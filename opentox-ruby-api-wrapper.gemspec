@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Christoph Helma"]
   s.date = %q{2009-08-13}
-  s.description = %q{}
+  s.description = %q{Ruby wrapper for the OpenTox REST API (http://www.opentox.org)}
   s.email = %q{helma@in-silico.ch}
   s.extra_rdoc_files = [
     "LICENSE",
@@ -25,20 +25,6 @@ Gem::Specification.new do |s|
      "VERSION",
      "lib/opentox-ruby-api-wrapper.rb",
      "opentox-ruby-api-wrapper.gemspec",
-     "rdoc/classes/OpenTox.html",
-     "rdoc/classes/OpenTox/Compound.html",
-     "rdoc/classes/OpenTox/Dataset.html",
-     "rdoc/classes/OpenTox/Feature.html",
-     "rdoc/classes/OpenTox/Fminer.html",
-     "rdoc/classes/OpenTox/OpenTox.html",
-     "rdoc/created.rid",
-     "rdoc/files/README_rdoc.html",
-     "rdoc/files/lib/opentox-ruby-api-wrapper_rb.html",
-     "rdoc/fr_class_index.html",
-     "rdoc/fr_file_index.html",
-     "rdoc/fr_method_index.html",
-     "rdoc/index.html",
-     "rdoc/rdoc-style.css",
      "test/opentox-ruby-api-wrapper_test.rb",
      "test/test_helper.rb"
   ]
