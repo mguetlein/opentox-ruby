@@ -6,7 +6,7 @@ begin
   Jeweler::Tasks.new do |gem|
     gem.name = "opentox-ruby-api-wrapper"
     gem.summary = %Q{Ruby wrapper for the OpenTox REST API}
-    gem.description = %Q{}
+    gem.description = %Q{Ruby wrapper for the OpenTox REST API (http://www.opentox.org)}
     gem.email = "helma@in-silico.ch"
     gem.homepage = "http://github.com/helma/opentox-ruby-api-wrapper"
     gem.authors = ["Christoph Helma"]

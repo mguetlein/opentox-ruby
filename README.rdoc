@@ -16,7 +16,7 @@ Install the gem:
 
 - set the environment variables OPENTOX_COMPOUNDS, OPENTOX_FEATURES, OPENTOX_DATASETS, OPENTOX_FMINER to the base URI of the OpenTox REST webservices
 - require 'opentox-ruby-api-wrapper' in your ruby application
-- consult the API documentation for details 
+- consult the rdoc API documentation for details 
 
 == Copyright
 
