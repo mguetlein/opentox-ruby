@@ -5,11 +5,13 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gem|
     gem.name = "opentox-ruby-api-wrapper"
-    gem.summary = %Q{TODO: one-line summary of your gem}
-    gem.description = %Q{TODO: longer description of your gem}
-    gem.email = "helma@in-silico.de"
+    gem.summary = %Q{Ruby wrapper for the OpenTox REST API}
+    gem.description = %Q{}
+    gem.email = "helma@in-silico.ch"
     gem.homepage = "http://github.com/helma/opentox-ruby-api-wrapper"
     gem.authors = ["Christoph Helma"]
+		gem.add_dependency "rest-client"
+		gem.add_dependency "crack"
     gem.add_development_dependency "thoughtbot-shoulda"
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end
