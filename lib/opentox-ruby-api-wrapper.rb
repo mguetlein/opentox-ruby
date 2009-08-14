@@ -1,5 +1,6 @@
 require 'rest_client'
 require 'crack/xml'
+require 'spork'
 
 ENV['OPENTOX_COMPOUND'] = 'http://webservices.in-silico.ch/compound/v0/' unless ENV['OPENTOX_COMPOUND']
 ENV['OPENTOX_FEATURE']  = 'http://webservices.in-silico.ch/feature/v0/'  unless ENV['OPENTOX_FEATURE']
