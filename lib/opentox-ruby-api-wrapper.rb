@@ -1,6 +1,11 @@
 require 'rest_client'
 require 'crack/xml'
 
+ENV['OPENTOX_COMPOUND'] = 'http://webservices.in-silico.ch/compound/v0/' unless ENV['OPENTOX_COMPOUND']
+ENV['OPENTOX_FEATURE']  = 'http://webservices.in-silico.ch/feature/v0/'  unless ENV['OPENTOX_FEATURE']
+ENV['OPENTOX_DATASET']  = 'http://webservices.in-silico.ch/dataset/v0/'  unless ENV['OPENTOX_DATASET']
+ENV['OPENTOX_FMINER']   = 'http://webservices.in-silico.ch/fminer/v0/'   unless ENV['OPENTOX_FMINER']
+
 module OpenTox
 
 	class OpenTox
@@ -19,9 +24,9 @@ module OpenTox
 			if params[:uri]
 				@uri = params[:uri].to_s
 			elsif params[:smiles]
-				@uri = RestClient.post ENV['OPENTOX_COMPOUNDS'] ,:smiles => uri_escape(params[:smiles])
+				@uri = RestClient.post ENV['OPENTOX_COMPOUND'] ,:smiles => uri_escape(params[:smiles])
 			elsif params[:name]
-				@uri = RestClient.post ENV['OPENTOX_COMPOUNDS'] ,:name => uri_escape(params[:name])
+				@uri = RestClient.post ENV['OPENTOX_COMPOUND'] ,:name => uri_escape(params[:name])
 			end
 		end
 
@@ -53,7 +58,7 @@ module OpenTox
 			if params[:uri]
 				@uri = params[:uri].to_s
 			else
-				@uri = ENV['OPENTOX_FEATURES'] + uri_escape(params[:name]) 
+				@uri = ENV['OPENTOX_FEATURE'] + uri_escape(params[:name]) 
 				params[:values].each do |k,v|
 					@uri += '/' + k.to_s + '/' + v.to_s
 				end
@@ -79,7 +84,7 @@ module OpenTox
 			if params[:uri]
 				@uri = params[:uri].to_s
 			elsif params[:name] 
-				@uri = RestClient.post ENV['OPENTOX_DATASETS'], :name => params[:name]
+				@uri = RestClient.post ENV['OPENTOX_DATASET'], :name => params[:name]
 				RestClient.delete @uri + '/associations'
 			end
 		end
