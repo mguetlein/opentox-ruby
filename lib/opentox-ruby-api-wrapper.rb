@@ -116,7 +116,7 @@ module OpenTox
 
 		# Add a compound and a feature to a dataset
 		def add(compound,feature)
-			RestClient.put @uri, :compound_uri => compound.uri, :feature_uri => feature.uri
+			RestClient.post @uri, :compound_uri => compound.uri, :feature_uri => feature.uri
 		end
 
 	end
