@@ -5,7 +5,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{opentox-ruby-api-wrapper}
-  s.version = "0.1.2"
+  s.version = "0.1.3"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Christoph Helma"]
@@ -24,6 +24,7 @@ Gem::Specification.new do |s|
      "Rakefile",
      "VERSION",
      "lib/opentox-ruby-api-wrapper.rb",
+     "lib/spork.rb",
      "opentox-ruby-api-wrapper.gemspec",
      "test/opentox-ruby-api-wrapper_test.rb",
      "test/test_helper.rb"
