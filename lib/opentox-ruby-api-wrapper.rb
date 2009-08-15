@@ -1,4 +1,6 @@
-[ 'rest_client', 'crack/xml', 'spork', 'helper' ].each do |lib|
+
+#['rubygems', 'rest_client', 'spork', 'helper' ].each do |lib|
+['rubygems', 'rest_client', 'spork' ].each do |lib|
 	require lib
 end
 
@@ -102,12 +104,7 @@ module OpenTox
 
 		# Get all compounds and features from a dataset, returns a hash with compound_uris as keys and arrays of features as values
 		def all_compounds_and_features
-			compounds = {}
-			Crack::XML.parse(RestClient.get @uri + '/compounds/features')['dataset']['compound'].each do |c|
-				features = c['feature_uri'].collect{ |f| Feature.new :uri => f }
-				compounds[c['uri']] = features
-			end
-			compounds
+			YAML.load(RestClient.get(@uri + '/compounds/features'))
 		end
 
 		# Get all features from a dataset
@@ -143,8 +140,12 @@ module OpenTox
 	class Lazar < OpenTox
 
 		# Create a new prediction model from a dataset
-		def initialize(training_dataset)
-			@uri = RestClient.post ENV['OPENTOX_LAZAR'] + 'models/' , :dataset_uri => training_dataset.uri
+		def initialize(params)
+			if params[:uri]
+				@uri = params[:uri]
+			elsif params[:dataset_ur]
+				@uri = RestClient.post ENV['OPENTOX_LAZAR'] + 'models/' , :dataset_uri => training_dataset.uri
+			end
 		end
 
 		# Predict a compound
