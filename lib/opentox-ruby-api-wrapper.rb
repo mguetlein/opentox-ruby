@@ -1,11 +1,12 @@
-require 'rest_client'
-require 'crack/xml'
-require 'spork'
+[ 'rest_client', 'crack/xml', 'spork', 'helper' ].each do |lib|
+	require lib
+end
 
 ENV['OPENTOX_COMPOUND'] = 'http://webservices.in-silico.ch/compound/v0/' unless ENV['OPENTOX_COMPOUND']
 ENV['OPENTOX_FEATURE']  = 'http://webservices.in-silico.ch/feature/v0/'  unless ENV['OPENTOX_FEATURE']
 ENV['OPENTOX_DATASET']  = 'http://webservices.in-silico.ch/dataset/v0/'  unless ENV['OPENTOX_DATASET']
 ENV['OPENTOX_FMINER']   = 'http://webservices.in-silico.ch/fminer/v0/'   unless ENV['OPENTOX_FMINER']
+ENV['OPENTOX_LAZAR']   = 'http://webservices.in-silico.ch/lazar/v0/'     unless ENV['OPENTOX_LAZAR']
 
 module OpenTox
 
@@ -86,7 +87,6 @@ module OpenTox
 				@uri = params[:uri].to_s
 			elsif params[:name] 
 				@uri = RestClient.post ENV['OPENTOX_DATASET'], :name => params[:name]
-				RestClient.delete @uri + '/associations'
 			end
 		end
 
@@ -136,6 +136,20 @@ module OpenTox
 
 		def dataset
 			Dataset.new(:uri => @dataset_uri)
+		end
+
+	end
+
+	class Lazar < OpenTox
+
+		# Create a new prediction model from a dataset
+		def initialize(training_dataset)
+			@uri = RestClient.post ENV['OPENTOX_LAZAR'] + 'models/' , :dataset_uri => training_dataset.uri
+		end
+
+		# Predict a compound
+		def predict(compound)
+			RestClient.post @uri, :compound_uri => compound.uri
 		end
 
 	end
