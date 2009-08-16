@@ -1,4 +1,3 @@
-
 #['rubygems', 'rest_client', 'spork', 'helper' ].each do |lib|
 ['rubygems', 'rest_client', 'spork' ].each do |lib|
 	require lib
@@ -8,7 +7,7 @@ ENV['OPENTOX_COMPOUND'] = 'http://webservices.in-silico.ch/compound/v0/' unless 
 ENV['OPENTOX_FEATURE']  = 'http://webservices.in-silico.ch/feature/v0/'  unless ENV['OPENTOX_FEATURE']
 ENV['OPENTOX_DATASET']  = 'http://webservices.in-silico.ch/dataset/v0/'  unless ENV['OPENTOX_DATASET']
 ENV['OPENTOX_FMINER']   = 'http://webservices.in-silico.ch/fminer/v0/'   unless ENV['OPENTOX_FMINER']
-ENV['OPENTOX_LAZAR']   = 'http://webservices.in-silico.ch/lazar/v0/'     unless ENV['OPENTOX_LAZAR']
+ENV['OPENTOX_LAZAR']    = 'http://webservices.in-silico.ch/lazar/v0/'     unless ENV['OPENTOX_LAZAR']
 
 module OpenTox
 
@@ -18,6 +17,20 @@ module OpenTox
 		# Escape all nonword characters
 		def uri_escape(string)
 			URI.escape(string, /[^\w]/)
+		end
+
+		def finished?
+			YAML.load(RestClient.get(@uri))[:finished]
+		end
+
+		def finished
+			print "closing "
+			puts @uri + '/finished'
+			RestClient.post @uri + '/finished'
+		end
+
+		def destroy
+			RestClient.delete @uri
 		end
 	end
 
@@ -87,9 +100,17 @@ module OpenTox
 		def initialize(params)
 			if params[:uri]
 				@uri = params[:uri].to_s
-			elsif params[:name] 
+			elsif params[:name] and params[:filename]
+				@uri = `curl -X POST -F file=@#{params[:filename]} -F name="#{params[:name]}" #{ENV['OPENTOX_DATASET']}`
+			elsif params[:name]
 				@uri = RestClient.post ENV['OPENTOX_DATASET'], :name => params[:name]
 			end
+		end
+
+		def finished
+			print "closing "
+			puts @uri + '/finished'
+			RestClient.post(@uri + '/finished',nil)
 		end
 
 		# Get the dataset name
@@ -143,8 +164,8 @@ module OpenTox
 		def initialize(params)
 			if params[:uri]
 				@uri = params[:uri]
-			elsif params[:dataset_ur]
-				@uri = RestClient.post ENV['OPENTOX_LAZAR'] + 'models/' , :dataset_uri => training_dataset.uri
+			elsif params[:dataset_uri]
+				@uri = RestClient.post ENV['OPENTOX_LAZAR'] + 'models' , :dataset_uri => params[:dataset_uri]
 			end
 		end
 
