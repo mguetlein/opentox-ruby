@@ -19,19 +19,21 @@ module OpenTox
 			URI.escape(string, /[^\w]/)
 		end
 
+		# Returns true if object creation has finished (for asynchronous processes)
 		def finished?
 			YAML.load(RestClient.get(@uri))[:finished]
 		end
 
-		def finished
-			print "closing "
-			puts @uri + '/finished'
-			RestClient.post @uri + '/finished'
+		# Get the object name
+		def name
+			RestClient.get @uri + '/name'
 		end
 
+		# Deletes an object
 		def destroy
 			RestClient.delete @uri
 		end
+
 	end
 
 	class Compound < OpenTox
@@ -87,11 +89,6 @@ module OpenTox
 			RestClient.get @uri + '/' + property
 		end
 
-		# Get the name of the feature
-		def name
-			RestClient.get @uri + '/name'
-		end
-
 	end
 
 	class Dataset < OpenTox
@@ -102,20 +99,9 @@ module OpenTox
 				@uri = params[:uri].to_s
 			elsif params[:name] and params[:filename]
 				@uri = `curl -X POST -F file=@#{params[:filename]} -F name="#{params[:name]}" #{ENV['OPENTOX_DATASET']}`
-			elsif params[:name]
-				@uri = RestClient.post ENV['OPENTOX_DATASET'], :name => params[:name]
+			elsif params[:name] 
+				@uri = RestClient.post ENV['OPENTOX_DATASET'], :name => params[:name], :data => params[:data].to_yaml
 			end
-		end
-
-		def finished
-			print "closing "
-			puts @uri + '/finished'
-			RestClient.post(@uri + '/finished',nil)
-		end
-
-		# Get the dataset name
-		def name
-			RestClient.get @uri + '/name'
 		end
 
 		# Get all compounds from a dataset
@@ -123,8 +109,8 @@ module OpenTox
 			RestClient.get(@uri + '/compounds').split("\n").collect{ |c| Compound.new(:uri => c) }
 		end
 
-		# Get all compounds and features from a dataset, returns a hash with compound_uris as keys and arrays of features as values
-		def all_compounds_and_features
+		# Get all compounds and features from a dataset, returns a hash with compound_uris as keys and arrays of feature_uris as values
+		def all_compounds_and_features_uris
 			YAML.load(RestClient.get(@uri + '/compounds/features'))
 		end
 
@@ -140,7 +126,13 @@ module OpenTox
 
 		# Add a compound and a feature to a dataset
 		def add(compound,feature)
-			RestClient.post @uri, :compound_uri => compound.uri, :feature_uri => feature.uri
+			RestClient.put @uri, :compound_uri => compound.uri, :feature_uri => feature.uri
+		end
+
+		# Tell the dataset that it is complete
+		def close
+			puts @uri + '/finished'
+			RestClient.put @uri + '/finished', nil
 		end
 
 	end
@@ -171,7 +163,33 @@ module OpenTox
 
 		# Predict a compound
 		def predict(compound)
-			RestClient.post @uri, :compound_uri => compound.uri
+			LazarPrediction.new(:uri => RestClient.post(@uri, :compound_uri => compound.uri))
+		end
+
+	end
+
+	class LazarPrediction < OpenTox
+
+		def initialize(params)
+			if params[:uri]
+				@uri = params[:uri]
+			end
+		end
+
+		def classification
+			YAML.load(RestClient.get @uri)[:classification]
+		end
+
+		def confidence
+			YAML.load(RestClient.get @uri)[:confidence]
+		end
+
+		def neighbors
+			RestClient.get @uri + '/neighbors' 
+		end
+
+		def features
+			RestClient.get @uri + '/features' 
 		end
 
 	end
