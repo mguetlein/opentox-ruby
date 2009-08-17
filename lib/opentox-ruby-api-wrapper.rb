@@ -131,8 +131,7 @@ module OpenTox
 
 		# Tell the dataset that it is complete
 		def close
-			puts @uri + '/finished'
-			RestClient.put @uri + '/finished', nil
+			RestClient.put @uri, :finished => 'true'
 		end
 
 	end
