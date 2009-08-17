@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{opentox-ruby-api-wrapper}
-  s.version = "0.1.5"
+  s.version = "0.2.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Christoph Helma"]
-  s.date = %q{2009-08-16}
+  s.date = %q{2009-08-17}
   s.description = %q{Ruby wrapper for the OpenTox REST API (http://www.opentox.org)}
   s.email = %q{helma@in-silico.ch}
   s.extra_rdoc_files = [
@@ -29,6 +29,7 @@ Gem::Specification.new do |s|
      "opentox-ruby-api-wrapper.gemspec",
      "test/hamster_carcinogenicity.csv",
      "test/opentox-ruby-api-wrapper_test.rb",
+     "test/start-local-webservices.rb",
      "test/test_helper.rb"
   ]
   s.homepage = %q{http://github.com/helma/opentox-ruby-api-wrapper}
@@ -38,7 +39,8 @@ Gem::Specification.new do |s|
   s.summary = %q{Ruby wrapper for the OpenTox REST API}
   s.test_files = [
     "test/test_helper.rb",
-     "test/opentox-ruby-api-wrapper_test.rb"
+     "test/opentox-ruby-api-wrapper_test.rb",
+     "test/start-local-webservices.rb"
   ]
 
   if s.respond_to? :specification_version then
