@@ -100,7 +100,7 @@ module OpenTox
 			elsif params[:name] and params[:filename]
 				@uri = `curl -X POST -F file=@#{params[:filename]} -F name="#{params[:name]}" #{ENV['OPENTOX_DATASET']}`
 			elsif params[:name] 
-				@uri = RestClient.post ENV['OPENTOX_DATASET'], :name => params[:name], :data => params[:data].to_yaml
+				@uri = RestClient.post ENV['OPENTOX_DATASET'], :name => params[:name]
 			end
 		end
 
