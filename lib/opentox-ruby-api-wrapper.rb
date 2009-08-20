@@ -1,4 +1,3 @@
-#['rubygems', 'rest_client', 'spork', 'helper' ].each do |lib|
 ['rubygems', 'rest_client', 'spork' ].each do |lib|
 	require lib
 end
