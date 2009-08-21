@@ -1,12 +1,6 @@
-['rubygems', 'rest_client', 'spork' ].each do |lib|
+['rubygems', 'rest_client', 'spork', 'environment'].each do |lib|
 	require lib
 end
-
-ENV['OPENTOX_COMPOUND'] = 'http://webservices.in-silico.ch/compound/v0/' unless ENV['OPENTOX_COMPOUND']
-ENV['OPENTOX_FEATURE']  = 'http://webservices.in-silico.ch/feature/v0/'  unless ENV['OPENTOX_FEATURE']
-ENV['OPENTOX_DATASET']  = 'http://webservices.in-silico.ch/dataset/v0/'  unless ENV['OPENTOX_DATASET']
-ENV['OPENTOX_FMINER']   = 'http://webservices.in-silico.ch/fminer/v0/'   unless ENV['OPENTOX_FMINER']
-ENV['OPENTOX_LAZAR']    = 'http://webservices.in-silico.ch/lazar/v0/'     unless ENV['OPENTOX_LAZAR']
 
 module OpenTox
 
@@ -42,9 +36,9 @@ module OpenTox
 			if params[:uri]
 				@uri = params[:uri].to_s
 			elsif params[:smiles]
-				@uri = RestClient.post ENV['OPENTOX_COMPOUND'] ,:smiles => uri_escape(params[:smiles])
+				@uri = RestClient.post @services['opentox-compound'] ,:smiles => uri_escape(params[:smiles])
 			elsif params[:name]
-				@uri = RestClient.post ENV['OPENTOX_COMPOUND'] ,:name => uri_escape(params[:name])
+				@uri = RestClient.post @services['opentox-compound'] ,:name => uri_escape(params[:name])
 			end
 		end
 
@@ -76,7 +70,7 @@ module OpenTox
 			if params[:uri]
 				@uri = params[:uri].to_s
 			else
-				@uri = ENV['OPENTOX_FEATURE'] + uri_escape(params[:name]) 
+				@uri = @services['opentox-feature']+ uri_escape(params[:name]) 
 				params[:values].each do |k,v|
 					@uri += '/' + k.to_s + '/' + v.to_s
 				end
@@ -97,9 +91,9 @@ module OpenTox
 			if params[:uri]
 				@uri = params[:uri].to_s
 			elsif params[:name] and params[:filename]
-				@uri = `curl -X POST -F file=@#{params[:filename]} -F name="#{params[:name]}" #{ENV['OPENTOX_DATASET']}`
+				@uri = `curl -X POST -F file=@#{params[:filename]} -F name="#{params[:name]}" #{@services['opentox-dataset']}`
 			elsif params[:name] 
-				@uri = RestClient.post ENV['OPENTOX_DATASET'], :name => params[:name]
+				@uri = RestClient.post @services['opentox-dataset'], :name => params[:name]
 			end
 		end
 
@@ -139,7 +133,7 @@ module OpenTox
 
 		# Create a new dataset with BBRC features
 		def initialize(training_dataset)
-			@dataset_uri = RestClient.post ENV['OPENTOX_FMINER'], :dataset_uri => training_dataset.uri
+			@dataset_uri = RestClient.post @services['opentox-fminer'], :dataset_uri => training_dataset.uri
 		end
 
 		def dataset
@@ -155,7 +149,7 @@ module OpenTox
 			if params[:uri]
 				@uri = params[:uri]
 			elsif params[:dataset_uri]
-				@uri = RestClient.post ENV['OPENTOX_LAZAR'] + 'models' , :dataset_uri => params[:dataset_uri]
+				@uri = RestClient.post @services['opentox-lazar']+ 'models' , :dataset_uri => params[:dataset_uri]
 			end
 		end
 

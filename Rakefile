@@ -11,7 +11,7 @@ begin
     gem.homepage = "http://github.com/helma/opentox-ruby-api-wrapper"
     gem.authors = ["Christoph Helma"]
 		gem.add_dependency "rest-client"
-		gem.files.include %w(lib/tasks/opentox.rb)
+		gem.files.include %w(lib/tasks/opentox.rb, lib/environment.rb, lib/templates/*)
 		#gem.files =  FileList["[A-Z]*", "{bin,generators,lib,test}/**/*", 'lib/jeweler/templates/.gitignore']
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end
