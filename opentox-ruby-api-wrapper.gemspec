@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Christoph Helma"]
-  s.date = %q{2009-08-21}
+  s.date = %q{2009-08-25}
   s.description = %q{Ruby wrapper for the OpenTox REST API (http://www.opentox.org)}
   s.email = %q{helma@in-silico.ch}
   s.extra_rdoc_files = [
@@ -23,10 +23,12 @@ Gem::Specification.new do |s|
      "README.rdoc",
      "Rakefile",
      "VERSION",
+     "lib/environment.rb",
      "lib/helper.rb",
      "lib/opentox-ruby-api-wrapper.rb",
      "lib/spork.rb",
      "lib/tasks/opentox.rb",
+     "lib/templates/config.yaml",
      "lib/templates/config.yaml",
      "opentox-ruby-api-wrapper.gemspec",
      "test/hamster_carcinogenicity.csv",

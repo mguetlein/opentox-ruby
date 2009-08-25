@@ -1,11 +1,6 @@
-development:
-  base_dir: ~/webservices
-
-production:
-  base_uri: webservices.in-silico.ch
-  base_dir: /var/www/webservices
-
-services:
+:base_dir: /home/ch/webservices
+:webserver: thin
+:services:
   - opentox-feature
   - opentox-compound
   - opentox-dataset

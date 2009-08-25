@@ -1,4 +1,4 @@
-require 'test_helper'
+require File.join(File.dirname(__FILE__), 'test_helper.rb')
 
 class OpentoxRubyApiWrapperTest < Test::Unit::TestCase
 
@@ -10,6 +10,7 @@ class OpentoxRubyApiWrapperTest < Test::Unit::TestCase
 				port += 1
 			end
 		end
+		ENV['OPENTOX'] = "test"
 	end
 
 	def test_create_dataset_and_model_and_make_a_prediction

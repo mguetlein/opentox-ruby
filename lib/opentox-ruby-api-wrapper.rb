@@ -1,4 +1,4 @@
-['rubygems', 'rest_client', 'spork', 'environment'].each do |lib|
+['rubygems', 'sinatra', 'sinatra/respond_to', 'sinatra/url_for', 'builder', 'rest_client', 'yaml', 'spork', 'environment'].each do |lib|
 	require lib
 end
 
@@ -9,12 +9,8 @@ module OpenTox
 
 		# Escape all nonword characters
 		def uri_escape(string)
-			URI.escape(string, /[^\w]/)
-		end
-
-		# Returns true if object creation has finished (for asynchronous processes)
-		def finished?
-			YAML.load(RestClient.get(@uri))[:finished]
+			#URI.escape(string, /[^\w]/)
+			URI.escape(string, /[^#{URI::PATTERN::UNRESERVED}]/)
 		end
 
 		# Get the object name
@@ -36,15 +32,20 @@ module OpenTox
 			if params[:uri]
 				@uri = params[:uri].to_s
 			elsif params[:smiles]
-				@uri = RestClient.post @services['opentox-compound'] ,:smiles => uri_escape(params[:smiles])
+				@uri = RestClient.post @@config[:services]["opentox-compound"] ,:smiles => uri_escape(params[:smiles])
 			elsif params[:name]
-				@uri = RestClient.post @services['opentox-compound'] ,:name => uri_escape(params[:name])
+				@uri = RestClient.post @@config[:services]["opentox-compound"] ,:name => uri_escape(params[:name])
 			end
 		end
 
 		# Get the (canonical) smiles
 		def smiles
 			RestClient.get @uri
+		end
+
+		# Get the unique id (URI encoded canonical smiles)
+		def uid
+			RestClient.get @uri + '.uid'
 		end
 
 		# Matchs a smarts string
@@ -70,7 +71,7 @@ module OpenTox
 			if params[:uri]
 				@uri = params[:uri].to_s
 			else
-				@uri = @services['opentox-feature']+ uri_escape(params[:name]) 
+				@uri = @@config[:services]["opentox-feature"] + uri_escape(params[:name]) 
 				params[:values].each do |k,v|
 					@uri += '/' + k.to_s + '/' + v.to_s
 				end
@@ -91,9 +92,9 @@ module OpenTox
 			if params[:uri]
 				@uri = params[:uri].to_s
 			elsif params[:name] and params[:filename]
-				@uri = `curl -X POST -F file=@#{params[:filename]} -F name="#{params[:name]}" #{@services['opentox-dataset']}`
+				@uri = `curl -X POST -F file=@#{params[:filename]} -F name="#{params[:name]}" #{@@config[:services]["opentox-dataset"]}`
 			elsif params[:name] 
-				@uri = RestClient.post @services['opentox-dataset'], :name => params[:name]
+				@uri = RestClient.post @@config[:services]["opentox-dataset"], :name => params[:name]
 			end
 		end
 
@@ -104,7 +105,7 @@ module OpenTox
 
 		# Get all compounds and features from a dataset, returns a hash with compound_uris as keys and arrays of feature_uris as values
 		def all_compounds_and_features_uris
-			YAML.load(RestClient.get(@uri + '/compounds/features'))
+			YAML.load(RestClient.get(@uri + '/compounds/features.yaml'))
 		end
 
 		# Get all features from a dataset
@@ -133,7 +134,7 @@ module OpenTox
 
 		# Create a new dataset with BBRC features
 		def initialize(training_dataset)
-			@dataset_uri = RestClient.post @services['opentox-fminer'], :dataset_uri => training_dataset.uri
+			@dataset_uri = RestClient.post @@config[:services]["opentox-fminer"], :dataset_uri => training_dataset.uri
 		end
 
 		def dataset
@@ -149,7 +150,7 @@ module OpenTox
 			if params[:uri]
 				@uri = params[:uri]
 			elsif params[:dataset_uri]
-				@uri = RestClient.post @services['opentox-lazar']+ 'models' , :dataset_uri => params[:dataset_uri]
+				@uri = RestClient.post @@config[:services]["opentox-lazar"] + 'models' , :dataset_uri => params[:dataset_uri]
 			end
 		end
 
