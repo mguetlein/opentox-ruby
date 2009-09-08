@@ -1,4 +1,4 @@
-require "environment"
+load File.join(File.dirname(__FILE__), '..', 'environment.rb')
 
 namespace :opentox do
 
@@ -18,18 +18,22 @@ namespace :opentox do
 		task :start do
 			@@config[:services].each do |service,uri|
 				dir = File.join(@@config[:base_dir], service)
-				case @@config[:webserver]
-				when 'thin'
+				server = @@config[:webserver]
+				`redis-server &`
+				case server
+				when /thin|mongrel|webrick/
 					port = uri.sub(/^.*:/,'').sub(/\/$/,'')
 					Dir.chdir dir
+					pid_file = File.join(@@tmp_dir,"#{service}.pid") 
 					begin
-						`thin --trace --rackup config.ru start -p #{port} -e #{ENV['RACK_ENV']} &`
-						puts "#{service} started on port #{port}."
+						`#{server} --trace --rackup config.ru start -p #{port} -e #{ENV['RACK_ENV']} -P #{pid_file} -d &`
+						puts "#{service} started on localhost:#{port} in #{ENV['RACK_ENV']} environment with PID file #{pid_file}."
 					rescue
 						puts "Cannot start #{service} on port #{port}."
 					end
 				when 'passenger'
-					puts "not yet implemented"
+					`touch #{File.join(dir, 'tmp/restart.txt')}`
+					puts "#{service} restarted."
 				else
 					puts "not yet implemented"
 				end
@@ -38,9 +42,18 @@ namespace :opentox do
 
 		desc "Stop opentox services"
 		task :stop do
-			@@config[:services].each do |service,uri|
-				port = uri.sub(/^.*:/,'').sub(/\/$/,'')
-				`echo "SHUTDOWN" | nc localhost #{port}` if port
+			server = @@config[:webserver]
+			if server =~ /thin|mongrel|webrick/
+				@@config[:services].each do |service,uri|
+					port = uri.sub(/^.*:/,'').sub(/\/$/,'')
+					pid_file = File.join(@@tmp_dir,"#{service}.pid") 
+					begin
+						puts `#{server} stop -P #{pid_file}` 
+						puts "#{service} stopped on localhost:#{port}"
+					rescue
+						puts "Cannot stop #{service} on port #{port}."
+					end
+				end
 			end
 		end
 
@@ -49,20 +62,55 @@ namespace :opentox do
 
 	end
 
-	namespace :test do
-
-		ENV['RACK_ENV'] = 'test'
-		test = "#{Dir.pwd}/test/test.rb"
-
-		desc "Run local tests"
-		task :local => "opentox:services:restart" do
-			load test
+	desc "Run all OpenTox tests"
+	task :test do
+		@@config[:services].each do |service,uri|
+			dir = File.join(@@config[:base_dir], service)
+			Dir.chdir dir
+			puts "Running tests in #{dir}"
+			`rake test -t 1>&2`
 		end
-
-		task :remote do
-			#load 'test.rb'
-		end
-
 	end
 
 end
+
+desc "Start service in current directory"
+task :start do
+	service = File.basename(Dir.pwd).intern
+	server = @@config[:webserver]
+	case server 
+		when /thin|mongrel|webrick/
+			port = @@config[:services][service].sub(/^.*:/,'').sub(/\/$/,'')
+			pid_file = File.join(@@tmp_dir,"#{service}.pid") 
+			begin
+				`#{server} --trace --rackup config.ru start -p #{port} -e #{ENV['RACK_ENV']} -P #{pid_file} -d &`
+				puts "#{service} started on localhost:#{port} in #{ENV['RACK_ENV']} environment with PID file #{pid_file}."
+			rescue
+				puts "Cannot start #{service} on port #{port}."
+			end
+		when 'passenger'
+			`touch tmp/restart.txt`
+			puts "#{service} restarted."
+		else
+			puts "not yet implemented"
+		end
+end
+
+desc "Stop service in current directory"
+task :stop do
+	service = File.basename(Dir.pwd).intern
+	server = @@config[:webserver]
+	if server =~ /thin|mongrel|webrick/
+		port = @@config[:services][service].sub(/^.*:/,'').sub(/\/$/,'')
+		pid_file = File.join(@@tmp_dir,"#{service}.pid") 
+		begin
+			puts `thin stop -P #{pid_file}` 
+			puts "#{service} stopped on localhost:#{port}"
+		rescue
+			puts "Cannot stop #{service} on port #{port}."
+		end
+	end
+end
+
+desc "Restart service in current directory"
+task :restart  => [:stop, :start]
