@@ -4,7 +4,7 @@ module OpenTox
 	# set: dataset uris
 	# key: /dataset/:dataset/compounds
 	# set: compound uris
-	# key: /dataset/:dataset/compound/:inchi/:feature_type
+	# key: /dataset/:dataset/compound/:inchi
 	# set: feature uris
 	class Dataset < OpenTox
 
@@ -19,31 +19,32 @@ module OpenTox
 		end
 
 		def self.find(params)
-			if params[:name]
-				uri = RestClient.get File.join(@@config[:services]["opentox-dataset"], params[:name])
-			elsif params[:uri]
-				uri = params[:uri]
-			end
-			if RestClient.get uri
-				Dataset.new(uri)
-			else
+			begin
+				if params[:name]
+					uri = File.join(@@config[:services]["opentox-dataset"], URI.encode(params[:name]))
+				elsif params[:uri]
+					uri = params[:uri]
+				end
+				RestClient.get uri # check if the resource is available
+				Dataset.new(uri) if uri
+			rescue
 				nil
 			end
+		end
+
+		def self.find_or_create(params)
+			self.create(params) unless self.find(params)
 		end
 
 		def import(params)
 			if params[:csv]
 				# RestClient seems not to work for file uploads
-				`curl -X POST -F "file=@#{params[:csv]};type=text/csv" -F compound_format=#{params[:compound_format]} -F feature_type=#{params[:feature_type]} #{@uri + '/import'}`
+				`curl -X POST -F "file=@#{params[:csv]};type=text/csv" -F compound_format=#{params[:compound_format]} #{@uri + '/import'}`
 			end
 		end
 
-		def add_features(features,feature_type)
-			#puts @uri
-			#puts feature_type
-			#puts features.to_yaml
-			HTTPClient.post @uri, {:feature_type => feature_type, :features => features.to_yaml}
-			#`curl -X POST -F feature_type="#{feature_type}" -F features="#{features.to_yaml}" #{@uri}`
+		def add(features)
+			HTTPClient.post @uri, {:features => features.to_yaml}
 		end
 
 		# Get all compounds from a dataset
@@ -56,19 +57,30 @@ module OpenTox
 		end
 
 		# Get all features for a compound
-		def feature_uris(compound,feature_type)
-			#puts File.join(@uri, 'compound', compound.inchi, feature_type)
-			RestClient.get(File.join(@uri, 'compound', compound.inchi, feature_type)).split("\n")
+		def feature_uris(compound)
+			RestClient.get(File.join(@uri, 'compound', compound.inchi)).split("\n")
 		end
 
 		# Get all features for a compound
-		def features(compound,feature_type)
-			feature_uris(compound,feature_type).collect{|uri| Feature.new(:uri => uri)}
+		def features(compound)
+			feature_uris(compound).collect{|uri| Feature.new(:uri => uri)}
+		end
+
+		def all_features
+			RestClient.get(File.join(@uri, 'features')).split("\n")
 		end
 
 		# Delete a dataset
 		def delete
 			RestClient.delete @uri
+		end
+
+		def tanimoto(dataset)
+			RestClient.get(File.join(@uri,'tanimoto',dataset.path))
+		end
+
+		def weighted_tanimoto(dataset)
+			RestClient.get(File.join(@uri,'weighted_tanimoto',dataset.path))
 		end
 
 	end

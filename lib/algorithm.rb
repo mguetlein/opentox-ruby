@@ -3,23 +3,19 @@ module OpenTox
 
 		class Fminer < OpenTox
 			# Create a new dataset with BBRC features
-			def initialize(training_dataset)
-				@uri = RestClient.post @@config[:services]["opentox-fminer"], :dataset_uri => training_dataset.uri
+			def self.create(training_dataset_uri)
+				RestClient.post @@config[:services]["opentox-fminer"], :dataset_uri => training_dataset_uri
 			end
 		end
 
 		class Similarity < OpenTox
 
-			def initialize
-				@uri = @@config[:services]["opentox-similarity"]
+			def self.tanimoto(dataset1,compound1,dataset2,compound2)
+				RestClient.get File.join(@@config[:services]["opentox-dataset"], 'algorithm/tanimoto/dataset',dataset1.name,compound1.inchi,'dataset',dataset2.name,compound2.inchi)
 			end
 
-			def self.tanimoto(dataset,compounds)
-				RestClient.post @uri + 'tanimoto', :dataset_uri => dataset.uri, :compound_uris => compounds.collect{ |c| c.uri }
-			end
-
-			def self.weighted_tanimoto(dataset,compounds)
-				RestClient.post @uri + 'weighted_tanimoto', :dataset_uri => dataset.uri, :compound_uris => compounds.collect{ |c| c.uri }
+			def self.weighted_tanimoto(dataset1,compound1,dataset2,compound2)
+				RestClient.get URI.encode(File.join(@@config[:services]["opentox-dataset"], 'algorithm/weighted_tanimoto/dataset',dataset1.name,'compound',compound1.inchi,'dataset',dataset2.name,'compound',compound2.inchi))
 			end
 
 		end

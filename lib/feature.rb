@@ -9,15 +9,16 @@ module OpenTox
 			if params[:uri]
 				@uri = params[:uri]
 				items = URI.split(@uri)[5].split(/\//)
-				@name = items[1]
+				@name = items[2]
 				@values = {}
-				i = 3
+				i = 4
 				while i < items.size
 					@values[items[i]] = items[i+1]
 					i += 2
 				end
 			else 
-				@name = URI.encode(URI.decode(params[:name]))
+				@name = params[:name]
+				#@name = URI.encode(URI.decode(params[:name]))
 				@values = params[:values]
 				@uri = File.join(@@config[:services]["opentox-dataset"],"feature",path)
 			end

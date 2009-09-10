@@ -19,7 +19,8 @@ namespace :opentox do
 			@@config[:services].each do |service,uri|
 				dir = File.join(@@config[:base_dir], service)
 				server = @@config[:webserver]
-				`redis-server &`
+				#puts "Starting Redis database"
+				#puts `redis-server /etc/redis.conf &`
 				case server
 				when /thin|mongrel|webrick/
 					port = uri.sub(/^.*:/,'').sub(/\/$/,'')

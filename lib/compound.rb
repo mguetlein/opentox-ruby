@@ -44,8 +44,8 @@ module OpenTox
 		end
 
 		# Match an array of smarts features, returns matching features
-		def match(smarts_features)
-			smarts_features.all_features.collect{ |smarts| smarts if self.match?(smarts.name) }.compact
+		def match(smarts_dataset)
+			smarts_dataset.all_features.collect{ |uri| uri if self.match?(Feature.new(:uri => uri).name) }.compact
 		end
 
 		def smiles2inchi(smiles)

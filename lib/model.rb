@@ -1,4 +1,7 @@
 module OpenTox
+
+	# key: /models
+	# set: dataset uris
 	module Model 
 
 		class Lazar < OpenTox
