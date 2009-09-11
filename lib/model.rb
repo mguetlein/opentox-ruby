@@ -11,6 +11,14 @@ module OpenTox
 				super(params[:uri])
 			end
 
+			def self.find(name)
+				RestClient.get File.join(@@config[:services]["opentox-lazar"], 'model', URI.encode(params[:name]))
+			end
+
+			def self.find_all
+				RestClient.get File.join(@@config[:services]["opentox-lazar"], 'models')#.split("\n")
+			end
+
 			# Predict a compound
 			def predict(compound)
 				LazarPrediction.new(:uri => RestClient.post(@uri, :compound_uri => compound.uri))

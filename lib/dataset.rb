@@ -39,12 +39,13 @@ module OpenTox
 		def import(params)
 			if params[:csv]
 				# RestClient seems not to work for file uploads
+				#RestClient.post @uri + '/import', :compound_format => params[:compound_format], :content_type => "text/csv", :file => File.new(params[:csv])
 				`curl -X POST -F "file=@#{params[:csv]};type=text/csv" -F compound_format=#{params[:compound_format]} #{@uri + '/import'}`
 			end
 		end
 
 		def add(features)
-			HTTPClient.post @uri, {:features => features.to_yaml}
+			RestClient.post @uri, :features => features.to_yaml
 		end
 
 		# Get all compounds from a dataset
@@ -58,7 +59,8 @@ module OpenTox
 
 		# Get all features for a compound
 		def feature_uris(compound)
-			RestClient.get(File.join(@uri, 'compound', compound.inchi)).split("\n")
+			uri = File.join(@uri, 'compound', CGI.escape(compound.inchi)) # URI.encode does not work here
+			RestClient.get(uri).split("\n")
 		end
 
 		# Get all features for a compound

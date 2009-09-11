@@ -15,7 +15,9 @@ module OpenTox
 			end
 
 			def self.weighted_tanimoto(dataset1,compound1,dataset2,compound2)
-				RestClient.get URI.encode(File.join(@@config[:services]["opentox-dataset"], 'algorithm/weighted_tanimoto/dataset',dataset1.name,'compound',compound1.inchi,'dataset',dataset2.name,'compound',compound2.inchi))
+				# URI.escape does not work here
+				uri = File.join(@@config[:services]["opentox-dataset"], 'algorithm/weighted_tanimoto/dataset',CGI.escape(dataset1.name),'compound',CGI.escape(compound1.inchi),'dataset',CGI.escape(dataset2.name),'compound',CGI.escape(compound2.inchi))
+				RestClient.get uri
 			end
 
 		end

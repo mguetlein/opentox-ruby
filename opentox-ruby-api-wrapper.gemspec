@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{opentox-ruby-api-wrapper}
-  s.version = "0.2.2"
+  s.version = "1.0.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Christoph Helma"]
-  s.date = %q{2009-09-08}
+  s.date = %q{2009-09-11}
   s.description = %q{Ruby wrapper for the OpenTox REST API (http://www.opentox.org)}
   s.email = %q{helma@in-silico.ch}
   s.extra_rdoc_files = [
@@ -29,6 +29,7 @@ Gem::Specification.new do |s|
      "lib/helper.rb",
      "lib/model.rb",
      "lib/opentox-ruby-api-wrapper.rb",
+     "lib/opentox.rb",
      "lib/spork.rb",
      "lib/tasks/opentox.rb",
      "lib/templates/config.ru",
@@ -57,11 +58,11 @@ Gem::Specification.new do |s|
     s.specification_version = 3
 
     if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
-      s.add_runtime_dependency(%q<rest-client>, [">= 0"])
+      s.add_runtime_dependency(%q<technoweenie-rest-client>, [">= 0"])
     else
-      s.add_dependency(%q<rest-client>, [">= 0"])
+      s.add_dependency(%q<technoweenie-rest-client>, [">= 0"])
     end
   else
-    s.add_dependency(%q<rest-client>, [">= 0"])
+    s.add_dependency(%q<technoweenie-rest-client>, [">= 0"])
   end
 end
