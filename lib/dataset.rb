@@ -14,7 +14,7 @@ module OpenTox
 		end
 
 		def self.create(params)
-			uri = RestClient.post File.join(@@config[:services]["opentox-dataset"],"datasets"), :name => params[:name]
+			uri = RestClient.post @@config[:services]["opentox-dataset"], :name => params[:name]
 			Dataset.new(uri.to_s)
 		end
 
@@ -36,6 +36,10 @@ module OpenTox
 			self.create(params) unless self.find(params)
 		end
 
+		def self.base_uri
+			@@config[:services]["opentox-dataset"]
+		end
+
 		def import(params)
 			if params[:csv]
 				# RestClient seems not to work for file uploads
@@ -45,7 +49,7 @@ module OpenTox
 		end
 
 		def add(features)
-			RestClient.post @uri, :features => features.to_yaml
+			RestClient.put @uri, :features => features
 		end
 
 		# Get all compounds from a dataset

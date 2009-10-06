@@ -10,13 +10,13 @@ module OpenTox
 			@@cactus_uri="http://cactus.nci.nih.gov/chemical/structure/"
 			if params[:smiles]
 				@inchi = smiles2inchi(params[:smiles])
-				@uri = File.join(@@config[:services]["opentox-dataset"],"compound",@inchi)
+				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
 			elsif params[:inchi]
-				@inchi = inchi
-				@uri = File.join(@@config[:services]["opentox-dataset"],"compound",@inchi)
+				@inchi = params[:inchi]
+				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
 			elsif params[:name]
 				@inchi = RestClient.get "#{@@cactus_uri}#{params[:name]}/stdinchi"
-				@uri = File.join(@@config[:services]["opentox-dataset"],"compound",@inchi)
+				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
 			elsif params[:uri]
 				@inchi = params[:uri].sub(/^.*InChI/, 'InChI')
 				@uri = params[:uri]

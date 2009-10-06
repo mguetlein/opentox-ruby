@@ -1,27 +1,36 @@
 module OpenTox
 
-	# key: /models
-	# set: dataset uris
 	module Model 
 
-		class Lazar < OpenTox
+		class LazarClassification < OpenTox
 
 			# Create a new prediction model from a dataset
-			def initialize(params)
-				super(params[:uri])
+			def initialize(uri)
+				super(uri)
+			end
+
+			def self.create(params)
+				uri = RestClient.post File.join(@@config[:services]["opentox-model"], 'lazar_classification'), params
+				puts "URI: " + uri
+				LazarClassification.new(uri.to_s)
 			end
 
 			def self.find(name)
-				RestClient.get File.join(@@config[:services]["opentox-lazar"], 'model', URI.encode(params[:name]))
+				uri = RestClient.get File.join(@@config[:services]["opentox-model"], 'lazar_classification', URI.encode(params[:name]))
+				LazarClassification.new(uri)
 			end
 
 			def self.find_all
-				RestClient.get File.join(@@config[:services]["opentox-lazar"], 'models')#.split("\n")
+				RestClient.get File.join(@@config[:services]["opentox-model"], 'lazar_classification')#.split("\n")
 			end
 
 			# Predict a compound
 			def predict(compound)
 				LazarPrediction.new(:uri => RestClient.post(@uri, :compound_uri => compound.uri))
+			end
+
+			def self.base_uri
+				@@config[:services]["opentox-model"]
 			end
 
 		end

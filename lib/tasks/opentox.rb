@@ -1,4 +1,16 @@
-load File.join(File.dirname(__FILE__), '..', 'environment.rb')
+require File.join(File.dirname(__FILE__), '..', 'opentox-ruby-api-wrapper.rb')
+require File.join(File.dirname(__FILE__), 'redis.rb')
+
+namespace :redis do
+
+	desc "Flush Redis testing database"
+	task :flush do
+		require 'redis'
+		r = Redis.new :db => 2
+		r.flushdb
+	end
+
+end
 
 namespace :opentox do
 
@@ -19,8 +31,6 @@ namespace :opentox do
 			@@config[:services].each do |service,uri|
 				dir = File.join(@@config[:base_dir], service)
 				server = @@config[:webserver]
-				#puts "Starting Redis database"
-				#puts `redis-server /etc/redis.conf &`
 				case server
 				when /thin|mongrel|webrick/
 					port = uri.sub(/^.*:/,'').sub(/\/$/,'')

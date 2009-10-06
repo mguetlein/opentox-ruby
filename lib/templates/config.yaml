@@ -1,10 +1,10 @@
 :base_dir: /home/ch/webservices
 :webserver: thin
 :services:
-# make sure to provide a full uri (including training slash)
-  opentox-feature:      "http://localhost:5000/"
-  opentox-compound:     "http://localhost:5001/"
-  opentox-dataset:      "http://localhost:5002/"
-  opentox-fminer:       "http://localhost:5003/"
-  opentox-similarity:   "http://localhost:5004/"
-  opentox-lazar:        "http://localhost:5005/"
+# make sure to enter a full uri (including training slash)
+  opentox-compound:      "http://localhost:4000/"
+  opentox-feature:       "http://localhost:4001/"
+  opentox-dataset:       "http://localhost:4002/"
+  opentox-algorithm:     "http://localhost:4003/"
+  opentox-model:         "http://localhost:4004/"
+  #opentox-task:          "http://localhost:4005/"

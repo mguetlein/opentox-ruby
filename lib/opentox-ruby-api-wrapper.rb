@@ -1,7 +1,7 @@
-['rubygems', 'sinatra', 'sinatra/url_for', 'builder', 'rest_client', 'yaml', 'cgi', 'openbabel'].each do |lib|
+['rubygems', 'sinatra', 'sinatra/url_for',  'redis','builder', 'rest_client', 'yaml', 'cgi', 'openbabel', 'spork', 'environment'].each do |lib|
 	require lib
 end
 
-['environment', 'opentox', 'compound','feature','dataset','algorithm','model','utils'].each do |lib|
+['opentox', 'compound','feature','dataset','algorithm','model','task','utils'].each do |lib|
 	require lib
 end

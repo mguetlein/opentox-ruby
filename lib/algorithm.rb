@@ -3,20 +3,24 @@ module OpenTox
 
 		class Fminer < OpenTox
 			# Create a new dataset with BBRC features
-			def self.create(training_dataset_uri)
-				RestClient.post @@config[:services]["opentox-fminer"], :dataset_uri => training_dataset_uri
+			def self.create(params)
+				puts  params[:dataset_uri]
+				uri = RestClient.post File.join(@@config[:services]["opentox-algorithm"],'fminer'), :dataset_uri => params[:dataset_uri]
+				print "fminer finsihed "
+				puts uri
+				uri
 			end
 		end
 
 		class Similarity < OpenTox
 
 			def self.tanimoto(dataset1,compound1,dataset2,compound2)
-				RestClient.get File.join(@@config[:services]["opentox-dataset"], 'algorithm/tanimoto/dataset',dataset1.name,compound1.inchi,'dataset',dataset2.name,compound2.inchi)
+				RestClient.get File.join(@@config[:services]["opentox-algorithm"], 'tanimoto/dataset',dataset1.name,compound1.inchi,'dataset',dataset2.name,compound2.inchi)
 			end
 
 			def self.weighted_tanimoto(dataset1,compound1,dataset2,compound2)
 				# URI.escape does not work here
-				uri = File.join(@@config[:services]["opentox-dataset"], 'algorithm/weighted_tanimoto/dataset',CGI.escape(dataset1.name),'compound',CGI.escape(compound1.inchi),'dataset',CGI.escape(dataset2.name),'compound',CGI.escape(compound2.inchi))
+				uri = File.join(@@config[:services]["opentox-algorithm"], 'weighted_tanimoto/dataset',CGI.escape(dataset1.name),'compound',CGI.escape(compound1.inchi),'dataset',CGI.escape(dataset2.name),'compound',CGI.escape(compound2.inchi))
 				RestClient.get uri
 			end
 
@@ -24,8 +28,8 @@ module OpenTox
 
 		class Lazar < OpenTox
 			# Create a new prediction model from a dataset
-			def initialize(params)
-				@uri = RestClient.post @@config[:services]["opentox-lazar"] + 'models' , :dataset_uri => params[:dataset_uri]
+			def self.create(params)
+				RestClient.post File.join(@@config[:services]["opentox-algorithm"],"lazar_classification"), params
 			end
 		end
 
