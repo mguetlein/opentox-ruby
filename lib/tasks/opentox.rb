@@ -7,8 +7,16 @@ namespace :redis do
 	task :flush do
 		require 'redis'
 		r = Redis.new :db => 2
-		r.flushdb
+		r.flush_db
 	end
+
+	desc "Flush all Redis databases"
+	task :flushall do
+		require 'redis'
+		r = Redis.new
+		r.flush_all
+	end
+
 
 end
 
