@@ -4,7 +4,7 @@ end
 
 begin
 	require 'openbabel'
-rescue
+rescue LoadError
 	puts "Please install Openbabel with 'rake openbabel:install' in the compound component"
 end
 
