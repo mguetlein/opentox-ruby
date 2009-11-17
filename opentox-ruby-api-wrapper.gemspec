@@ -5,13 +5,15 @@
 
 Gem::Specification.new do |s|
   s.name = %q{opentox-ruby-api-wrapper}
-  s.version = "1.1.1"
+  s.version = "1.1.2"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Christoph Helma"]
   s.date = %q{2009-11-17}
+  s.default_executable = %q{opentox-install-debian.sh}
   s.description = %q{Ruby wrapper for the OpenTox REST API (http://www.opentox.org)}
   s.email = %q{helma@in-silico.ch}
+  s.executables = ["opentox-install-debian.sh"]
   s.extra_rdoc_files = [
     "LICENSE",
      "README.rdoc"
@@ -21,6 +23,7 @@ Gem::Specification.new do |s|
      "README.rdoc",
      "Rakefile",
      "VERSION",
+     "bin/opentox-install-debian.sh",
      "lib/algorithm.rb",
      "lib/compound.rb",
      "lib/dataset.rb",
@@ -56,20 +59,26 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<rack>, [">= 0"])
       s.add_runtime_dependency(%q<rack-contrib>, [">= 0"])
       s.add_runtime_dependency(%q<thin>, [">= 0"])
-      s.add_runtime_dependency(%q<cucumber>, [">= 0"])
       s.add_runtime_dependency(%q<ezmobius-redis-rb>, [">= 0"])
       s.add_runtime_dependency(%q<emk-sinatra-url-for>, [">= 0"])
       s.add_runtime_dependency(%q<cehoffman-sinatra-respond_to>, [">= 0"])
+      s.add_runtime_dependency(%q<dm-core>, [">= 0"])
+      s.add_runtime_dependency(%q<datamapper>, [">= 0"])
+      s.add_runtime_dependency(%q<do_sqlite3>, [">= 0"])
+      s.add_development_dependency(%q<cucumber>, [">= 0"])
     else
       s.add_dependency(%q<rest-client>, [">= 0"])
       s.add_dependency(%q<sinatra>, [">= 0"])
       s.add_dependency(%q<rack>, [">= 0"])
       s.add_dependency(%q<rack-contrib>, [">= 0"])
       s.add_dependency(%q<thin>, [">= 0"])
-      s.add_dependency(%q<cucumber>, [">= 0"])
       s.add_dependency(%q<ezmobius-redis-rb>, [">= 0"])
       s.add_dependency(%q<emk-sinatra-url-for>, [">= 0"])
       s.add_dependency(%q<cehoffman-sinatra-respond_to>, [">= 0"])
+      s.add_dependency(%q<dm-core>, [">= 0"])
+      s.add_dependency(%q<datamapper>, [">= 0"])
+      s.add_dependency(%q<do_sqlite3>, [">= 0"])
+      s.add_dependency(%q<cucumber>, [">= 0"])
     end
   else
     s.add_dependency(%q<rest-client>, [">= 0"])
@@ -77,9 +86,12 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<rack>, [">= 0"])
     s.add_dependency(%q<rack-contrib>, [">= 0"])
     s.add_dependency(%q<thin>, [">= 0"])
-    s.add_dependency(%q<cucumber>, [">= 0"])
     s.add_dependency(%q<ezmobius-redis-rb>, [">= 0"])
     s.add_dependency(%q<emk-sinatra-url-for>, [">= 0"])
     s.add_dependency(%q<cehoffman-sinatra-respond_to>, [">= 0"])
+    s.add_dependency(%q<dm-core>, [">= 0"])
+    s.add_dependency(%q<datamapper>, [">= 0"])
+    s.add_dependency(%q<do_sqlite3>, [">= 0"])
+    s.add_dependency(%q<cucumber>, [">= 0"])
   end
 end

@@ -22,16 +22,6 @@ end
 
 namespace :opentox do
 
-	desc "Install required gems"
-	task :install do
-		puts `sudo gem install #{@gems}`
-	end
-
-	desc "Update gems"
-	task :update do
-		puts `sudo gem update #{@gems}`
-	end
-
 	namespace :services do
 
 		desc "Run opentox services"
@@ -51,7 +41,8 @@ namespace :opentox do
 						puts "Cannot start #{service} on port #{port}."
 					end
 				when 'passenger'
-					`touch #{File.join(dir, 'tmp/restart.txt')}`
+					FileUtils.mkdir_p File.join(dir, 'tmp')
+					FileUtils.touch File.join(dir, 'tmp/restart.txt')
 					puts "#{service} restarted."
 				else
 					puts "not yet implemented"
@@ -108,7 +99,8 @@ task :start do
 				puts "Cannot start #{service} on port #{port}."
 			end
 		when 'passenger'
-			`touch tmp/restart.txt`
+			FileUtils.mkdir_p File.join(dir, 'tmp')
+			FileUtils.touch File.join(dir, 'tmp/restart.txt')
 			puts "#{service} restarted."
 		else
 			puts "not yet implemented"
