@@ -21,6 +21,7 @@ begin
 		gem.files.include %w(lib/tasks/opentox.rb, lib/tasks/redis.rb, lib/environment.rb, lib/algorithm.rb, lib/compound.rb, lib/dataset.rb, lib/feature.rb, lib/model.rb, lib/utils.rb, lib/templates/*)
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end
+	Jeweler::GemcutterTasks.new
 rescue LoadError
   puts "Jeweler (or a dependency) not available. Install it with: sudo gem install jeweler"
 end
