@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Christoph Helma"]
-  s.date = %q{2009-10-06}
+  s.date = %q{2009-11-17}
   s.description = %q{Ruby wrapper for the OpenTox REST API (http://www.opentox.org)}
   s.email = %q{helma@in-silico.ch}
   s.extra_rdoc_files = [
@@ -52,10 +52,28 @@ Gem::Specification.new do |s|
 
     if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
       s.add_runtime_dependency(%q<technoweenie-rest-client>, [">= 0"])
+      s.add_runtime_dependency(%q<sinatra>, [">= 0"])
+      s.add_runtime_dependency(%q<rack>, [">= 0"])
+      s.add_runtime_dependency(%q<rack-contrib>, [">= 0"])
+      s.add_runtime_dependency(%q<thin>, [">= 0"])
+      s.add_runtime_dependency(%q<cucumber>, [">= 0"])
+      s.add_runtime_dependency(%q<ezmobius-redis-rb>, [">= 0"])
     else
       s.add_dependency(%q<technoweenie-rest-client>, [">= 0"])
+      s.add_dependency(%q<sinatra>, [">= 0"])
+      s.add_dependency(%q<rack>, [">= 0"])
+      s.add_dependency(%q<rack-contrib>, [">= 0"])
+      s.add_dependency(%q<thin>, [">= 0"])
+      s.add_dependency(%q<cucumber>, [">= 0"])
+      s.add_dependency(%q<ezmobius-redis-rb>, [">= 0"])
     end
   else
     s.add_dependency(%q<technoweenie-rest-client>, [">= 0"])
+    s.add_dependency(%q<sinatra>, [">= 0"])
+    s.add_dependency(%q<rack>, [">= 0"])
+    s.add_dependency(%q<rack-contrib>, [">= 0"])
+    s.add_dependency(%q<thin>, [">= 0"])
+    s.add_dependency(%q<cucumber>, [">= 0"])
+    s.add_dependency(%q<ezmobius-redis-rb>, [">= 0"])
   end
 end
