@@ -48,11 +48,11 @@ module OpenTox
 				end
 
 				def classification
-					YAML.load(RestClient.get @uri)[:classification]
+					YAML.load(RestClient.get(@uri))[:classification]
 				end
 
 				def confidence
-					YAML.load(RestClient.get @uri)[:confidence]
+					YAML.load(RestClient.get(@uri))[:confidence]
 				end
 
 				def neighbors
