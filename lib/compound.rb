@@ -15,7 +15,7 @@ module OpenTox
 				@inchi = params[:inchi]
 				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
 			elsif params[:name]
-				@inchi = RestClient.get "#{@@cactus_uri}#{params[:name]}/stdinchi"
+				@inchi = RestClient.get("#{@@cactus_uri}#{params[:name]}/stdinchi").chomp
 				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
 			elsif params[:uri]
 				@inchi = params[:uri].sub(/^.*InChI/, 'InChI')
@@ -44,8 +44,8 @@ module OpenTox
 		end
 
 		# Match an array of smarts features, returns matching features
-		def match(smarts_dataset)
-			smarts_dataset.all_features.collect{ |uri| uri if self.match?(Feature.new(:uri => uri).name) }.compact
+		def match(smarts_array)
+			smarts_array.collect{|s| s if match?(s)}.compact
 		end
 
 		def smiles2inchi(smiles)

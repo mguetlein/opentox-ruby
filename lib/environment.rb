@@ -18,6 +18,7 @@ else
 end
 
 # configure redis database
+=begin
 begin
 	case ENV['RACK_ENV']
 	when 'production'
@@ -31,3 +32,4 @@ begin
 rescue
 	puts "Redis database not running, please start it with 'rake redis:start'."
 end
+=end

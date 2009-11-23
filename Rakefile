@@ -15,15 +15,16 @@ begin
 		gem.add_dependency "rack"
 		gem.add_dependency "rack-contrib"
 		gem.add_dependency "thin"
-		gem.add_dependency "ezmobius-redis-rb"
+		#gem.add_dependency "ezmobius-redis-rb"
 		gem.add_dependency "emk-sinatra-url-for"
 		gem.add_dependency "cehoffman-sinatra-respond_to"
-		gem.add_dependency "dm-core"
-		gem.add_dependency "datamapper"
-		gem.add_dependency "do_sqlite3"
+		#gem.add_dependency "dm-core"
+		#gem.add_dependency "datamapper"
+		#gem.add_dependency "do_sqlite3"
 		gem.add_development_dependency "cucumber"
 		gem.files =  FileList["[A-Z]*", "{bin,generators,lib,test}/**/*", 'lib/jeweler/templates/.gitignore']
-		gem.files.include %w(lib/tasks/opentox.rb, lib/tasks/redis.rb, lib/environment.rb, lib/algorithm.rb, lib/compound.rb, lib/dataset.rb, lib/feature.rb, lib/model.rb, lib/utils.rb, lib/templates/*)
+		#gem.files.include %w(lib/tasks/opentox.rb, lib/tasks/redis.rb, lib/environment.rb, lib/algorithm.rb, lib/compound.rb, lib/dataset.rb, lib/feature.rb, lib/model.rb, lib/utils.rb, lib/templates/*)
+		gem.files.include %w(lib/tasks/opentox.rb, lib/environment.rb, lib/algorithm.rb, lib/compound.rb, lib/dataset.rb, lib/model.rb, lib/utils.rb, lib/templates/*)
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end
 	Jeweler::GemcutterTasks.new
