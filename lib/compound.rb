@@ -1,9 +1,8 @@
 module OpenTox
 
-	# uri: /compound/:inchi
-	class Compound < OpenTox
+	class Compound #< OpenTox
 
-		attr_reader :inchi
+		attr_reader :inchi, :uri
 
 		# Initialize with <tt>:uri => uri</tt>, <tt>:smiles => smiles</tt> or <tt>:name => name</tt> (name can be also an InChI/InChiKey, CAS number, etc)
 		def initialize(params)
@@ -13,6 +12,9 @@ module OpenTox
 				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
 			elsif params[:inchi]
 				@inchi = params[:inchi]
+				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
+			elsif params[:sdf]
+				@inchi = sdf2inchi(params[:sdf])
 				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
 			elsif params[:name]
 				@inchi = RestClient.get("#{@@cactus_uri}#{params[:name]}/stdinchi").chomp
@@ -48,6 +50,10 @@ module OpenTox
 			smarts_array.collect{|s| s if match?(s)}.compact
 		end
 
+		def sdf2inchi(sdf)
+			obconversion(sdf,'sdf','inchi')
+		end
+
 		def smiles2inchi(smiles)
 			obconversion(smiles,'smi','inchi')
 		end
@@ -61,7 +67,12 @@ module OpenTox
 			obmol = OpenBabel::OBMol.new
 			obconversion.set_in_and_out_formats input_format, output_format
 			obconversion.read_string obmol, identifier
-			obconversion.write_string(obmol).gsub(/\s/,'').chomp
+			case output_format
+			when /smi|can|inchi/
+				obconversion.write_string(obmol).gsub(/\s/,'').chomp
+			else
+				obconversion.write_string(obmol)
+			end
 		end
 	end
 end

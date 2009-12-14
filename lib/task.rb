@@ -1,15 +1,16 @@
 module OpenTox
 
-	class Task < OpenTox
-		#private :new
+	class Task #< OpenTox
 
 		def initialize(uri)
 			super(uri)
 		end
 
-		def self.create(params)
-			uri = RestClient.post @@config[:services]["opentox-task"], :resource_uri => params[:resource_uri]
-			Task.new uri
+		#def self.create(uri)
+		def self.create
+			puts @@config[:services]["opentox-task"]
+			uri = RestClient.post @@config[:services]["opentox-task"], ''#, :dataset_uri => uri
+			Task.new(uri)
 		end
 
 		def self.find(params)

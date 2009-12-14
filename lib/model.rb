@@ -1,37 +1,68 @@
 module OpenTox
-
-	module Model 
-
-		class LazarClassification < OpenTox
-
+	module Model
+		class Lazar
+			include Owl
+			
 			# Create a new prediction model from a dataset
-			def initialize(uri)
-				super(uri)
+			def initialize
+				super
 			end
 
-			def self.create(params)
-				uri = RestClient.post File.join(@@config[:services]["opentox-model"], 'lazar_classification'), params
-				puts "URI: " + uri
-				LazarClassification.new(uri.to_s)
+			def read_yaml(id,yaml)
+				@lazar = YAML.load yaml
+				self.identifier = File.join(@@config[:services]["opentox-model"],'lazar',id)
+				self.title = "lazar model for #{@lazar[:endpoint]}"
+				self.source = "http://github.com/helma/opentox-model"
+				self.parameters = {
+					"Dataset URI" => { :scope => "mandatory", :value => "dataset_uri=#{@lazar[:activity_dataset]}" },
+					"Feature URI for dependent variable" => { :scope => "mandatory", :value => "feature_uri=#{@lazar[:endpoint]}" },
+					"Feature generation URI" => { :scope => "mandatory", :value => "feature_generation_uri=" } #TODO write to yaml
+				}
+				self.algorithm = File.join(@@config[:services]["opentox-model"],"lazar")
+				self.trainingDataset = @lazar[:activity_dataset]
+				self.dependentVariables = @lazar[:endpoint]
+				self.predictedVariables = @lazar[:endpoint] + " lazar prediction"
 			end
 
-			def self.find(name)
-				uri = RestClient.get File.join(@@config[:services]["opentox-model"], 'lazar_classification', URI.encode(params[:name]))
-				LazarClassification.new(uri)
+			def self.find(uri)
+				begin
+					YAML.load(RestClient.get uri)
+					Lazar.new uri
+				rescue
+					halt 404, "Model #{uri} not found."
+				end
 			end
 
 			def self.find_all
-				RestClient.get File.join(@@config[:services]["opentox-model"], 'lazar_classification')#.split("\n")
+				RestClient.get(@@config[:services]["opentox-model"]).split("\n")
 			end
-
+			
 			# Predict a compound
 			def predict(compound)
-				LazarPrediction.new(:uri => RestClient.post(@uri, :compound_uri => compound.uri))
+				RestClient.post(@uri, :compound_uri => compound.uri)
 			end
 
 			def self.base_uri
 				@@config[:services]["opentox-model"]
 			end
+
+			def self.create(data)
+				RestClient.post(@@config[:services]["opentox-model"], data, :content_type => "application/x-yaml").to_s
+			end
+
+			def endpoint
+				YAML.load(RestClient.get uri)[:endpoint]
+			end
+
+		end
+	end
+
+
+=begin
+	module Model 
+
+		class LazarClassification < OpenTox
+
 
 		end
 
@@ -68,4 +99,5 @@ module OpenTox
 		end
 
 	end
+=end
 end
