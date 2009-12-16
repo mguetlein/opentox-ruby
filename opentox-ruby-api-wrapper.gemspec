@@ -9,10 +9,11 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Christoph Helma"]
-  s.date = %q{2009-12-14}
+  s.date = %q{2009-12-16}
+  s.default_executable = %q{opentox-install-debian.sh}
   s.description = %q{Ruby wrapper for the OpenTox REST API (http://www.opentox.org)}
   s.email = %q{helma@in-silico.ch}
-  s.executables = ["opentox-install-debian.sh", "csv2rdf.rb"]
+  s.executables = ["opentox-install-debian.sh"]
   s.extra_rdoc_files = [
     "LICENSE",
      "README.rdoc"
@@ -22,7 +23,6 @@ Gem::Specification.new do |s|
      "README.rdoc",
      "Rakefile",
      "VERSION",
-     "bin/csv2rdf.rb",
      "bin/opentox-install-debian.sh",
      "lib/algorithm.rb",
      "lib/compound.rb",
