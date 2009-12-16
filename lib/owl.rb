@@ -12,6 +12,8 @@ module OpenTox
 			
 			# explicit typing
 			# this should come from http://opentox.org/data/documents/development/RDF%20files/OpenToxOntology/at_download/file (does not pass OWL-DL validation)
+			@parser.parse_into_model(@model,"http://opentox.org/data/documents/development/RDF%20files/OpenToxOntology/at_download/file")
+=begin
 			@model.add @uri, RDF['type'], OWL['Ontology']
 			# annotation properties
 			@model.add DC['source'], RDF['type'], OWL["AnnotationProperty"]
@@ -37,6 +39,7 @@ module OpenTox
 			@model.add OT['DataEntry'], RDF['type'], OWL["Class"]
 			@model.add OT['Parameter'], RDF['type'], OWL["Class"]
 			@model.add OT['Algorithm'], RDF['type'], OWL["Class"]
+=end
 		end
 
 		def owl_class
@@ -67,7 +70,7 @@ module OpenTox
 		end
 
 		def title
-			puts OT[self.owl_class]
+			#puts OT[self.owl_class]
 			@model.object(OT[self.owl_class], DC['title']).to_s
 		end
 
@@ -83,14 +86,18 @@ module OpenTox
 
 		def create_owl_statement(name,value)
 			r = @model.create_resource
-			@model.add r, RDF['type'], DC[name.gsub(/^[a-z]/) { |a| a.upcase }] # capitalize only the first letter
+			dc_class = DC[name.gsub(/^[a-z]/) { |a| a.upcase }] # capitalize only the first letter
+			@model.add dc_class, RDF['type'], OWL["Class"]
+			@model.add r, RDF['type'], dc_class
 			@model.add r, DC[name], value
+			#puts r
+			#puts DC[name.gsub(/^[a-z]/) { |a| a.upcase }] # capitalize only the first letter
+			#puts DC[name] # capitalize only the first letter
 		end
 
 		def method_missing(name, *args)
 			# create magic setter methods
 			if /=/ =~ name.to_s
-			puts "create_owl_statement #{name.to_s.sub(/=/,'')}, #{args.first}"
 				create_owl_statement name.to_s.sub(/=/,''), args.first
 			else
 				raise "No method #{name}"
