@@ -2,7 +2,7 @@ module OpenTox
 
 	module Owl
 
-		attr_reader :uri, :model
+		attr_reader :uri#, :model
 
 		def initialize
 
@@ -10,36 +10,10 @@ module OpenTox
 			@parser = Redland::Parser.new
 			@serializer = Redland::Serializer.ntriples
 			
-			# explicit typing
-			# this should come from http://opentox.org/data/documents/development/RDF%20files/OpenToxOntology/at_download/file (does not pass OWL-DL validation)
-			@parser.parse_into_model(@model,"http://opentox.org/data/documents/development/RDF%20files/OpenToxOntology/at_download/file")
-=begin
-			@model.add @uri, RDF['type'], OWL['Ontology']
-			# annotation properties
-			@model.add DC['source'], RDF['type'], OWL["AnnotationProperty"]
-			@model.add DC['identifier'], RDF['type'], OWL["AnnotationProperty"]
-			@model.add DC['title'], RDF['type'], OWL["AnnotationProperty"]
-			# object properties
-			@model.add OT['feature'], RDF['type'], OWL["ObjectProperty"]
-			@model.add OT['compound'], RDF['type'], OWL["ObjectProperty"]
-			@model.add OT['values'], RDF['type'], OWL["ObjectProperty"]
-			@model.add OT['tuple'], RDF['type'], OWL["ObjectProperty"] # added by ch
-			@model.add OT['parameters'], RDF['type'], OWL["ObjectProperty"]
-			# datatype properties
-			@model.add OT['value'], RDF['type'], OWL["DatatypeProperty"]
-			@model.add OT['paramValue'], RDF['type'], OWL["DatatypeProperty"]
-			@model.add OT['paramScope'], RDF['type'], OWL["DatatypeProperty"]
-			@model.add OT['hasSource'], RDF['type'], OWL["DatatypeProperty"]
-			# classes
-			@model.add OT['Dataset'], RDF['type'], OWL["Class"]
-			@model.add OT['FeatureValue'], RDF['type'], OWL["Class"]
-			@model.add OT['Tuple'], RDF['type'], OWL["Class"] # added by ch
-			@model.add OT['Feature'], RDF['type'], OWL["Class"]
-			@model.add OT['Compound'], RDF['type'], OWL["Class"]
-			@model.add OT['DataEntry'], RDF['type'], OWL["Class"]
-			@model.add OT['Parameter'], RDF['type'], OWL["Class"]
-			@model.add OT['Algorithm'], RDF['type'], OWL["Class"]
-=end
+			# read OT Ontology
+			#@parser.parse_into_model(@model,"http://opentox.org/data/documents/development/RDF%20files/OpenToxOntology/at_download/file")
+			@parser.parse_string_into_model(@model,File.read(File.join(File.dirname(__FILE__),"opentox.owl")),'/')
+			#@model.add OT['ComplexValue'], RDF['type'], OWL["Class"] # added by ch
 		end
 
 		def owl_class
@@ -62,7 +36,11 @@ module OpenTox
 		end
 
 		def uri=(uri)
-			identifier = uri
+			@uri = uri
+			me = @model.subject(RDF['type'],OT[self.owl_class])
+			identifier = @model.object(me, DC['identifier'])
+			@model.delete me, DC['identifier'], identifier
+			@model.add me, DC['identifier'], uri
 		end
 
 		def to_ntriples
@@ -70,8 +48,18 @@ module OpenTox
 		end
 
 		def title
-			#puts OT[self.owl_class]
-			@model.object(OT[self.owl_class], DC['title']).to_s
+			me = @model.subject(RDF['type'],OT[self.owl_class])
+			@model.object(me, DC['title']).to_s unless me.nil?
+		end
+
+		def source
+			me = @model.subject(RDF['type'],OT[self.owl_class])
+			@model.object(me, DC['source']).to_s unless me.nil?
+		end
+
+		def identifier
+			me = @model.subject(RDF['type'],OT[self.owl_class])
+			@model.object(me, DC['identifier']).to_s unless me.nil?
 		end
 
 		def parameters=(params)
@@ -87,12 +75,10 @@ module OpenTox
 		def create_owl_statement(name,value)
 			r = @model.create_resource
 			dc_class = DC[name.gsub(/^[a-z]/) { |a| a.upcase }] # capitalize only the first letter
+			#puts "DC:" + name.gsub(/^[a-z]/) { |a| a.upcase }
 			@model.add dc_class, RDF['type'], OWL["Class"]
 			@model.add r, RDF['type'], dc_class
 			@model.add r, DC[name], value
-			#puts r
-			#puts DC[name.gsub(/^[a-z]/) { |a| a.upcase }] # capitalize only the first letter
-			#puts DC[name] # capitalize only the first letter
 		end
 
 		def method_missing(name, *args)

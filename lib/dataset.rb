@@ -3,8 +3,6 @@ module OpenTox
 	class Dataset 
 		include Owl
 
-		#attr_accessor :model
-
 		def initialize 
 			super
 		end
@@ -28,7 +26,7 @@ module OpenTox
 				@model.add feature, RDF['type'], OT["Feature"]
 				@model.add feature, DC["identifier"], File.join("feature",feature.to_s.gsub(/[()]/,'')) # relative uri as we don know the final uri
 				@model.add feature, DC["title"], f[:name].to_s
-				@model.add feature, OT['hasSource'], f[:source].to_s if f[:source]
+				@model.add feature, DC['source'], f[:source].to_s if f[:source]
 			end
 			feature
 		end
@@ -66,9 +64,12 @@ module OpenTox
 				feature = self.find_or_create_feature(:name => name)
 				value = self.find_or_create_value(value)
 				pair = @model.create_resource
-				@model.add tuple, OT['tuple'], pair
+				@model.add pair, RDF['type'], OT['FeatureValue']
+				@model.add tuple, OT['complexValue'], pair
 				@model.add pair, OT['feature'], feature
-				@model.add pair, OT['value'], value
+				@model.add pair, OT['value'], value #FIX
+				#@model.add tuple, OT['feature'], feature
+				#@model.add tuple, OT['values'], value
 			end
 			tuple
 		end
@@ -98,7 +99,7 @@ module OpenTox
 
 		def self.find(uri)
 			begin
-				RestClient.get uri # check if the resource is available
+				RestClient.get uri, :accept => 'application/rdf+xml' # check if the resource is available
 				dataset = Dataset.new
 				dataset.read uri.to_s
 				dataset
@@ -108,11 +109,42 @@ module OpenTox
 		end
 
 		def features
+			features = []
+			@model.subjects(RDF['type'], OT["Feature"]).each do |feature_node|
+				features << @model.object(feature_node,  DC["identifier"])#
+			end
+			features
 		end
 
-		def feature_values(uri)
+		def data_entries
+			data_entries = {}
+			self.compounds.each do |compound|
+				compound_node = @model.subject(DC["identifier"],compound)
+				compound = compound.to_s.sub(/^\[(.*)\]$/,'\1')
+				data_entries[compound] = {} unless data_entries[compound]
+				@model.subjects(OT['compound'], compound_node).each do |data_entry|
+					feature_node = @model.object(data_entry, OT['feature'])
+					feature = @model.object(feature_node,DC['identifier']).to_s
+					values_node = @model.object(data_entry, OT['values'])
+					data_entries[compound][feature] = [] unless data_entries[compound][feature]
+					@model.find(values_node, OT['value'], nil) do |s,p,value| 
+						case value.to_s
+						when "true"
+							data_entries[compound][feature] << true
+						when "false"
+							data_entries[compound][feature] << false
+						else
+							data_entries[compound][feature] << value.to_s
+						end
+					end
+				end
+			end
+			data_entries
+		end
+
+		def feature_values(feature_uri)
 			features = {}
-			feature = @model.subject(DC["identifier"],uri)
+			feature = @model.subject(DC["identifier"],feature_uri)
 			@model.subjects(RDF['type'], OT["Compound"]).each do |compound_node|
 				compound = @model.object(compound_node,  DC["identifier"]).to_s.sub(/^\[(.*)\]$/,'\1')
 				features[compound] = [] unless features[compound]
@@ -176,7 +208,7 @@ module OpenTox
 		def compounds
 			compounds = []
 			@model.subjects(RDF['type'], OT["Compound"]).each do |compound_node|
-				compounds << @model.object(compound_node,  DC["identifier"])#.to_s.sub(/^\[(.*)\]$/,'\1')
+				compounds << @model.object(compound_node,  DC["identifier"])#
 			end
 			compounds
 		end
@@ -188,6 +220,28 @@ module OpenTox
 
 		def save
 			RestClient.post(@@config[:services]["opentox-dataset"], self.rdf, :content_type =>  "application/rdf+xml").to_s
+		end
+
+		def to_yaml
+			#compounds.each do |c|
+			#end
+			{
+				:uri => self.uri,
+				:opentox_class => self.owl_class,
+				:title => self.title,
+				:source => self.source,
+				:identifier => self.identifier,
+				:compounds => self.compounds.collect{|c| c.to_s.to_s.sub(/^\[(.*)\]$/,'\1')},
+				:features => self.features.collect{|f| f.to_s },
+				:data_entries => self.data_entries,
+=begin
+				:tuples =>  self.compounds.collect{|c|
+					compound_uri = c.to_s.to_s.sub(/^\[(.*)\]$/,'\1')
+					{compound_uri => self.tuple(compound_uri)}
+				},
+=end
+				#:feature_values => self.features.collect{|f| { f.to_s => self.feature_values(f.to_s)} }
+			}.to_yaml
 		end
 
 	end
