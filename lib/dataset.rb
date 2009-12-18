@@ -7,6 +7,13 @@ module OpenTox
 			super
 		end
 
+		def add(compound_uri,feature_uri,value)
+			c = self.find_or_create_compound compound_uri
+			f = self.find_or_create_feature feature_uri
+			v = self.find_or_create_value value
+			self.add_data_entry(c,f,v)
+		end
+
 		# find or create a new compound and return the resource
 		def find_or_create_compound(uri)
 			compound = @model.subject(DC["identifier"], uri)
@@ -19,14 +26,14 @@ module OpenTox
 		end
 
 		# find or create a new feature and return the resource
-		def find_or_create_feature(f)
-			feature = @model.subject(DC["title"], f[:name].to_s)
+		def find_or_create_feature(uri)
+			feature = @model.subject(DC["identifier"], uri)
 			if feature.nil?
 				feature = @model.create_resource
 				@model.add feature, RDF['type'], OT["Feature"]
-				@model.add feature, DC["identifier"], File.join("feature",feature.to_s.gsub(/[()]/,'')) # relative uri as we don know the final uri
-				@model.add feature, DC["title"], f[:name].to_s
-				@model.add feature, DC['source'], f[:source].to_s if f[:source]
+				@model.add feature, DC["identifier"], uri
+				@model.add feature, DC["title"], File.basename(uri)
+				@model.add feature, DC['source'], uri
 			end
 			feature
 		end
@@ -233,7 +240,7 @@ module OpenTox
 				:identifier => self.identifier,
 				:compounds => self.compounds.collect{|c| c.to_s.to_s.sub(/^\[(.*)\]$/,'\1')},
 				:features => self.features.collect{|f| f.to_s },
-				:data_entries => self.data_entries,
+				#:data_entries => self.data_entries,
 =begin
 				:tuples =>  self.compounds.collect{|c|
 					compound_uri = c.to_s.to_s.sub(/^\[(.*)\]$/,'\1')

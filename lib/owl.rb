@@ -2,7 +2,7 @@ module OpenTox
 
 	module Owl
 
-		attr_reader :uri#, :model
+		attr_reader :uri
 
 		def initialize
 
@@ -13,12 +13,69 @@ module OpenTox
 			# read OT Ontology
 			#@parser.parse_into_model(@model,"http://opentox.org/data/documents/development/RDF%20files/OpenToxOntology/at_download/file")
 			@parser.parse_string_into_model(@model,File.read(File.join(File.dirname(__FILE__),"opentox.owl")),'/')
-			#@model.add OT['ComplexValue'], RDF['type'], OWL["Class"] # added by ch
+			# reate an anonymous resource for metadata
+			# this has to be rewritten with an URI as soon as the resource has been saved at an definitive location
+			tmp = @model.create_resource
+			@model.add tmp, RDF['type'], OWL['Ontology']
+			@model.add tmp, RDF['type'], OT[self.owl_class]
+		end
+
+		def uri=(uri)
+			puts "assigning uri"
+			@uri = uri
+			uri = Redland::Uri.new(uri)
+			# rewrite uri
+			@model.subjects(RDF['type'],OT[self.owl_class]).each do |me|
+				@model.delete(me,RDF['type'],OT[self.owl_class])
+				@model.add(uri,RDF['type'],OT[self.owl_class])
+				id = @model.object(me, DC['identifier'])
+				@model.delete me, DC['identifier'], id
+				# find/replace metadata
+				@model.find(me, nil, nil) do |s,p,o|
+					@model.delete s,p,o
+					@model.add uri,p,o
+				end
+				@model.add uri, DC['identifier'], @uri 
+			end
+		end
+
+		def title
+			me = @model.subject(RDF['type'],OT[self.owl_class])
+			@model.object(me, DC['title']).to_s unless me.nil?
+		end
+
+		def title=(title)
+			me = @model.subject(RDF['type'],OT[self.owl_class])
+			begin
+				t = @model.object(me, DC['title'])
+				@model.delete me, DC['title'], t
+			rescue
+			end
+			@model.add me, DC['title'], title
+		end
+
+		def source
+			me = @model.subject(RDF['type'],OT[self.owl_class])
+			@model.object(me, DC['source']).to_s unless me.nil?
+		end
+
+		def source=(source)
+			me = @model.subject(RDF['type'],OT[self.owl_class])
+			begin
+				t = @model.object(me, DC['source'])
+				@model.delete me, DC['source'], t
+			rescue
+			end
+			@model.add me, DC['source'], source
+		end
+
+		def identifier
+			me = @model.subject(RDF['type'],OT[self.owl_class])
+			@model.object(me, DC['identifier']).to_s unless me.nil?
 		end
 
 		def owl_class
-			self.class.to_s.sub(/^OpenTox::/,'')
-			#@model.subject RDF['type'], OT[self.class.to_s.sub(/^OpenTox::/,'')]
+			self.class.to_s.sub(/^OpenTox::/,'').sub(/::.*$/,'')
 		end
 
 		def read(uri)
@@ -35,31 +92,8 @@ module OpenTox
 			@model.to_string
 		end
 
-		def uri=(uri)
-			@uri = uri
-			me = @model.subject(RDF['type'],OT[self.owl_class])
-			identifier = @model.object(me, DC['identifier'])
-			@model.delete me, DC['identifier'], identifier
-			@model.add me, DC['identifier'], uri
-		end
-
 		def to_ntriples
 			@serializer.model_to_string(Redland::Uri.new(@uri), @model)
-		end
-
-		def title
-			me = @model.subject(RDF['type'],OT[self.owl_class])
-			@model.object(me, DC['title']).to_s unless me.nil?
-		end
-
-		def source
-			me = @model.subject(RDF['type'],OT[self.owl_class])
-			@model.object(me, DC['source']).to_s unless me.nil?
-		end
-
-		def identifier
-			me = @model.subject(RDF['type'],OT[self.owl_class])
-			@model.object(me, DC['identifier']).to_s unless me.nil?
 		end
 
 		def parameters=(params)
@@ -72,6 +106,7 @@ module OpenTox
 			end
 		end
 
+=begin
 		def create_owl_statement(name,value)
 			r = @model.create_resource
 			dc_class = DC[name.gsub(/^[a-z]/) { |a| a.upcase }] # capitalize only the first letter
@@ -89,6 +124,7 @@ module OpenTox
 				raise "No method #{name}"
 			end
 		end
+=end
 
 	end
 
