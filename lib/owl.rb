@@ -21,7 +21,6 @@ module OpenTox
 		end
 
 		def uri=(uri)
-			puts "assigning uri"
 			@uri = uri
 			uri = Redland::Uri.new(uri)
 			# rewrite uri
@@ -40,8 +39,11 @@ module OpenTox
 		end
 
 		def title
-			me = @model.subject(RDF['type'],OT[self.owl_class])
-			@model.object(me, DC['title']).to_s unless me.nil?
+			# I have no idea, why 2 subjects are returned
+			# iterating over all subjects leads to memory allocation problems
+			# SPARQL queries also do not work 
+			me = @model.subjects(RDF['type'],OT[self.owl_class])[1]
+			@model.object(me, DC['title']).to_s
 		end
 
 		def title=(title)
