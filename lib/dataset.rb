@@ -8,7 +8,6 @@ module OpenTox
 		end
 
 		# create/add to entry from uris or Redland::Resources
-		# TODO add tuple
 		def add(compound,feature,value)
 			compound = self.find_or_create_compound compound unless compound.class == Redland::Resource
 			feature = self.find_or_create_feature feature unless feature.class == Redland::Resource
@@ -57,7 +56,6 @@ module OpenTox
 		def find_or_create_compound(uri)
 			compound = @model.subject(DC["identifier"], uri)
 			if compound.nil?
-				#puts uri
 				compound = @model.create_resource
 				@model.add compound, RDF['type'], OT["Compound"]
 				@model.add compound, DC["identifier"], uri
@@ -77,29 +75,6 @@ module OpenTox
 			end
 			feature
 		end
-
-		# find or create a new value and return the resource
-=begin
-		def find_or_create_value(v)
-			value = @model.subject OT["value"], v.to_s
-			if value.nil?
-				value = @model.create_resource
-				@model.add value, RDF['type'], OT["FeatureValue"]
-				@model.add value, OT["value"], v.to_s
-			end
-			value
-		end
-=end
-
-=begin
-		def add_data_entry(compound,feature,value)
-			data_entry = @model.create_resource
-			@model.add data_entry, RDF['type'], OT["DataEntry"]
-			@model.add data_entry, OT['compound'], compound
-			@model.add data_entry, OT['feature'], feature
-			@model.add data_entry, OT['values'], value
-		end
-=end
 
 		def self.create(data, content_type = 'application/rdf+xml')
 			uri = RestClient.post @@config[:services]["opentox-dataset"], data, :content_type => content_type
@@ -127,30 +102,35 @@ module OpenTox
 			features
 		end
 
-		def data_entries
-			data_entries = {}
-			self.compounds.each do |compound|
-				compound_node = @model.subject(DC["identifier"],compound)
-				compound = compound.to_s.sub(/^\[(.*)\]$/,'\1')
-				data_entries[compound] = {} unless data_entries[compound]
-				@model.subjects(OT['compound'], compound_node).each do |data_entry|
-					feature_node = @model.object(data_entry, OT['feature'])
-					feature = @model.object(feature_node,DC['identifier']).to_s
-					values_node = @model.object(data_entry, OT['values'])
-					data_entries[compound][feature] = [] unless data_entries[compound][feature]
-					@model.find(values_node, OT['value'], nil) do |s,p,value| 
-						case value.to_s
-						when "true"
-							data_entries[compound][feature] << true
-						when "false"
-							data_entries[compound][feature] << false
-						else
-							data_entries[compound][feature] << value.to_s
+		def data
+			data = {}
+			@model.subjects(RDF['type'], OT['DataEntry']).each do |data_entry|
+				compound_node  = @model.object(data_entry, OT['compound'])
+				@model.find(compound_node, OT['identifier'],nil) {|s,p,o| puts o.to_s}
+				compound_uri = @model.object(compound_node, DC['identifier']).to_s
+				data[compound_uri] = [] unless data[compound_uri]
+				@model.find(data_entry, OT['values'], nil) do |s,p,values|
+					entry = {}
+					feature_node = @model.object values, OT['feature']
+					feature_uri = @model.object(feature_node, DC['identifier']).to_s
+					# TODO simple features
+					type = @model.object(values, RDF['type'])
+					if type == OT['FeatureValue']
+						#entry[feature_uri] = [] unless entry[feature_uri]
+						entry[feature_uri] = @model.object(values, OT['value']).to_s
+					elsif type == OT['Tuple']
+						entry[feature_uri] = {} unless entry[feature_uri]
+						@model.find(values, OT['complexValue'],nil) do |s,p,complex_value|
+							name_node = @model.object complex_value, OT['feature']
+							name = @model.object(name_node, DC['title']).to_s
+							value = @model.object(complex_value, OT['value']).to_s
+							entry[feature_uri][name] = value
 						end
 					end
+					data[compound_uri] << entry
 				end
 			end
-			data_entries
+			data
 		end
 
 		def feature_values(feature_uri)
@@ -159,18 +139,17 @@ module OpenTox
 			@model.subjects(RDF['type'], OT["Compound"]).each do |compound_node|
 				compound = @model.object(compound_node,  DC["identifier"]).to_s.sub(/^\[(.*)\]$/,'\1')
 				features[compound] = [] unless features[compound]
-				@model.subjects(OT['compound'], compound_node).each do |data_entry|
-					if feature == @model.object(data_entry, OT['feature'])
-						values_node = @model.object(data_entry, OT['values'])
-						@model.find(values_node, OT['value'], nil) do |s,p,value| 
-							case value.to_s
-							when "true"
-								features[compound] << true
-							when "false"
-								features[compound] << false
-							else
-								features[compound] << value.to_s
-							end
+				data_entry = @model.subject(OT['compound'], compound_node)
+				@model.find( data_entry, OT['values'], nil ) do |s,p,values|
+					if feature == @model.object(values, OT['feature'])
+						value = @model.object(values, OT['value'])
+						case value.to_s
+						when "true"
+							features[compound] << true
+						when "false"
+							features[compound] << false
+						else
+							features[compound] << value.to_s
 						end
 					end
 				end
@@ -178,6 +157,7 @@ module OpenTox
 			features
 		end
 
+=begin
 		def tuples
 			tuples = []
 			@model.subjects(RDF['type'], OT["Tuple"]).each do |t|
@@ -215,11 +195,12 @@ module OpenTox
 				#puts values_node
 			end
 		end
+=end
 
 		def compounds
 			compounds = []
 			@model.subjects(RDF['type'], OT["Compound"]).each do |compound_node|
-				compounds << @model.object(compound_node,  DC["identifier"])#
+				compounds << @model.object(compound_node,  DC["identifier"]).to_s
 			end
 			compounds
 		end
@@ -234,8 +215,6 @@ module OpenTox
 		end
 
 		def to_yaml
-			#compounds.each do |c|
-			#end
 			{
 				:uri => self.uri,
 				:opentox_class => self.owl_class,
@@ -244,42 +223,10 @@ module OpenTox
 				:identifier => self.identifier,
 				:compounds => self.compounds.collect{|c| c.to_s.to_s.sub(/^\[(.*)\]$/,'\1')},
 				:features => self.features.collect{|f| f.to_s },
-				#:data_entries => self.data_entries,
-=begin
-				:tuples =>  self.compounds.collect{|c|
-					compound_uri = c.to_s.to_s.sub(/^\[(.*)\]$/,'\1')
-					{compound_uri => self.tuple(compound_uri)}
-				},
-=end
-				#:feature_values => self.features.collect{|f| { f.to_s => self.feature_values(f.to_s)} }
+				:data_entries => self.data_entries,
 			}.to_yaml
 		end
 
 	end
 
 end
-=begin
-		def tuple?(t)
-			statements = []
-			has_tuple = true
-			t.each do |name,v|
-				feature = self.find_or_create_feature(:name => name)
-				value = self.find_or_create_value(v)
-				tuple = @model.subject(feature,value)
-				has_tuple = false if tuple.nil?
-				statements << [tuple,feature,value]
-			end
-			tuples_found = statements.collect{|s| s[0]}.uniq
-			has_tuple = false unless tuples_found.size == 1
-			has_tuple
-		end
-
-		def find_or_create_tuple(t)
-			if self.tuple?(t)
-				t 
-			else
-				self.create_tuple(t)
-			end
-		end
-=end
-

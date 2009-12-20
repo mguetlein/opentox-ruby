@@ -5,15 +5,14 @@
 
 Gem::Specification.new do |s|
   s.name = %q{opentox-ruby-api-wrapper}
-  s.version = "1.2.1"
+  s.version = "1.2.2"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Christoph Helma"]
-  s.date = %q{2009-12-16}
-  s.default_executable = %q{opentox-install-debian.sh}
+  s.date = %q{2009-12-20}
   s.description = %q{Ruby wrapper for the OpenTox REST API (http://www.opentox.org)}
   s.email = %q{helma@in-silico.ch}
-  s.executables = ["opentox-install-debian.sh"]
+  s.executables = ["opentox-install-debian.sh", "yaml2owl.rb"]
   s.extra_rdoc_files = [
     "LICENSE",
      "README.rdoc"
@@ -24,6 +23,7 @@ Gem::Specification.new do |s|
      "Rakefile",
      "VERSION",
      "bin/opentox-install-debian.sh",
+     "bin/yaml2owl.rb",
      "lib/algorithm.rb",
      "lib/compound.rb",
      "lib/dataset.rb",
@@ -32,6 +32,7 @@ Gem::Specification.new do |s|
      "lib/helper.rb",
      "lib/model.rb",
      "lib/opentox-ruby-api-wrapper.rb",
+     "lib/opentox.owl",
      "lib/owl.rb",
      "lib/spork.rb",
      "lib/task.rb",
