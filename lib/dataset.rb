@@ -85,9 +85,9 @@ module OpenTox
 
 		def self.find(uri)
 			begin
-				RestClient.get uri, :accept => 'application/rdf+xml' # check if the resource is available
 				dataset = Dataset.new
-				dataset.read uri.to_s
+				data = RestClient.get uri, :accept => 'application/rdf+xml' # check if the resource is available
+				dataset.rdf = data
 				dataset
 			rescue
 				nil
