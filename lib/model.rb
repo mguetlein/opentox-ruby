@@ -1,6 +1,6 @@
 module OpenTox
 	module Model
-
+   
 		class Lazar
 			include Owl
 
@@ -87,25 +87,28 @@ module OpenTox
 							end
 						end
 					end
-				end
-
+			  end
+      
 				conf = conf/neighbors.size
 				if conf > 0.0
 					classification = true
 				elsif conf < 0.0
 					classification = false
 				end
-			
+			  
 				compound = @dataset.find_or_create_compound(compound_uri)
 				feature = @dataset.find_or_create_feature(@lazar[:endpoint])
-				tuple = @dataset.create_tuple(feature,{ 'lazar#classification' => classification, 'lazar#confidence' => conf})
-				@dataset.add_tuple compound,tuple
-				@predictions[compound_uri] = { @lazar[:endpoint] => { :lazar_prediction => {
-						:classification => classification,
-						:confidence => conf,
-						:neighbors => neighbors,
-						:features => compound_matches
-					} } }
+
+        if (classification != nil)
+  				tuple = @dataset.create_tuple(feature,{ 'lazar#classification' => classification, 'lazar#confidence' => conf})
+  				@dataset.add_tuple compound,tuple
+  				@predictions[compound_uri] = { @lazar[:endpoint] => { :lazar_prediction => {
+  						:classification => classification,
+  						:confidence => conf,
+  						:neighbors => neighbors,
+  						:features => compound_matches
+  					} } }
+  			end
 			end
 
 			def self.base_uri

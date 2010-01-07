@@ -47,8 +47,9 @@ module OpenTox
 				@model.add tuple, OT['complexValue'], complex_value
 				@model.add complex_value, RDF['type'], OT["FeatureValue"]
 				@model.add complex_value, OT['feature'], f
-				@model.add complex_value, OT['value'], value.to_s 
-			end
+				@model.add complex_value, OT['value'], value.to_s
+      end
+  	
 			tuple
 		end
 
@@ -77,7 +78,7 @@ module OpenTox
 		end
 
 		def self.create(data, content_type = 'application/rdf+xml')
-			uri = RestClient.post @@config[:services]["opentox-dataset"], data, :content_type => content_type
+      uri = RestClient.post @@config[:services]["opentox-dataset"], data, :content_type => content_type
 			dataset = Dataset.new
 			dataset.read uri.to_s
 			dataset
@@ -85,9 +86,9 @@ module OpenTox
 
 		def self.find(uri)
 			begin
-				dataset = Dataset.new
-				data = RestClient.get uri, :accept => 'application/rdf+xml' # check if the resource is available
-				dataset.rdf = data
+        dataset = Dataset.new
+        data = RestClient.get uri, :accept => 'application/rdf+xml' # check if the resource is available
+        dataset.rdf = data
 				dataset
 			rescue
 				nil
@@ -222,8 +223,7 @@ module OpenTox
 				:source => self.source,
 				:identifier => self.identifier,
 				:compounds => self.compounds.collect{|c| c.to_s.to_s.sub(/^\[(.*)\]$/,'\1')},
-				:features => self.features.collect{|f| f.to_s },
-				:data_entries => self.data_entries,
+				:features => self.features.collect{|f| f.to_s }
 			}.to_yaml
 		end
 

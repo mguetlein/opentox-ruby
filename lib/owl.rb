@@ -12,7 +12,7 @@ module OpenTox
 			
 			# read OT Ontology
 			#@parser.parse_into_model(@model,"http://opentox.org/data/documents/development/RDF%20files/OpenToxOntology/at_download/file")
-			@parser.parse_string_into_model(@model,File.read(File.join(File.dirname(__FILE__),"opentox.owl")),'/')
+			#@parser.parse_string_into_model(@model,File.read(File.join(File.dirname(__FILE__),"opentox.owl")),'/')
 			# reate an anonymous resource for metadata
 			# this has to be rewritten with an URI as soon as the resource has been saved at an definitive location
 			tmp = @model.create_resource

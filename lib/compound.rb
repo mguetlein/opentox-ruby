@@ -34,6 +34,14 @@ module OpenTox
 			obconversion(@inchi,'inchi','sdf')
 		end
 
+		def image
+			RestClient.get("#{@@cactus_uri}#{@inchi}/image")
+		end
+
+		def image_uri
+			"#{@@cactus_uri}#{@inchi}/image"
+		end
+
 		# Matchs a smarts string
 		def match?(smarts)
 			obconversion = OpenBabel::OBConversion.new

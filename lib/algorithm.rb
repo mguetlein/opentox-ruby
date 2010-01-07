@@ -1,7 +1,7 @@
 module OpenTox
 	module Algorithm 
 
-		class Fminer #< OpenTox
+		class Fminer 
 			include Owl
 
 			def initialize
@@ -20,7 +20,7 @@ module OpenTox
 			end
 		end
 
-		class Lazar #< OpenTox
+		class Lazar 
 			include Owl
 
 			def initialize
@@ -37,6 +37,11 @@ module OpenTox
 						{ :scope => "mandatory", :value => "feature_generation_uri" }
 				}
 			end
+			
+			def self.create_model(params)
+				@uri = RestClient.post File.join(@@config[:services]["opentox-algorithm"], "lazar"), :dataset_uri => params[:dataset_uri], :feature_uri => params[:feature_uri], :feature_generation_uri => File.join(@@config[:services]["opentox-algorithm"], "fminer")
+			end
+
 		end
 
 		class Similarity
