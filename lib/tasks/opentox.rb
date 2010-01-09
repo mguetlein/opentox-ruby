@@ -1,24 +1,4 @@
 require File.join(File.dirname(__FILE__), '..', 'opentox-ruby-api-wrapper.rb')
-require File.join(File.dirname(__FILE__), 'redis.rb')
-
-namespace :redis do
-
-	desc "Flush Redis testing database"
-	task :flush do
-		require 'redis'
-		r = Redis.new :db => 2
-		r.flush_db
-	end
-
-	desc "Flush all Redis databases"
-	task :flushall do
-		require 'redis'
-		r = Redis.new
-		r.flush_all
-	end
-
-
-end
 
 namespace :opentox do
 

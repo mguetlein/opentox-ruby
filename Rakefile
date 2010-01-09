@@ -10,13 +10,9 @@ begin
     gem.email = "helma@in-silico.ch"
     gem.homepage = "http://github.com/helma/opentox-ruby-api-wrapper"
     gem.authors = ["Christoph Helma"]
-		gem.add_dependency "rest-client"
-		gem.add_dependency "sinatra"
-		gem.add_dependency "rack"
-		gem.add_dependency "rack-contrib"
-		gem.add_dependency "thin"
-		gem.add_dependency "emk-sinatra-url-for"
-		gem.add_dependency "cehoffman-sinatra-respond_to"
+		["sinatra", "rest-client", "rack", "rack-contrib", "thin", "emk-sinatra-url-for", "cehoffman-sinatra-respond_to", "dm-more", "dm-core"].each do |dep|
+			gem.add_dependency dep
+		end
 		gem.add_development_dependency "cucumber"
 		gem.files =  FileList["[A-Z]*", "{bin,generators,lib,test}/**/*", 'lib/jeweler/templates/.gitignore']
 		gem.files.include %w(lib/tasks/owl.rb, lib/environment.rb, lib/algorithm.rb, lib/compound.rb, lib/dataset.rb, lib/model.rb, lib/utils.rb, lib/templates/*)

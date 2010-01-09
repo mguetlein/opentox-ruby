@@ -1,20 +1,21 @@
 module OpenTox
 
-	class Task #< OpenTox
+	class Task
+
+		attr_accessor :uri
 
 		def initialize(uri)
-			super(uri)
+			#super()
+			@uri = uri
 		end
 
-		#def self.create(uri)
 		def self.create
-			puts @@config[:services]["opentox-task"]
-			uri = RestClient.post @@config[:services]["opentox-task"], ''#, :dataset_uri => uri
+			uri = RestClient.post @@config[:services]["opentox-task"], nil
 			Task.new(uri)
 		end
 
-		def self.find(params)
-			Task.new(params[:uri])
+		def self.find(uri)
+			Task.new(uri)
 		end
 
 		def self.base_uri
@@ -22,32 +23,32 @@ module OpenTox
 		end
 
 		def start
-			RestClient.put @uri, :status => 'started'
+			RestClient.put File.join(@uri,'started'), nil
 		end
 
-		def stop
-			RestClient.put @uri, :status => 'stopped'
+		def cancel
+			RestClient.put File.join(@uri,'cancelled'), nil
 		end
 
-		def completed
-			RestClient.put @uri, :status => 'completed'
+		def completed(uri)
+			RestClient.put File.join(@uri,'completed'), :resource => uri
 		end
 		 
 		def status
 			RestClient.get File.join(@uri, 'status')
 		end
-
-		def completed?
-			self.status == 'completed'
+		 
+		def resource
+			RestClient.get File.join(@uri, 'resource')
 		end
 
-		def resource
-			RestClient.get @uri
+		def completed?
+			self.status.to_s == 'completed'
 		end
 
 		def wait_for_completion
 			until self.completed?
-				sleep 1
+				sleep 0.1
 			end
 		end
 

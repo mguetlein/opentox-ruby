@@ -45,7 +45,6 @@ module OpenTox
 		end
 
 		class Similarity
-
 			def self.weighted_tanimoto(fp_a,fp_b,p)
 				common_features = fp_a & fp_b
 				all_features = fp_a + fp_b
@@ -59,7 +58,6 @@ module OpenTox
 					0.0
 				end
 			end
-
 		end
 
 	end

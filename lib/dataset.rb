@@ -158,46 +158,6 @@ module OpenTox
 			features
 		end
 
-=begin
-		def tuples
-			tuples = []
-			@model.subjects(RDF['type'], OT["Tuple"]).each do |t|
-				tuple = {}
-				compounds = []
-				@model.subjects(OT['values'], t).each do |data_entry|
-					compound_node = @model.object(data_entry,OT['compound'])
-					compounds << @model.object(compound_node,  DC["identifier"]).to_s
-				end
-				@model.find(t, OT['tuple'],nil) do |s,p,pair|
-					feature_node = @model.object(pair, OT['feature'])
-					feature_name = @model.object(feature_node, DC['title']).to_s
-					value_node = @model.object(pair, OT['value'])
-					value = @model.object(value_node, OT['value']).to_s
-					value = value.to_f if value.match(/^[\d\.]+$/)
-					tuple[feature_name.to_sym] = value
-				end
-				tuple[:compounds] = compounds
-				tuples << tuple
-			end
-			tuples
-		end
-
-		def tuple(compound_uri)
-			compound_node = @model.subject(DC["identifier"],compound_uri)
-			#puts compound_uri
-			@model.subjects(OT['compound'], compound_node).each do |data_entry|
-				values_node = @model.object(data_entry, OT['values'])
-				@model.find(values_node, OT['tuple'], nil) do |s,p,tuple| 
-					@model.find(tuple, OT['feature'], nil) do |s,p,feature|
-						name = @model.object(feature,DC['title']).to_s
-						#puts name
-					end
-				end
-				#puts values_node
-			end
-		end
-=end
-
 		def compounds
 			compounds = []
 			@model.subjects(RDF['type'], OT["Compound"]).each do |compound_node|
