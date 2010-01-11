@@ -22,12 +22,13 @@ module OpenTox
 			@@config[:services]["opentox-task"]
 		end
 
-		def start
-			RestClient.put File.join(@uri,'started'), nil
+		def started
+			#LOGGER.info File.join(@uri,'started')
+			RestClient.put File.join(@uri,'started'), {}
 		end
 
 		def cancel
-			RestClient.put File.join(@uri,'cancelled'), nil
+			RestClient.put File.join(@uri,'cancelled'), {}
 		end
 
 		def completed(uri)
