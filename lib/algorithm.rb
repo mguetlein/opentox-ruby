@@ -16,7 +16,8 @@ module OpenTox
 			end
 
 			def self.create_feature_dataset(params)
-				RestClient.post params[:feature_generation_uri], :dataset_uri => params[:dataset_uri], :feature_uri => params[:feature_uri] 
+			  resource = RestClient::Resource.new(params[:feature_generation_uri], :user => request.username, :password => request.password)
+			  resource.post :dataset_uri => params[:dataset_uri], :feature_uri => params[:feature_uri]
 			end
 		end
 
@@ -39,7 +40,8 @@ module OpenTox
 			end
 			
 			def self.create_model(params)
-				@uri = RestClient.post File.join(@@config[:services]["opentox-algorithm"], "lazar"), :dataset_uri => params[:dataset_uri], :feature_uri => params[:feature_uri], :feature_generation_uri => File.join(@@config[:services]["opentox-algorithm"], "fminer")
+			  resource = RestClient::Resource.new(File.join(@@config[:services]["opentox-algorithm"], "lazar"), :user => request.username, :password => request.password)
+				@uri = resource.post :dataset_uri => params[:dataset_uri], :feature_uri => params[:feature_uri], :feature_generation_uri => File.join(@@config[:services]["opentox-algorithm"], "fminer")
 			end
 
 		end

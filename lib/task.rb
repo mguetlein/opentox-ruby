@@ -10,7 +10,7 @@ module OpenTox
 		end
 
 		def self.create
-			uri = RestClient.post @@config[:services]["opentox-task"], nil
+			uri = RestClient::Resource.new(@@config[:services]["opentox-task"], :user => request.username, :password => request.password).post nil
 			Task.new(uri)
 		end
 
@@ -24,15 +24,15 @@ module OpenTox
 
 		def started
 			#LOGGER.info File.join(@uri,'started')
-			RestClient.put File.join(@uri,'started'), {}
+			RestClient::Resource.new(@uri, :user => request.username, :password => request.password).put File.join(@uri,'started'), {}
 		end
 
 		def cancel
-			RestClient.put File.join(@uri,'cancelled'), {}
+			RestClient::Resource.new(@uri, :user => request.username, :password => request.password).put File.join(@uri,'cancelled'), {}
 		end
 
 		def completed(uri)
-			RestClient.put File.join(@uri,'completed'), :resource => uri
+			RestClient::Resource.new(@uri, :user => request.username, :password => request.password).put File.join(@uri,'completed'), :resource => uri
 		end
 		 
 		def status
