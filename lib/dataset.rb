@@ -78,7 +78,7 @@ module OpenTox
 		end
 
 		def self.create(data, content_type = 'application/rdf+xml')
-      uri = RestClient.post @@config[:services]["opentox-dataset"], data, :content_type => content_type
+		  uri = RestClient::Resource.new(@@config[:services]["opentox-dataset"], :user => request.username, :password => request.password).post data, :content_type => content_type
 			dataset = Dataset.new
 			dataset.read uri.to_s
 			dataset
@@ -168,11 +168,12 @@ module OpenTox
 
 		# Delete a dataset
 		def delete
-			RestClient.delete @uri
-		end
+  		resource = RestClient::Resource.new(@uri, :user => request.username, :password => request.password)
+      resource.delete
+    end
 
 		def save
-			RestClient.post(@@config[:services]["opentox-dataset"], self.rdf, :content_type =>  "application/rdf+xml").to_s
+      RestClient::Resource.new(@@config[:services]["opentox-dataset"], :user => request.username, :password => request.password).post(self.rdf, :content_type =>  "application/rdf+xml").to_s		
 		end
 
 		def to_yaml

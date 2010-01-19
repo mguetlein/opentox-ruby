@@ -6,6 +6,7 @@ basedir = File.join(ENV['HOME'], ".opentox")
 config_dir = File.join(basedir, "config")
 @@tmp_dir = File.join(basedir, "tmp")
 config_file = File.join(config_dir, "#{ENV['RACK_ENV']}.yaml")
+user_file = File.join(config_dir, "users.yaml")
 
 if File.exist?(config_file)
 	@@config = YAML.load_file(config_file)
@@ -15,6 +16,14 @@ else
 	FileUtils.cp(File.join(File.dirname(__FILE__), 'templates/config.yaml'), config_file)
 	puts "Please edit #{config_file} and restart your application."
 	exit
+end
+
+if File.exist?(user_file)
+  @@users = YAML.load_file(user_file)
+else
+  FileUtils.cp(File.join(File.dirname(__FILE__), 'templates/users.yaml'), user_file)
+  puts "Please edit #{user_file} and restart your application."
+  exit
 end
 
 # RDF namespaces
