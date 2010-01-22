@@ -1,23 +1,13 @@
 require 'rubygems'
-require 'sinatra'
+require 'opentox-ruby-api-wrapper'
 require 'application.rb'
 require 'rack'
 require 'rack/contrib'
 
-FileUtils.mkdir_p 'log' unless File.exists?('log')
-log = File.new("log/#{ENV["RACK_ENV"]}.log", "a")
+FileUtils.mkdir_p @@tmp_dir
+log = File.new("#{@@tmp_dir}/#{ENV["RACK_ENV"]}.log", "a+")
 $stdout.reopen(log)
 $stderr.reopen(log)
  
-if ENV['RACK_ENV'] == 'production'
-	use Rack::MailExceptions do |mail|
-		mail.to 'helma@in-silico.ch'
-		mail.subject '[ERROR] %s'
-	end 
-elsif ENV['RACK_ENV'] == 'development'
-  use Rack::Reloader 
-  use Rack::ShowExceptions
-end
-
+use Rack::ShowExceptions
 run Sinatra::Application
-

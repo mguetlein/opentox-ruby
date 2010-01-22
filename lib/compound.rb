@@ -20,14 +20,19 @@ module OpenTox
 				@inchi = RestClient.get("#{@@cactus_uri}#{params[:name]}/stdinchi").chomp
 				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
 			elsif params[:uri]
-				@inchi = params[:uri].sub(/^.*InChI/, 'InChI')
+				if params[:uri].match(/InChI/) # shortcut for IST services
+					@inchi = params[:uri].sub(/^.*InChI/, 'InChI')
+				else
+					@inchi = RestClient.get @uri, :accept => 'chemical/x-inchi'
+				end
 				@uri = params[:uri]
 			end
 		end
 
 		# Get the (canonical) smiles
 		def smiles
-			obconversion(@inchi,'inchi','can')
+			RestClient.get(@uri, :accept => 'chemical/x-daylight-smiles').split(/\s+/).first # fix ambit output
+			#obconversion(@inchi,'inchi','can')
 		end
 
 		def sdf
