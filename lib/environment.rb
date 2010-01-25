@@ -25,8 +25,11 @@ else
   puts "Please edit #{user_file} and restart your application."
   exit
 end
-if @@users.length < 1 or !@@users
-  puts "Please edit #{user_file} and restart your application."
+
+begin
+  0 < @@users[:users].keys.length
+rescue
+  puts "Please edit #{user_file} and restart your application. Create at least one user with password."
   exit
 end
 
