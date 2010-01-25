@@ -10,7 +10,8 @@ module OpenTox
 		end
 
 		def self.create
-			uri = RestClient::Resource.new(@@config[:services]["opentox-task"], :user => request.username, :password => request.password).post nil
+      resource = RestClient::Resource.new(@@config[:services]["opentox-task"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+			uri = resource.post(nil)
 			Task.new(uri)
 		end
 
@@ -23,16 +24,19 @@ module OpenTox
 		end
 
 		def started
-			#LOGGER.info File.join(@uri,'started')
-			RestClient::Resource.new(@uri, :user => request.username, :password => request.password).put File.join(@uri,'started'), {}
+      LOGGER.info File.join(@uri,'started')
+      resource = RestClient::Resource.new(File.join(@uri,'started'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+      resource.put({}) 
 		end
 
 		def cancel
-			RestClient::Resource.new(@uri, :user => request.username, :password => request.password).put File.join(@uri,'cancelled'), {}
+			resource = RestClient::Resource.new(@File.join(@uri,'cancelled'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+			resource.put({})
 		end
 
 		def completed(uri)
-			RestClient::Resource.new(@uri, :user => request.username, :password => request.password).put File.join(@uri,'completed'), :resource => uri
+			resource = RestClient::Resource.new(File.join(@uri,'completed'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+			resource.put :resource => uri
 		end
 		 
 		def status

@@ -25,6 +25,10 @@ else
   puts "Please edit #{user_file} and restart your application."
   exit
 end
+if @@users.length < 1 or !@@users
+  puts "Please edit #{user_file} and restart your application."
+  exit
+end
 
 # RDF namespaces
 RDF = Redland::Namespace.new 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'

@@ -8,6 +8,9 @@ FileUtils.mkdir_p 'log' unless File.exists?('log')
 log = File.new("log/#{ENV["RACK_ENV"]}.log", "a")
 $stdout.reopen(log)
 $stderr.reopen(log)
+$stdout.sync = true
+$stderr.sync = true
+
  
 if ENV['RACK_ENV'] == 'production'
 	use Rack::MailExceptions do |mail|
@@ -21,3 +24,4 @@ end
 
 run Sinatra::Application
 
+set :raise_errors, true
