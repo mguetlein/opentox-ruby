@@ -33,7 +33,6 @@ module OpenTox
 			end
 
 			def self.find(uri)
-				puts uri
 				yaml = RestClient.get(uri, :accept => "application/x-yaml")
 				OpenTox::Model::Lazar.from_yaml(yaml)
 			end

@@ -22,6 +22,11 @@ module OpenTox
 			@@config[:services]["opentox-task"]
 		end
 
+		def self.all
+			task_uris = RestClient.get(@@config[:services]["opentox-task"]).split(/\n/)
+			task_uris.collect{|uri| Task.new(uri)}
+		end
+
 		def started
 			#LOGGER.info File.join(@uri,'started')
 			RestClient.put File.join(@uri,'started'), {}
@@ -35,12 +40,24 @@ module OpenTox
 			RestClient.put File.join(@uri,'completed'), :resource => uri
 		end
 		 
+		def created_at
+			RestClient.get File.join(@uri, 'created_at')
+		end
+		 
+		def finished_at
+			RestClient.get File.join(@uri, 'finished_at')
+		end
+		 
 		def status
 			RestClient.get File.join(@uri, 'status')
 		end
 		 
 		def resource
 			RestClient.get File.join(@uri, 'resource')
+		end
+		 
+		def pid=(pid)
+			RestClient.put File.join(@uri, 'pid'), :pid => pid
 		end
 
 		def completed?
@@ -49,7 +66,7 @@ module OpenTox
 
 		def wait_for_completion
 			until self.completed?
-				sleep 0.1
+				sleep 1
 			end
 		end
 
