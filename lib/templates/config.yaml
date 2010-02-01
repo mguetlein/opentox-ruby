@@ -1,10 +1,20 @@
-:base_dir: /home/ch/webservices
-:webserver: thin
-:services:
-# make sure to enter a full uri (including training slash)
-  opentox-compound:      "http://localhost:4000/"
-  opentox-feature:       "http://localhost:4001/"
-  opentox-dataset:       "http://localhost:4002/"
-  opentox-algorithm:     "http://localhost:4003/"
-  opentox-model:         "http://localhost:4004/"
-  #opentox-task:          "http://localhost:4005/"
+# Example configuration for OpenTox, please adjust to your settings
+# 
+# Example 1: Using external test services
+#
+# :services:
+#  opentox-compound:      "http://webservices.in-silico.ch/test/compound/"
+#  opentox-dataset:       "http://webservices.in-silico.ch/test/dataset/"
+#  opentox-algorithm:     "http://webservices.in-silico.ch/test/algorithm/"
+#  opentox-model:         "http://webservices.in-silico.ch/test/model/"
+#  opentox-task:         "http://webservices.in-silico.ch/test/task/"
+#
+# Example 2: Using local services
+# :base_dir: /home/ch/webservices
+# :webserver: thin
+# :services:
+#   opentox-compound:      "http://localhost:4000/"
+#   opentox-dataset:       "http://localhost:4001/"
+#   opentox-algorithm:     "http://localhost:4002/"
+#   opentox-model:         "http://localhost:4003/"
+#   opentox-task:          "http://localhost:4004/"
