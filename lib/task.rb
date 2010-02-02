@@ -10,7 +10,7 @@ module OpenTox
 		end
 
 		def self.create
-			uri = RestClient.post @@config[:services]["opentox-task"], nil
+			uri = RestClient.post @@config[:services]["opentox-task"], {}
 			Task.new(uri)
 		end
 

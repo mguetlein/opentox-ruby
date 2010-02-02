@@ -2,7 +2,7 @@ require 'logger'
 # set default environment
 ENV['RACK_ENV'] = 'test' unless ENV['RACK_ENV']
 
-# load configuration
+# load/setup configuration
 basedir = File.join(ENV['HOME'], ".opentox")
 config_dir = File.join(basedir, "config")
 config_file = File.join(config_dir, "#{ENV['RACK_ENV']}.yaml")
@@ -19,6 +19,26 @@ else
 	puts "Please edit #{config_file} and restart your application."
 	exit
 end
+
+# database
+if @@config[:database]
+	['dm-core', 'dm-serializer', 'dm-timestamps', 'dm-types'].each{|lib| require lib }
+	case @@config[:database][:adapter]
+	when /sqlite/i
+		db_dir = File.join(basedir, "db")
+		FileUtils.mkdir_p db_dir
+		DataMapper::setup(:default, "sqlite3://#{db_dir}/opentox.sqlite3")
+	else
+		DataMapper.setup(:default, { 
+				:adapter  => @@config[:database][:adapter],
+				:database => @@config[:database][:database],
+				:username => @@config[:database][:username],
+				:password => @@config[:database][:password],
+				:host     => @@config[:database][:host]})
+	end
+end
+
+# logging
 logfile = "#{LOG_DIR}/#{ENV["RACK_ENV"]}.log"
 LOGGER = Logger.new(logfile,'daily') # daily rotation
 LOGGER.level = Logger::DEBUG
