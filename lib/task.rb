@@ -61,7 +61,8 @@ module OpenTox
 		end
 		 
 		def pid=(pid)
-			RestClient.put File.join(@uri, 'pid'), :pid => pid
+		  resource = RestClient::Resource.new(File.join(@uri,'pid'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+			resource.put :pid => pid
 		end
 
 		def completed?
