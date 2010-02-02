@@ -83,22 +83,24 @@ echo "Installing packages: zlib1g-dev tcl curl perl ssh tcl tk8.5 libopenssl-rub
 sudo apt-get install zlib1g-dev tcl curl perl libopenssl-ruby libgsl0-dev r-base | tee -a $INSTALLLOG
 sudo apt-get install ssh tcl tk8.5 | tee -a $INSTALLLOG
 sudo apt-get install swig | tee -a $INSTALLLOG
+apt-get install postgresql-server-dev-8.2 | tee -a $INSTALLLOG
+
 
 #echo "Installing gems jeweler sinatra emk-sinatra-url-for dm-core cehoffman-sinatra-respond_to rest-client rack-contrib thin cucumber datamapper data_objects do_sqlite3 rinruby"
-#sudo gem install jeweler  | tee -a $INSTALLLOG
-#sudo gem install sinatra | tee -a $INSTALLLOG
-#sudo gem install emk-sinatra-url-for -s http://gems.github.com  | tee -a $INSTALLLOG
-#sudo gem install dm-core  | tee -a $INSTALLLOG
-#sudo gem install cehoffman-sinatra-respond_to -s http://gems.github.com  | tee -a $INSTALLLOG
-#sudo gem install rest-client | tee -a $INSTALLLOG
-#sudo gem install rack-contrib | tee -a $INSTALLLOG
-#sudo gem install thin | tee -a $INSTALLLOG
-#sudo gem install cucumber | tee -a $INSTALLLOG
-#sudo gem install datamapper | tee -a $INSTALLLOG
-#sudo gem install data_objects | tee -a $INSTALLLOG
-#sudo gem install do_sqlite3 | tee -a $INSTALLLOG
-#sudo gem install rinruby | tee -a $INSTALLLOG
-#sudo gem cleanup | tee -a $INSTALLLOG
+sudo gem install jeweler  | tee -a $INSTALLLOG
+sudo gem install sinatra | tee -a $INSTALLLOG
+sudo gem install emk-sinatra-url-for -s http://gems.github.com  | tee -a $INSTALLLOG
+sudo gem install dm-core  | tee -a $INSTALLLOG
+sudo gem install cehoffman-sinatra-respond_to -s http://gems.github.com  | tee -a $INSTALLLOG
+sudo gem install rest-client | tee -a $INSTALLLOG
+sudo gem install rack-contrib | tee -a $INSTALLLOG
+sudo gem install thin | tee -a $INSTALLLOG
+sudo gem install cucumber | tee -a $INSTALLLOG
+sudo gem install datamapper | tee -a $INSTALLLOG
+sudo gem install data_objects | tee -a $INSTALLLOG
+sudo gem install do_sqlite3 | tee -a $INSTALLLOG
+sudo gem install rinruby | tee -a $INSTALLLOG
+sudo gem cleanup | tee -a $INSTALLLOG
 
 echo "Installing LibRDF-ruby"
 sudo apt-get install librdf0 librdf-ruby | tee -a $INSTALLLOG
