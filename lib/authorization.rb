@@ -1,7 +1,7 @@
 helpers do
  
   def protected!
-    response['WWW-Authenticate'] = %(Basic realm="Opentox Ruby API Wrapper Auth") and \
+    response['WWW-Authenticate'] = %(Basic realm="Opentox Webservice Authentication") and \
     throw(:halt, [401, "Not authorized\n"]) and \
     return unless authorized?
   end
