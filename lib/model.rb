@@ -31,6 +31,11 @@ module OpenTox
 			def self.find_all
 				RestClient.get(@@config[:services]["opentox-model"]).split("\n")
 			end
+
+			def self.find(uri)
+				yaml = RestClient.get(uri, :accept => "application/x-yaml")
+				OpenTox::Model::Lazar.from_yaml(yaml)
+			end
 			
 			# Predict a compound
 			def predict(compound)
@@ -46,7 +51,7 @@ module OpenTox
 			end
 
 			def endpoint
-				YAML.load(RestClient.get uri)[:endpoint]
+				YAML.load(RestClient.get(uri))[:endpoint]
 			end
 
 			def algorithm=(algorithm)

@@ -85,14 +85,11 @@ module OpenTox
 		end
 
 		def self.find(uri)
-			begin
-        dataset = Dataset.new
-        data = RestClient.get uri, :accept => 'application/rdf+xml' # check if the resource is available
-        dataset.rdf = data
-				dataset
-			rescue
-				nil
-			end
+			dataset = Dataset.new
+			data = `curl "#{uri}"`
+			#data = RestClient.get uri, :accept => 'application/rdf+xml' # unclear why this does not work for complex uris, Dataset.find works from irb
+			dataset.rdf = data
+			dataset
 		end
 
 		def features
@@ -107,55 +104,42 @@ module OpenTox
 			data = {}
 			@model.subjects(RDF['type'], OT['DataEntry']).each do |data_entry|
 				compound_node  = @model.object(data_entry, OT['compound'])
-				@model.find(compound_node, OT['identifier'],nil) {|s,p,o| puts o.to_s}
 				compound_uri = @model.object(compound_node, DC['identifier']).to_s
-				data[compound_uri] = [] unless data[compound_uri]
 				@model.find(data_entry, OT['values'], nil) do |s,p,values|
-					entry = {}
 					feature_node = @model.object values, OT['feature']
-					feature_uri = @model.object(feature_node, DC['identifier']).to_s
-					# TODO simple features
+					feature_uri = @model.object(feature_node, DC['identifier']).to_s.sub(/\^\^.*$/,'') # remove XML datatype
 					type = @model.object(values, RDF['type'])
 					if type == OT['FeatureValue']
-						#entry[feature_uri] = [] unless entry[feature_uri]
-						entry[feature_uri] = @model.object(values, OT['value']).to_s
+						value = @model.object(values, OT['value']).to_s
+						case value.to_s
+						when TRUE_REGEXP # defined in environment.rb
+							value = true
+						when FALSE_REGEXP # defined in environment.rb
+							value = false
+						else
+							LOGGER.warn compound_uri + " has value '" + value.to_s + "' for feature " + feature_uri
+							value = nil
+						end
+						data[compound_uri] = {} unless data[compound_uri]
+						data[compound_uri][feature_uri] = [] unless data[compound_uri][feature_uri]
+						data[compound_uri][feature_uri] << value unless value.nil?
 					elsif type == OT['Tuple']
-						entry[feature_uri] = {} unless entry[feature_uri]
+						entry = {}
+						data[compound_uri] = {} unless data[compound_uri]
+						data[compound_uri][feature_uri] = [] unless data[compound_uri][feature_uri]
 						@model.find(values, OT['complexValue'],nil) do |s,p,complex_value|
 							name_node = @model.object complex_value, OT['feature']
 							name = @model.object(name_node, DC['title']).to_s
 							value = @model.object(complex_value, OT['value']).to_s
-							entry[feature_uri][name] = value
+							v = value.sub(/\^\^.*$/,'') # remove XML datatype
+							v = v.to_f if v.match(/^[\.|\d]+$/) # guess numeric datatype
+							entry[name] = v
 						end
+						data[compound_uri][feature_uri] << entry
 					end
-					data[compound_uri] << entry
 				end
 			end
 			data
-		end
-
-		def feature_values(feature_uri)
-			features = {}
-			feature = @model.subject(DC["identifier"],feature_uri)
-			@model.subjects(RDF['type'], OT["Compound"]).each do |compound_node|
-				compound = @model.object(compound_node,  DC["identifier"]).to_s.sub(/^\[(.*)\]$/,'\1')
-				features[compound] = [] unless features[compound]
-				data_entry = @model.subject(OT['compound'], compound_node)
-				@model.find( data_entry, OT['values'], nil ) do |s,p,values|
-					if feature == @model.object(values, OT['feature'])
-						value = @model.object(values, OT['value'])
-						case value.to_s
-						when "true"
-							features[compound] << true
-						when "false"
-							features[compound] << false
-						else
-							features[compound] << value.to_s
-						end
-					end
-				end
-			end
-			features
 		end
 
 		def compounds
@@ -183,7 +167,8 @@ module OpenTox
 				:source => self.source,
 				:identifier => self.identifier,
 				:compounds => self.compounds.collect{|c| c.to_s.to_s.sub(/^\[(.*)\]$/,'\1')},
-				:features => self.features.collect{|f| f.to_s }
+				:features => self.features.collect{|f| f.to_s },
+				:data => self.data
 			}.to_yaml
 		end
 

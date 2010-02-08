@@ -42,7 +42,8 @@ module OpenTox
 			# I have no idea, why 2 subjects are returned
 			# iterating over all subjects leads to memory allocation problems
 			# SPARQL queries also do not work 
-			me = @model.subjects(RDF['type'],OT[self.owl_class])[1]
+			#me = @model.subjects(RDF['type'],OT[self.owl_class])[1]
+			me = @model.subject(RDF['type'],OT[self.owl_class])
 			@model.object(me, DC['title']).to_s
 		end
 

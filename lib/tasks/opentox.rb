@@ -13,7 +13,7 @@ namespace :opentox do
 				when /thin|mongrel|webrick/
 					port = uri.sub(/^.*:/,'').sub(/\/$/,'')
 					Dir.chdir dir
-					pid_file = File.join(@@tmp_dir,"#{service}.pid") 
+					pid_file = File.join(TMP_DIR,"#{service}.pid") 
 					begin
 						`#{server} --trace --rackup config.ru start -p #{port} -e #{ENV['RACK_ENV']} -P #{pid_file} -d &`
 						puts "#{service} started on localhost:#{port} in #{ENV['RACK_ENV']} environment with PID file #{pid_file}."
@@ -36,7 +36,7 @@ namespace :opentox do
 			if server =~ /thin|mongrel|webrick/
 				@@config[:services].each do |service,uri|
 					port = uri.sub(/^.*:/,'').sub(/\/$/,'')
-					pid_file = File.join(@@tmp_dir,"#{service}.pid") 
+					pid_file = File.join(TMP_DIR,"#{service}.pid") 
 					begin
 						puts `#{server} stop -P #{pid_file}` 
 						puts "#{service} stopped on localhost:#{port}"
@@ -71,7 +71,7 @@ task :start do
 	case server 
 		when /thin|mongrel|webrick/
 			port = @@config[:services][service].sub(/^.*:/,'').sub(/\/$/,'')
-			pid_file = File.join(@@tmp_dir,"#{service}.pid") 
+			pid_file = File.join(TMP_DIR,"#{service}.pid") 
 			begin
 				`#{server} --trace --rackup config.ru start -p #{port} -e #{ENV['RACK_ENV']} -P #{pid_file} -d &`
 				puts "#{service} started on localhost:#{port} in #{ENV['RACK_ENV']} environment with PID file #{pid_file}."
@@ -93,7 +93,7 @@ task :stop do
 	server = @@config[:webserver]
 	if server =~ /thin|mongrel|webrick/
 		port = @@config[:services][service].sub(/^.*:/,'').sub(/\/$/,'')
-		pid_file = File.join(@@tmp_dir,"#{service}.pid") 
+		pid_file = File.join(TMP_DIR,"#{service}.pid") 
 		begin
 			puts `thin stop -P #{pid_file}` 
 			puts "#{service} stopped on localhost:#{port}"
