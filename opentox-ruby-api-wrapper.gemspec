@@ -26,6 +26,7 @@ Gem::Specification.new do |s|
      "bin/yaml2owl.rb",
      "lib/algorithm.rb",
      "lib/compound.rb",
+     "lib/config/config_ru.rb",
      "lib/config/database.rb",
      "lib/dataset.rb",
      "lib/environment.rb",

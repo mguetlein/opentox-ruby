@@ -10,7 +10,7 @@ module OpenTox
 		end
 
 		def self.create
-			uri = RestClient.post @@config[:services]["opentox-task"], nil
+			uri = RestClient.post @@config[:services]["opentox-task"], {}
 			Task.new(uri)
 		end
 
@@ -25,19 +25,6 @@ module OpenTox
 		def self.all
 			task_uris = RestClient.get(@@config[:services]["opentox-task"]).split(/\n/)
 			task_uris.collect{|uri| Task.new(uri)}
-		end
-
-		def started
-			#LOGGER.info File.join(@uri,'started')
-			RestClient.put File.join(@uri,'started'), {}
-		end
-
-		def cancel
-			RestClient.put File.join(@uri,'cancelled'), {}
-		end
-
-		def completed(uri)
-			RestClient.put File.join(@uri,'completed'), :resource => uri
 		end
 		 
 		def created_at
@@ -55,6 +42,26 @@ module OpenTox
 		def resource
 			RestClient.get File.join(@uri, 'resource')
 		end
+
+		def started
+			RestClient.put File.join(@uri,'started'), {}
+		end
+
+		def cancel
+			RestClient.put File.join(@uri,'cancelled'), {}
+		end
+
+		def failed
+			RestClient.put File.join(@uri,'failed'), {}
+		end
+
+		def parent=(task)
+			RestClient.put File.join(@uri,'parent'), {:uri => task.uri}
+		end
+
+		def completed(uri)
+			RestClient.put File.join(@uri,'completed'), :resource => uri
+		end
 		 
 		def pid=(pid)
 			RestClient.put File.join(@uri, 'pid'), :pid => pid
@@ -64,8 +71,12 @@ module OpenTox
 			self.status.to_s == 'completed'
 		end
 
+		def failed?
+			self.status.to_s == 'failed'
+		end
+
 		def wait_for_completion
-			until self.completed?
+			until self.completed? or self.failed?
 				sleep 1
 			end
 		end

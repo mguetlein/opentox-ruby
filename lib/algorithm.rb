@@ -39,6 +39,7 @@ module OpenTox
 			end
 			
 			def self.create_model(params)
+				LOGGER.debug params
 				@uri = RestClient.post File.join(@@config[:services]["opentox-algorithm"], "lazar"), :dataset_uri => params[:dataset_uri], :feature_uri => params[:feature_uri], :feature_generation_uri => File.join(@@config[:services]["opentox-algorithm"], "fminer")
 			end
 
