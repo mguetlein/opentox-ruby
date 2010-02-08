@@ -50,6 +50,14 @@ module OpenTox
 				RestClient.post(@@config[:services]["opentox-model"], data, :content_type => "application/x-yaml").to_s
 			end
 
+#			def self.create(task)
+#				@uri = RestClient.post(@@config[:services]["opentox-model"], :task_uri => task.uri)
+#			end
+
+#			def yaml=(data)
+#				RestClient.put(@@uri, data, :content_type => "application/x-yaml").to_s
+#			end
+
 			def endpoint
 				YAML.load(RestClient.get(uri))[:endpoint]
 			end
