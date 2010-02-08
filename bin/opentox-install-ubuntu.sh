@@ -74,6 +74,7 @@ then
 	else
 	    echo "Rubygems version $GEMVERSION installation failed."
 	    FAILED=1
+        exit $FAILED
 	fi
 else
 	echo "rubygems-$GEMVERSION folder already exist. "
@@ -83,7 +84,7 @@ echo "Installing packages: zlib1g-dev tcl curl perl ssh tcl tk8.5 libopenssl-rub
 sudo apt-get install zlib1g-dev tcl curl perl libopenssl-ruby libgsl0-dev r-base | tee -a $INSTALLLOG
 sudo apt-get install ssh tcl tk8.5 | tee -a $INSTALLLOG
 sudo apt-get install swig | tee -a $INSTALLLOG
-apt-get install postgresql-server-dev-8.2 | tee -a $INSTALLLOG
+sudo apt-get install postgresql-server-dev-8.4 | tee -a $INSTALLLOG
 
 
 #echo "Installing gems jeweler sinatra emk-sinatra-url-for dm-core cehoffman-sinatra-respond_to rest-client rack-contrib thin cucumber datamapper data_objects do_sqlite3 rinruby"
@@ -127,6 +128,7 @@ then
 	else
 	    echo "Git version $GITVERSION installation failed."
 	    FAILED=1
+        exit $FAILED
 	fi
 else
 	echo "git-$GITVERSION folder exists."
@@ -158,6 +160,7 @@ then
 		else
 		    echo "Raptor version $RAPTORVERSION installation failed."
 		    FAILED=1
+            exit $FAILED
 		fi
 	else
 		echo "raptor-$RAPTORVERSION folder exists."
@@ -181,6 +184,7 @@ then
 	else
 	    echo "Raptor version $RASQALVERSION2 or higher installation failed."
 	    FAILED=1
+        exit $FAILED
 	fi
 
 	echo "Installing Redland redland"
@@ -201,6 +205,7 @@ then
 	else
 	    echo "Redland version $REDLANDVERSION installation failed."
 	    FAILED=1
+        exit $FAILED
 	fi
 
 
@@ -223,6 +228,7 @@ then
 	#else
 	#    echo "Redland Bindings version $REDBINDVERSION installation failed."
 	#    FAILED=1
+    #    exit $FAILED
 	#fi
 else
 	echo "Redland folder exists."
@@ -249,6 +255,7 @@ then
 else
 	echo "opentox-ruby-api-wrapper ($OTAPIVERSION) installation failed."
 	FAILED=1
+    exit $FAILED
 fi
 
 echo "Installing the webservices: compound, dataset, algorithm, model, task, feature"
@@ -285,6 +292,8 @@ echo "Installing openbabel"
 cd ../opentox-compound
 sudo rake openbabel:install | tee -a $INSTALLLOG
 sudo ldconfig >>$INSTALLLOG 2>>$ERRLOG
+
+ln -s /usr/local/lib/libopenbabel.so.3 /usr/lib/libopenbabel.so.3 >> $INSTALLLOG 2>>$ERR
 #VERSION=` --version`
 #if [ "$VERSION"  == "$RAPTORVERSION" ]
 #then
@@ -294,6 +303,7 @@ sudo ldconfig >>$INSTALLLOG 2>>$ERRLOG
 #else
 #    echo "Raptor version $RAPTORVERSION installation failed."
 #    FAILED=1
+#    exit $FAILED
 #fi
 
 
@@ -328,6 +338,7 @@ then
 else
     echo "Fminer installation failed."
     FAILED=1
+    exit $FAILED
 fi
 
 if [ $FAILED == 0 ]
