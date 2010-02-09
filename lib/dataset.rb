@@ -156,7 +156,18 @@ module OpenTox
 		end
 
 		def save
-			RestClient.post(@@config[:services]["opentox-dataset"], self.rdf, :content_type =>  "application/rdf+xml").to_s
+			LOGGER.debug "Saving dataset"
+			task_uri = RestClient.post(@@config[:services]["opentox-dataset"], self.rdf, :content_type =>  "application/rdf+xml").to_s
+			task = OpenTox::Task.find(task_uri)
+			LOGGER.debug "Waiting for task #{task_uri}"
+			task.wait_for_completion
+			LOGGER.debug "Dataset task #{task_uri} completed"
+			if task.failed?
+				LOGGER.error "Saving dataset failed"
+				task.failed
+				exit
+			end
+			task.resource
 		end
 
 		def to_yaml
