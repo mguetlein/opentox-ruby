@@ -86,7 +86,9 @@ module OpenTox
 
 		def self.find(uri)
 			dataset = Dataset.new
+			LOGGER.debug "Getting data from #{uri}"
 			data = `curl "#{uri}"`
+			LOGGER.debug data
 			#data = RestClient.get(uri, :accept => 'application/rdf+xml') # unclear why this does not work for complex uris, Dataset.find works from irb
 			dataset.rdf = data
 			dataset
