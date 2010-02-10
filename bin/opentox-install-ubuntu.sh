@@ -261,8 +261,7 @@ fi
 echo "Installing the webservices: compound, dataset, algorithm, model, task, feature"
 git clone git://github.com/helma/opentox-compound.git >>$INSTALLLOG 2>>$ERRLOG
 git clone git://github.com/helma/opentox-dataset.git >>$INSTALLLOG 2>>$ERRLOG
-# opentox-algorithem only temporally from davor!
-git clone git://github.com/davor/opentox-algorithm.git >>$INSTALLLOG 2>>$ERRLOG
+git clone git://github.com/helma/opentox-algorithm.git >>$INSTALLLOG 2>>$ERRLOG
 git clone git://github.com/helma/opentox-model.git >>$INSTALLLOG 2>>$ERRLOG
 git clone git://github.com/helma/opentox-task.git >>$INSTALLLOG 2>>$ERRLOG
 git clone git://github.com/helma/opentox-feature.git >>$INSTALLLOG 2>>$ERRLOG
