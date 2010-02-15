@@ -14,6 +14,8 @@ module OpenTox
 			data_entry = @model.subject OT['compound'], compound
 			if data_entry.nil?
 				data_entry = @model.create_resource
+				dataset = @model.subject(RDF['type'],OT[self.owl_class])
+				@model.add dataset, RDF['dataEntry'], data_entry
 				@model.add data_entry, RDF['type'], OT["DataEntry"]
 				@model.add data_entry, OT['compound'], compound
 			end
@@ -29,6 +31,8 @@ module OpenTox
 			data_entry = @model.subject OT['compound'], compound
 			if data_entry.nil?
 				data_entry = @model.create_resource
+				dataset = @model.subject(RDF['type'],OT[self.owl_class])
+				@model.add dataset, RDF['dataEntry'], data_entry
 				@model.add data_entry, RDF['type'], OT["DataEntry"]
 				@model.add data_entry, OT['compound'], compound
 			end
@@ -57,7 +61,7 @@ module OpenTox
 		def find_or_create_compound(uri)
 			compound = @model.subject(DC["identifier"], uri)
 			if compound.nil?
-				compound = @model.create_resource
+				compound = @model.create_resource(uri)
 				@model.add compound, RDF['type'], OT["Compound"]
 				@model.add compound, DC["identifier"], uri
 			end
@@ -68,7 +72,7 @@ module OpenTox
 		def find_or_create_feature(uri)
 			feature = @model.subject(DC["identifier"], uri)
 			if feature.nil?
-				feature = @model.create_resource
+				feature = @model.create_resource(uri)
 				@model.add feature, RDF['type'], OT["Feature"]
 				@model.add feature, DC["identifier"], uri
 				@model.add feature, DC["title"], File.basename(uri).split(/#/)[1]

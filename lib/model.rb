@@ -24,7 +24,7 @@ module OpenTox
 				lazar.algorithm = File.join(@@config[:services]["opentox-algorithm"],"lazar")
 				lazar.trainingDataset = yaml[:activity_dataset]
 				lazar.dependentVariables = yaml[:endpoint]
-				lazar.predictedVariables = yaml[:endpoint] #+ " lazar prediction"
+				lazar.predictedVariables = yaml[:endpoint] + "_lazar_prediction"
 				lazar
 			end
 
