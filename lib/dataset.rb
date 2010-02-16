@@ -15,7 +15,7 @@ module OpenTox
 			if data_entry.nil?
 				data_entry = @model.create_resource
 				dataset = @model.subject(RDF['type'],OT[self.owl_class])
-				@model.add dataset, RDF['dataEntry'], data_entry
+				@model.add dataset, OT['dataEntry'], data_entry
 				@model.add data_entry, RDF['type'], OT["DataEntry"]
 				@model.add data_entry, OT['compound'], compound
 			end
@@ -32,7 +32,7 @@ module OpenTox
 			if data_entry.nil?
 				data_entry = @model.create_resource
 				dataset = @model.subject(RDF['type'],OT[self.owl_class])
-				@model.add dataset, RDF['dataEntry'], data_entry
+				@model.add dataset, OT['dataEntry'], data_entry
 				@model.add data_entry, RDF['type'], OT["DataEntry"]
 				@model.add data_entry, OT['compound'], compound
 			end
