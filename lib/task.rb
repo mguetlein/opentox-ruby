@@ -10,7 +10,10 @@ module OpenTox
 		end
 
 		def self.create
-			uri = RestClient.post @@config[:services]["opentox-task"], {}
+			#uri = RestClient.post @@config[:services]["opentox-task"], {}
+      resource = RestClient::Resource.new(@@config[:services]["opentox-task"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+			#uri = resource.post(nil)
+			uri = resource.post({})
 			Task.new(uri)
 		end
 
@@ -26,7 +29,7 @@ module OpenTox
 			task_uris = RestClient.get(@@config[:services]["opentox-task"]).split(/\n/)
 			task_uris.collect{|uri| Task.new(uri)}
 		end
-		 
+
 		def created_at
 			RestClient.get File.join(@uri, 'created_at')
 		end
@@ -42,7 +45,24 @@ module OpenTox
 		def resource
 			RestClient.get File.join(@uri, 'resource')
 		end
+		 
+		def started
+      LOGGER.info File.join(@uri,'started')
+      resource = RestClient::Resource.new(File.join(@uri,'started'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+      resource.put({}) 
+		end
 
+		def cancel
+			resource = RestClient::Resource.new(@File.join(@uri,'cancelled'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+			resource.put({})
+		end
+
+		def completed(uri)
+			resource = RestClient::Resource.new(File.join(@uri,'completed'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+			resource.put :resource => uri
+		end
+
+=begin
 		def started
 			RestClient.put File.join(@uri,'started'), {}
 		end
@@ -51,20 +71,26 @@ module OpenTox
 			RestClient.put File.join(@uri,'cancelled'), {}
 		end
 
-		def failed
-			RestClient.put File.join(@uri,'failed'), {}
-		end
-
-		def parent=(task)
-			RestClient.put File.join(@uri,'parent'), {:uri => task.uri}
-		end
-
 		def completed(uri)
 			RestClient.put File.join(@uri,'completed'), :resource => uri
 		end
+
+=end
+		def failed
+			#RestClient.put File.join(@uri,'failed'), {}
+			resource = RestClient::Resource.new(@File.join(@uri,'failed'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+			resource.put({})
+		end
+
+		def parent=(task)
+			#RestClient.put File.join(@uri,'parent'), {:uri => task.uri}
+			resource = RestClient::Resource.new(@File.join(@uri,'parent'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+			resource.put :uri => task.uri
+		end
 		 
 		def pid=(pid)
-			RestClient.put File.join(@uri, 'pid'), :pid => pid
+		  resource = RestClient::Resource.new(File.join(@uri,'pid'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+			resource.put :pid => pid
 		end
 
 		def completed?

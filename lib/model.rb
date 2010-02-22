@@ -39,7 +39,8 @@ module OpenTox
 			
 			# Predict a compound
 			def predict(compound)
-				RestClient.post(@uri, :compound_uri => compound.uri)
+				resource = RestClient::Resource.new(@uri, :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+				resource.post(:compound_uri => compound.uri)
 			end
 
 			def self.base_uri
@@ -47,7 +48,8 @@ module OpenTox
 			end
 
 			def self.create(data)
-				RestClient.post(@@config[:services]["opentox-model"], data, :content_type => "application/x-yaml").to_s
+			  resource = RestClient::Resource.new(@@config[:services]["opentox-model"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+			  resource.post(data, :content_type => "application/x-yaml").to_s
 			end
 
 #			def self.create(task)

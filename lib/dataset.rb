@@ -82,7 +82,8 @@ module OpenTox
 		end
 
 		def self.create(data, content_type = 'application/rdf+xml')
-      uri = RestClient.post @@config[:services]["opentox-dataset"], data, :content_type => content_type
+      resource = RestClient::Resource.new(@@config[:services]["opentox-dataset"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])		  
+		  uri = resource.post data, :content_type => content_type
 			dataset = Dataset.new
 			dataset.read uri.to_s
 			dataset
@@ -158,12 +159,14 @@ module OpenTox
 
 		# Delete a dataset
 		def delete
-			RestClient.delete @uri
-		end
+  		resource = RestClient::Resource.new(@uri, :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+      resource.delete
+    end
 
 		def save
 			LOGGER.debug "Saving dataset"
-			task_uri = RestClient.post(@@config[:services]["opentox-dataset"], self.rdf, :content_type =>  "application/rdf+xml").to_s
+			#task_uri = RestClient.post(@@config[:services]["opentox-dataset"], self.rdf, :content_type =>  "application/rdf+xml").to_s
+      task_uri = RestClient::Resource.new(@@config[:services]["opentox-dataset"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0]).post(self.rdf, :content_type =>  "application/rdf+xml").to_s		
 			task = OpenTox::Task.find(task_uri)
 			LOGGER.debug "Waiting for task #{task_uri}"
 			task.wait_for_completion
