@@ -39,8 +39,47 @@ if @@config[:database]
 end
 
 # logging
+class MyLogger < Logger
+  
+  
+  def trace()
+    lines = caller(0)
+#    puts lines.join("\n")
+#    puts "-"
+    line = lines[2]
+#    puts line
+#    puts "-"
+    index = line.rindex(/\/.*\.rb/)
+#    raise "index = nil" if index==nil
+    return line if index==nil
+#    puts "<<< "+line[index..-1].size.to_s+" <<< "+line[index..-1]
+#    raise "stop"
+    line[index..-1]
+  end
+  
+  def debug(param)
+    super trace.ljust(50)+" :: "+param.to_s
+  end
+  
+  def info(param)
+    super trace.ljust(50)+" :: "+param.to_s
+  end
+  
+  def warn(param)
+    super trace.ljust(50)+" :: "+param.to_s
+  end
+
+  def error(param)
+    super trace.ljust(50)+" :: "+param.to_s
+  end
+
+end
+
 logfile = "#{LOG_DIR}/#{ENV["RACK_ENV"]}.log"
-LOGGER = Logger.new(logfile,'daily') # daily rotation
+
+LOGGER = MyLogger.new(logfile,'daily') # daily rotation
+#LOGGER = MyLogger.new(STDOUT)
+
 LOGGER.level = Logger::DEBUG
 
 # RDF namespaces
