@@ -17,7 +17,8 @@ module OpenTox
 				@inchi = sdf2inchi(params[:sdf])
 				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
 			elsif params[:name]
-				@inchi = RestClient.get("#{@@cactus_uri}#{params[:name]}/stdinchi").chomp
+				# paranoid URI encoding to keep SMILES charges and brackets
+				@inchi = RestClient.get("#{@@cactus_uri}#{URI.encode(params[:name], Regexp.new("[^#{URI::PATTERN::UNRESERVED}]"))}/stdinchi").chomp
 				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
 			elsif params[:uri]
 				@uri = params[:uri]

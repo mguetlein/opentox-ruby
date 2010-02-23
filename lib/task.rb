@@ -84,7 +84,8 @@ module OpenTox
 
 		def parent=(task)
 			#RestClient.put File.join(@uri,'parent'), {:uri => task.uri}
-			resource = RestClient::Resource.new(@File.join(@uri,'parent'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+			resource = RestClient::Resource.new(File.join(@uri,'parent'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+			LOGGER.debug "task.rb: #{resource}"
 			resource.put :uri => task.uri
 		end
 		 

@@ -20,5 +20,5 @@ helpers do
 end
  
 before do
-  protected! unless env['REQUEST_METHOD'] == "GET"
+  #protected! unless env['REQUEST_METHOD'] == "GET"
 end

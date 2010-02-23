@@ -39,6 +39,7 @@ module OpenTox
 			
 			# Predict a compound
 			def predict(compound)
+				# nicht absichern??
 				resource = RestClient::Resource.new(@uri, :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
 				resource.post(:compound_uri => compound.uri)
 			end
@@ -50,6 +51,13 @@ module OpenTox
 			def self.create(data)
 			  resource = RestClient::Resource.new(@@config[:services]["opentox-model"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
 			  resource.post(data, :content_type => "application/x-yaml").to_s
+			end
+
+			def delete
+			  resource = RestClient::Resource.new(self.uri, :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+				resource.delete
+				#RestClient.delete @uri if @uri
+				#RestClient.delete model.task_uri if model.task_uri
 			end
 
 #			def self.create(task)
