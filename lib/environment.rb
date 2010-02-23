@@ -41,6 +41,12 @@ end
 # logging
 class MyLogger < Logger
   
+  def pwd
+    path = Dir.pwd.to_s
+    index = path.rindex(/\//)
+    return path if index==nil
+    path[(index+1)..-1]
+  end
   
   def trace()
     lines = caller(0)
@@ -59,26 +65,30 @@ class MyLogger < Logger
 #    puts "-"
     index = line.rindex(/\/.*\.rb/)
 #    raise "index = nil" if index==nil
-    return line if index==nil || index<4
+    return line if index==nil
 #    puts "<<< "+line[index..-1].size.to_s+" <<< "+line[index..-1]
 #    raise "stop"
-    ".."+line[(index-3)..-1]
+    line[index..-1]
   end
   
-  def debug(param)
-    super trace.ljust(50)+" :: "+param.to_s
+  def format(msg)
+    pwd.ljust(18)+" :: "+msg.to_s+"           :: "+trace
   end
   
-  def info(param)
-    super trace.ljust(50)+" :: "+param.to_s
+  def debug(msg)
+    super format(msg)
   end
   
-  def warn(param)
-    super trace.ljust(50)+" :: "+param.to_s
+  def info(msg)
+    super format(msg)
+  end
+  
+  def warn(msg)
+    super format(msg)
   end
 
-  def error(param)
-    super trace.ljust(50)+" :: "+param.to_s
+  def error(msg)
+    super format(msg)
   end
 
 end
@@ -87,6 +97,7 @@ logfile = "#{LOG_DIR}/#{ENV["RACK_ENV"]}.log"
 
 LOGGER = MyLogger.new(logfile,'daily') # daily rotation
 #LOGGER = MyLogger.new(STDOUT)
+
 LOGGER.level = Logger::DEBUG
 
 # RDF namespaces
