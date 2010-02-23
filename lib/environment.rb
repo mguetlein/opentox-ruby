@@ -59,10 +59,10 @@ class MyLogger < Logger
 #    puts "-"
     index = line.rindex(/\/.*\.rb/)
 #    raise "index = nil" if index==nil
-    return line if index==nil
+    return line if index==nil || index<4
 #    puts "<<< "+line[index..-1].size.to_s+" <<< "+line[index..-1]
 #    raise "stop"
-    line[index..-1]
+    ".."+line[(index-3)..-1]
   end
   
   def debug(param)
@@ -85,9 +85,8 @@ end
 
 logfile = "#{LOG_DIR}/#{ENV["RACK_ENV"]}.log"
 
-#LOGGER = MyLogger.new(logfile,'daily') # daily rotation
-LOGGER = MyLogger.new(STDOUT)
-
+LOGGER = MyLogger.new(logfile,'daily') # daily rotation
+#LOGGER = MyLogger.new(STDOUT)
 LOGGER.level = Logger::DEBUG
 
 # RDF namespaces
