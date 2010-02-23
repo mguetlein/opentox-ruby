@@ -46,7 +46,15 @@ class MyLogger < Logger
     lines = caller(0)
 #    puts lines.join("\n")
 #    puts "-"
-    line = lines[2]
+    n = 2
+    line = lines[n]
+    
+    while (line =~ /spork.rb/ or line =~ /as_task/)
+      #puts "skip line "+line.to_s
+      n += 1
+      line = lines[n]
+    end
+  
 #    puts line
 #    puts "-"
     index = line.rindex(/\/.*\.rb/)
@@ -77,8 +85,8 @@ end
 
 logfile = "#{LOG_DIR}/#{ENV["RACK_ENV"]}.log"
 
-LOGGER = MyLogger.new(logfile,'daily') # daily rotation
-#LOGGER = MyLogger.new(STDOUT)
+#LOGGER = MyLogger.new(logfile,'daily') # daily rotation
+LOGGER = MyLogger.new(STDOUT)
 
 LOGGER.level = Logger::DEBUG
 
