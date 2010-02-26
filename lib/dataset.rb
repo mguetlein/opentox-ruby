@@ -14,6 +14,8 @@ module OpenTox
 			data_entry = @model.subject OT['compound'], compound
 			if data_entry.nil?
 				data_entry = @model.create_resource
+				dataset = @model.subject(RDF['type'],OT[self.owl_class])
+				@model.add dataset, OT['dataEntry'], data_entry
 				@model.add data_entry, RDF['type'], OT["DataEntry"]
 				@model.add data_entry, OT['compound'], compound
 			end
@@ -29,6 +31,8 @@ module OpenTox
 			data_entry = @model.subject OT['compound'], compound
 			if data_entry.nil?
 				data_entry = @model.create_resource
+				dataset = @model.subject(RDF['type'],OT[self.owl_class])
+				@model.add dataset, OT['dataEntry'], data_entry
 				@model.add data_entry, RDF['type'], OT["DataEntry"]
 				@model.add data_entry, OT['compound'], compound
 			end
@@ -57,7 +61,7 @@ module OpenTox
 		def find_or_create_compound(uri)
 			compound = @model.subject(DC["identifier"], uri)
 			if compound.nil?
-				compound = @model.create_resource
+				compound = @model.create_resource(uri)
 				@model.add compound, RDF['type'], OT["Compound"]
 				@model.add compound, DC["identifier"], uri
 			end
@@ -68,7 +72,7 @@ module OpenTox
 		def find_or_create_feature(uri)
 			feature = @model.subject(DC["identifier"], uri)
 			if feature.nil?
-				feature = @model.create_resource
+				feature = @model.create_resource(uri)
 				@model.add feature, RDF['type'], OT["Feature"]
 				@model.add feature, DC["identifier"], uri
 				@model.add feature, DC["title"], File.basename(uri).split(/#/)[1]
@@ -78,7 +82,8 @@ module OpenTox
 		end
 
 		def self.create(data, content_type = 'application/rdf+xml')
-      uri = RestClient.post @@config[:services]["opentox-dataset"], data, :content_type => content_type
+      resource = RestClient::Resource.new(@@config[:services]["opentox-dataset"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])		  
+		  uri = resource.post data, :content_type => content_type
 			dataset = Dataset.new
 			dataset.read uri.to_s
 			dataset
@@ -154,12 +159,14 @@ module OpenTox
 
 		# Delete a dataset
 		def delete
-			RestClient.delete @uri
-		end
+  		resource = RestClient::Resource.new(@uri, :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+      resource.delete
+    end
 
 		def save
 			LOGGER.debug "Saving dataset"
-			task_uri = RestClient.post(@@config[:services]["opentox-dataset"], self.rdf, :content_type =>  "application/rdf+xml").to_s
+			#task_uri = RestClient.post(@@config[:services]["opentox-dataset"], self.rdf, :content_type =>  "application/rdf+xml").to_s
+      task_uri = RestClient::Resource.new(@@config[:services]["opentox-dataset"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0]).post(self.rdf, :content_type =>  "application/rdf+xml").to_s		
 			task = OpenTox::Task.find(task_uri)
 			LOGGER.debug "Waiting for task #{task_uri}"
 			task.wait_for_completion
