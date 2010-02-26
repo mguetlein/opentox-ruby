@@ -1,3 +1,5 @@
+LOGGER.progname = File.expand_path(__FILE__)
+
 module OpenTox
 
 	class Dataset 
