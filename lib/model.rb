@@ -45,7 +45,7 @@ module OpenTox
 			end
 
 			def self.base_uri
-				@@config[:services]["opentox-model"]
+				File.join @@config[:services]["opentox-model"],'lazar'
 			end
 
 			def self.create(data)

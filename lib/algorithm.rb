@@ -22,6 +22,10 @@ module OpenTox
         resource = RestClient::Resource.new(params[:feature_generation_uri], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
         resource.post :dataset_uri => params[:dataset_uri], :feature_uri => params[:feature_uri]
       end
+
+			def self.uri
+				File.join(@@config[:services]["opentox-algorithm"], "fminer")
+			end
     end
 
     class Lazar 
@@ -48,6 +52,10 @@ module OpenTox
 				#@uri = RestClient.post File.join(@@config[:services]["opentox-algorithm"], "lazar"), :dataset_uri => params[:dataset_uri], :feature_uri => params[:feature_uri], :feature_generation_uri => File.join(@@config[:services]["opentox-algorithm"], "fminer")
         resource = RestClient::Resource.new(File.join(@@config[:services]["opentox-algorithm"], "lazar"), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
         @uri = resource.post :dataset_uri => params[:dataset_uri], :feature_uri => params[:feature_uri], :feature_generation_uri => File.join(@@config[:services]["opentox-algorithm"], "fminer")
+			end
+
+			def self.uri
+				File.join(@@config[:services]["opentox-algorithm"], "lazar")
 			end
 
     end
