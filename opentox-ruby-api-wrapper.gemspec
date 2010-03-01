@@ -60,7 +60,6 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<rack>, [">= 0"])
       s.add_runtime_dependency(%q<rack-contrib>, [">= 0"])
       s.add_runtime_dependency(%q<rack-flash>, [">= 0"])
-      s.add_runtime_dependency(%q<thin>, [">= 0"])
       s.add_runtime_dependency(%q<emk-sinatra-url-for>, [">= 0"])
       s.add_runtime_dependency(%q<cehoffman-sinatra-respond_to>, [">= 0"])
       s.add_runtime_dependency(%q<dm-more>, [">= 0"])
@@ -68,13 +67,13 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<sinatra-static-assets>, [">= 0"])
       s.add_development_dependency(%q<cucmber>, [">= 0"])
       s.add_development_dependency(%q<jeweler>, [">= 0"])
+      s.add_development_dependency(%q<thin>, [">= 0"])
     else
       s.add_dependency(%q<sinatra>, [">= 0"])
       s.add_dependency(%q<rest-client>, [">= 0"])
       s.add_dependency(%q<rack>, [">= 0"])
       s.add_dependency(%q<rack-contrib>, [">= 0"])
       s.add_dependency(%q<rack-flash>, [">= 0"])
-      s.add_dependency(%q<thin>, [">= 0"])
       s.add_dependency(%q<emk-sinatra-url-for>, [">= 0"])
       s.add_dependency(%q<cehoffman-sinatra-respond_to>, [">= 0"])
       s.add_dependency(%q<dm-more>, [">= 0"])
@@ -82,6 +81,7 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<sinatra-static-assets>, [">= 0"])
       s.add_dependency(%q<cucmber>, [">= 0"])
       s.add_dependency(%q<jeweler>, [">= 0"])
+      s.add_dependency(%q<thin>, [">= 0"])
     end
   else
     s.add_dependency(%q<sinatra>, [">= 0"])
@@ -89,7 +89,6 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<rack>, [">= 0"])
     s.add_dependency(%q<rack-contrib>, [">= 0"])
     s.add_dependency(%q<rack-flash>, [">= 0"])
-    s.add_dependency(%q<thin>, [">= 0"])
     s.add_dependency(%q<emk-sinatra-url-for>, [">= 0"])
     s.add_dependency(%q<cehoffman-sinatra-respond_to>, [">= 0"])
     s.add_dependency(%q<dm-more>, [">= 0"])
@@ -97,6 +96,7 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<sinatra-static-assets>, [">= 0"])
     s.add_dependency(%q<cucmber>, [">= 0"])
     s.add_dependency(%q<jeweler>, [">= 0"])
+    s.add_dependency(%q<thin>, [">= 0"])
   end
 end
 
