@@ -65,7 +65,7 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<dm-more>, [">= 0"])
       s.add_runtime_dependency(%q<dm-core>, [">= 0"])
       s.add_runtime_dependency(%q<sinatra-static-assets>, [">= 0"])
-      s.add_development_dependency(%q<cucmber>, [">= 0"])
+      s.add_development_dependency(%q<cucumber>, [">= 0"])
       s.add_development_dependency(%q<jeweler>, [">= 0"])
       s.add_development_dependency(%q<thin>, [">= 0"])
     else
@@ -79,7 +79,7 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<dm-more>, [">= 0"])
       s.add_dependency(%q<dm-core>, [">= 0"])
       s.add_dependency(%q<sinatra-static-assets>, [">= 0"])
-      s.add_dependency(%q<cucmber>, [">= 0"])
+      s.add_dependency(%q<cucumber>, [">= 0"])
       s.add_dependency(%q<jeweler>, [">= 0"])
       s.add_dependency(%q<thin>, [">= 0"])
     end
@@ -94,7 +94,7 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<dm-more>, [">= 0"])
     s.add_dependency(%q<dm-core>, [">= 0"])
     s.add_dependency(%q<sinatra-static-assets>, [">= 0"])
-    s.add_dependency(%q<cucmber>, [">= 0"])
+    s.add_dependency(%q<cucumber>, [">= 0"])
     s.add_dependency(%q<jeweler>, [">= 0"])
     s.add_dependency(%q<thin>, [">= 0"])
   end
