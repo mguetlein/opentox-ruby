@@ -16,7 +16,6 @@ module OpenTox
 			# reate an anonymous resource for metadata
 			# this has to be rewritten with an URI as soon as the resource has been saved at an definitive location
 			tmp = @model.create_resource
-			@model.add tmp, RDF['type'], OWL['Ontology']
 			@model.add tmp, RDF['type'], OT[self.owl_class]
 		end
 

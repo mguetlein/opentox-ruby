@@ -10,6 +10,7 @@ $stdout.reopen(log)
 $stderr.reopen(log)
 $stdout.sync = true
 $stderr.sync = true
+set :logging, false
 set :raise_errors, true 
 
 ['public','tmp'].each do |dir|

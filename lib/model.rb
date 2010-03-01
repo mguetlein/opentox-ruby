@@ -24,7 +24,7 @@ module OpenTox
 				lazar.algorithm = File.join(@@config[:services]["opentox-algorithm"],"lazar")
 				lazar.trainingDataset = yaml[:activity_dataset]
 				lazar.dependentVariables = yaml[:endpoint]
-				lazar.predictedVariables = yaml[:endpoint] #+ " lazar prediction"
+				lazar.predictedVariables = yaml[:endpoint] + "_lazar_prediction"
 				lazar
 			end
 
@@ -39,15 +39,25 @@ module OpenTox
 			
 			# Predict a compound
 			def predict(compound)
-				RestClient.post(@uri, :compound_uri => compound.uri)
+				# nicht absichern??
+				resource = RestClient::Resource.new(@uri, :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+				resource.post(:compound_uri => compound.uri)
 			end
 
 			def self.base_uri
-				@@config[:services]["opentox-model"]
+				File.join @@config[:services]["opentox-model"],'lazar'
 			end
 
 			def self.create(data)
-				RestClient.post(@@config[:services]["opentox-model"], data, :content_type => "application/x-yaml").to_s
+			  resource = RestClient::Resource.new(@@config[:services]["opentox-model"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+			  resource.post(data, :content_type => "application/x-yaml").to_s
+			end
+
+			def delete
+			  resource = RestClient::Resource.new(self.uri, :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+				resource.delete
+				#RestClient.delete @uri if @uri
+				#RestClient.delete model.task_uri if model.task_uri
 			end
 
 #			def self.create(task)
