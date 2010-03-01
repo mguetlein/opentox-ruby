@@ -17,7 +17,7 @@ begin
 			gem.add_development_dependency dep
 		end
 		gem.files =  FileList["[A-Z]*", "{bin,generators,lib,test}/**/*", 'lib/jeweler/templates/.gitignore']
-		gem.files.include %w(lib/tasks/owl.rb, lib/environment.rb, lib/algorithm.rb, lib/compound.rb, lib/dataset.rb, lib/model.rb, lib/utils.rb, lib/templates/*)
+		gem.files.include %w(lib/tasks/owl.rb, lib/environment.rb, lib/algorithm.rb, lib/compound.rb, lib/dataset.rb, lib/model.rb, lib/utils.rb, lib/validation.rb, lib/templates/*)
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end
 	Jeweler::GemcutterTasks.new
