@@ -55,7 +55,7 @@ module OpenTox
 		end
 
 		def cancel
-			resource = RestClient::Resource.new(@File.join(@uri,'cancelled'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+			resource = RestClient::Resource.new(File.join(@uri,'cancelled'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
 			resource.put({})
 		end
 
@@ -80,7 +80,7 @@ module OpenTox
 =end
 		def failed
 			#RestClient.put File.join(@uri,'failed'), {}
-			resource = RestClient::Resource.new(@File.join(@uri,'failed'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+			resource = RestClient::Resource.new(File.join(@uri,'failed'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
 			resource.put({})
 		end
 
