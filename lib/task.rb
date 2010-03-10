@@ -7,16 +7,15 @@ module OpenTox
 		attr_accessor :uri
 
 		def initialize(uri)
-			#super()
-			@uri = uri
+			@uri = uri.chomp
 		end
 
 		def self.create
 			#uri = RestClient.post @@config[:services]["opentox-task"], {}
       resource = RestClient::Resource.new(@@config[:services]["opentox-task"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
 			#uri = resource.post(nil)
-			uri = resource.post({})
-			Task.new(uri)
+			uri = resource.post({}).chomp
+			Task.new(uri.chomp)
 		end
 
 		def self.find(uri)
@@ -28,7 +27,7 @@ module OpenTox
 		end
 
 		def self.all
-			task_uris = RestClient.get(@@config[:services]["opentox-task"]).split(/\n/)
+			task_uris = RestClient.get(@@config[:services]["opentox-task"]).chomp.split(/\n/)
 			task_uris.collect{|uri| Task.new(uri)}
 		end
 

@@ -20,7 +20,7 @@ module OpenTox
 		end
 
 		def uri=(uri)
-			@uri = uri
+			@uri = uri.chomp
 			uri = Redland::Uri.new(uri)
 			# rewrite uri
 			@model.subjects(RDF['type'],OT[self.owl_class]).each do |me|

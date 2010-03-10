@@ -2,6 +2,27 @@ module OpenTox
 	module Model
    
 		class Lazar
+
+			attr_accessor :dependent_variable, :activity_dataset_uri, :feature_dataset_uri, :effects, :activities, :p_values, :fingerprints, :features
+			
+			def initialize
+				@source = "http://github.com/helma/opentox-model"
+				@algorithm = File.join(@@config[:services]["opentox-algorithm"],"lazar")
+				#@independent_variables = File.join(@@config[:services]["opentox-algorithm"],"fminer#BBRC_representative")
+				@features = []
+				@effects = {}
+				@activities = {}
+				@p_values = {}
+				@fingerprints = {}
+			end
+
+			def save
+				@features.uniq!
+			  resource = RestClient::Resource.new(@@config[:services]["opentox-model"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+			  resource.post(self.to_yaml, :content_type => "application/x-yaml").chomp.to_s
+			end
+
+=begin
 			include Owl
 
 			# Create a new prediction model from a dataset
@@ -50,7 +71,7 @@ module OpenTox
 
 			def self.create(data)
 			  resource = RestClient::Resource.new(@@config[:services]["opentox-model"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
-			  resource.post(data, :content_type => "application/x-yaml").to_s
+			  resource.post(data, :content_type => "application/x-yaml").chomp.to_s
 			end
 
 			def delete
@@ -101,6 +122,7 @@ module OpenTox
 				@model.add me, OT['predictedVariables'], Redland::Uri.new(predictedVariables) # untyped individual comes from this line, why??
 				@model.add Redland::Uri.new(predictedVariables), RDF['type'], OT['Feature']
 			end
+=end
 		end
 	end
 end
