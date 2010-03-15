@@ -8,7 +8,7 @@ module OpenTox
 
 			@model = Redland::Model.new Redland::MemoryStore.new
 			@parser = Redland::Parser.new
-			@serializer = Redland::Serializer.ntriples
+			#@serializer = Redland::Serializer.ntriples
 			
 			# read OT Ontology
 			#@parser.parse_into_model(@model,"http://opentox.org/data/documents/development/RDF%20files/OpenToxOntology/at_download/file")

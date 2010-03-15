@@ -11,17 +11,11 @@ module OpenTox
 			@data = {}
 			@features = []
 			@compounds = []
-			#super
 		end
 
 		def self.find(uri)
-			#dataset = Dataset.new
-			LOGGER.debug "Getting data from #{uri}"
-			YAML.load RestClient.get(uri, :accept => 'application/x-yaml').to_s # unclear why this does not work for complex uris, Dataset.find works from irb
-			#data = `curl "#{uri}"`
-			#LOGGER.debug data
-			#dataset.rdf = data
-			#dataset
+			#LOGGER.debug "Getting data from #{uri}"
+			YAML.load RestClient.get(uri, :accept => 'application/x-yaml').to_s 
 		end
 
 
@@ -29,18 +23,19 @@ module OpenTox
 			LOGGER.debug "Saving dataset"
 			@features.uniq!
 			@compounds.uniq!
-			#task_uri = RestClient.post(@@config[:services]["opentox-dataset"], self.rdf, :content_type =>  "application/rdf+xml").to_s
-      task_uri = RestClient::Resource.new(@@config[:services]["opentox-dataset"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0]).post(self.to_yaml, :content_type =>  "application/x-yaml").chomp.to_s		
-			task = OpenTox::Task.find(task_uri)
-			LOGGER.debug "Waiting for task #{task_uri}"
-			task.wait_for_completion
-			LOGGER.debug "Dataset task #{task_uri} completed"
-			if task.failed?
-				LOGGER.error "Saving dataset failed"
-				task.failed
-				exit
-			end
-			task.resource
+      #task_uri = RestClient::Resource.new(@@config[:services]["opentox-dataset"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0]).post(self.to_yaml, :content_type =>  "application/x-yaml").chomp.to_s		
+      uri = RestClient::Resource.new(@@config[:services]["opentox-dataset"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0]).post(self.to_yaml, :content_type =>  "application/x-yaml").chomp.to_s		
+			#task = OpenTox::Task.find(task_uri)
+			#LOGGER.debug "Waiting for task #{task_uri}"
+			#task.wait_for_completion
+			#LOGGER.debug "Dataset task #{task_uri} completed"
+			#if task.failed?
+				#LOGGER.error "Saving dataset failed"
+				#task.failed
+				#exit
+			#end
+			#task.resource
+			uri
 		end
 
 =begin
