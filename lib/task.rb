@@ -105,7 +105,7 @@ module OpenTox
 
 		def wait_for_completion
 			until self.completed? or self.failed?
-				sleep 1
+				sleep 0.1
 			end
 		end
 

@@ -22,6 +22,10 @@ module OpenTox
 			  resource.post(self.to_yaml, :content_type => "application/x-yaml").chomp.to_s
 			end
 
+
+			def self.find_all
+				RestClient.get(@@config[:services]["opentox-model"]).chomp.split("\n")
+			end
 =begin
 			include Owl
 
@@ -47,10 +51,6 @@ module OpenTox
 				lazar.dependentVariables = yaml[:endpoint]
 				lazar.predictedVariables = yaml[:endpoint] + "_lazar_prediction"
 				lazar
-			end
-
-			def self.find_all
-				RestClient.get(@@config[:services]["opentox-model"]).split("\n")
 			end
 
 			def self.find(uri)
