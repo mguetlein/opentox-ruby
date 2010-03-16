@@ -18,7 +18,6 @@ module OpenTox
 
 
 		def save
-			LOGGER.debug "Saving dataset"
 			@features.uniq!
 			@compounds.uniq!
       RestClient::Resource.new(@@config[:services]["opentox-dataset"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0]).post(self.to_yaml, :content_type =>  "application/x-yaml").chomp.to_s		
