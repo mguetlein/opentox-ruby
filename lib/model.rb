@@ -3,7 +3,7 @@ module OpenTox
    
 		class Lazar
 
-			attr_accessor :dependent_variable, :activity_dataset_uri, :feature_dataset_uri, :effects, :activities, :p_values, :fingerprints, :features
+			attr_accessor :dependent_variable, :activity_dataset_uri, :feature_dataset_uri, :effects, :activities, :p_values, :fingerprints, :features, :algorithm
 			
 			def initialize
 				@source = "http://github.com/helma/opentox-model"

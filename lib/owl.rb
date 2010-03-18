@@ -5,21 +5,16 @@ module OpenTox
 		attr_reader :uri, :ot_class
 
 		def initialize(ot_class,uri)
-			
-			# read OT Ontology
-			#@parser.parse_into_model(@model,"http://opentox.org/data/documents/development/RDF%20files/OpenToxOntology/at_download/file")
-			#@parser.parse_string_into_model(@model,File.read(File.join(File.dirname(__FILE__),"opentox.owl")),'/')
-
 			@model = Redland::Model.new Redland::MemoryStore.new
 			@parser = Redland::Parser.new
 			@ot_class = ot_class
 			@uri = Redland::Uri.new(uri.chomp)
 			@model.add @uri, RDF['type'], OT[@ot_class]
-			
+			@model.add @uri, DC['identifier'], @uri
 		end
 
 		def method_missing(name, *args)
-			methods = ['title', 'source', 'identifier', 'algorithm', 'independentVariables', 'dependentVariable']
+			methods = ['title', 'source', 'identifier', 'algorithm', 'independentVariables', 'dependentVariables', 'predictedVariables', 'date','trainingDataset' ]
 			if methods.include? name.to_s.sub(/=/,'')
 				if /=/ =~ name.to_s # setter
 					name = name.to_s.sub(/=/,'')
