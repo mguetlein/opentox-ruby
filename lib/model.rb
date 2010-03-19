@@ -1,10 +1,26 @@
 module OpenTox
 	module Model
-   
-		class Lazar
 
-			attr_accessor :dependent_variable, :activity_dataset_uri, :feature_dataset_uri, :effects, :activities, :p_values, :fingerprints, :features, :algorithm
+		class Generic
+
+			attr_accessor :predicted_variables, :independent_variables, :dependent_variables, :activity_dataset_uri, :feature_dataset_uri, :effects, :activities, :p_values, :fingerprints, :features, :algorithm
+
+			def self.find(uri)
+				owl = OpenTox::Owl.from_uri(uri)
+				@title = owl.title
+				@source = owl.source
+				@identifier = owl.identifier.sub(/^\[/,'').sub(/\]$/,'')
+				@uri = @identifier
+				@algorithm = owl.algorithm
+				@dependent_variables = owl.dependentVariables
+				@independent_variables = owl.independentVariables
+				@predicted_variables = owl.predictedVariables
+			end
 			
+		end
+   
+		class Lazar < Generic
+
 			def initialize
 				@source = "http://github.com/helma/opentox-model"
 				@algorithm = File.join(@@config[:services]["opentox-algorithm"],"lazar")
@@ -22,41 +38,10 @@ module OpenTox
 			  resource.post(self.to_yaml, :content_type => "application/x-yaml").chomp.to_s
 			end
 
-
 			def self.find_all
 				RestClient.get(@@config[:services]["opentox-model"]).chomp.split("\n")
 			end
 =begin
-			include Owl
-
-			# Create a new prediction model from a dataset
-			def initialize
-				super
-				self.source = "http://github.com/helma/opentox-model"
-				self.algorithm = File.join(@@config[:services]["opentox-algorithm"],"lazar")
-				self.independentVariables = File.join(@@config[:services]["opentox-algorithm"],"fminer#BBRC_representative") # TODO read this from dataset
-			end
-
-			def self.from_yaml(yaml)
-				yaml = YAML.load yaml
-				lazar = Lazar.new
-				lazar.title = "lazar model for #{yaml[:endpoint]}"
-				lazar.parameters = {
-					"Dataset URI" => { :scope => "mandatory", :value => "dataset_uri=#{yaml[:activity_dataset]}" },
-					"Feature URI for dependent variable" => { :scope => "mandatory", :value => "feature_uri=#{yaml[:endpoint]}" },
-					"Feature generation URI" => { :scope => "mandatory", :value => "feature_generation_uri=#{File.join(@@config[:services]["opentox-algorithm"],"fminer")}"} #TODO write to yaml
-				}
-				lazar.algorithm = File.join(@@config[:services]["opentox-algorithm"],"lazar")
-				lazar.trainingDataset = yaml[:activity_dataset]
-				lazar.dependentVariables = yaml[:endpoint]
-				lazar.predictedVariables = yaml[:endpoint] + "_lazar_prediction"
-				lazar
-			end
-
-			def self.find(uri)
-				yaml = RestClient.get(uri, :accept => "application/x-yaml")
-				OpenTox::Model::Lazar.from_yaml(yaml)
-			end
 			
 			# Predict a compound
 			def predict(compound)

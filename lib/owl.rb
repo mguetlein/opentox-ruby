@@ -2,15 +2,35 @@ module OpenTox
 
 	class Owl
 
-		attr_reader :uri, :ot_class
+		attr_accessor :uri, :ot_class, :model
 
-		def initialize(ot_class,uri)
+		def initialize
 			@model = Redland::Model.new Redland::MemoryStore.new
-			@parser = Redland::Parser.new
-			@ot_class = ot_class
-			@uri = Redland::Uri.new(uri.chomp)
-			@model.add @uri, RDF['type'], OT[@ot_class]
-			@model.add @uri, DC['identifier'], @uri
+		end
+
+		def self.create(ot_class,uri)
+			owl = OpenTox::Owl.new
+			owl.ot_class = ot_class
+			owl.uri = Redland::Uri.new(uri.chomp)
+			owl.model.add owl.uri, RDF['type'], OT[owl.ot_class]
+			owl.model.add owl.uri, DC['identifier'], owl.uri
+			owl
+		end
+
+		def self.from_uri(uri)
+			owl = OpenTox::Owl.new
+			parser = Redland::Parser.new
+			begin
+				parser.parse_into_model(owl.model,uri)
+			rescue => e
+				raise "Error parsing #{uri}: #{e.message + e.backtrace}"
+			end
+			owl.uri =  Redland::Uri.new(uri.chomp)
+			owl
+		end
+
+		def rdf
+			@model.to_string
 		end
 
 		def method_missing(name, *args)
@@ -25,7 +45,7 @@ module OpenTox
 					end
 					@model.add @uri, DC[name], args.first
 				else # getter
-					@model.object(@uri, DC['title']).to_s
+					@model.object(@uri, DC[name.to_s]).to_s
 				end
 			else
 				raise "Method '#{name.to_s}' not found."
@@ -106,95 +126,46 @@ module OpenTox
 			feature
 		end
 
-		def rdf
-			@model.to_string
-		end
-
-=begin
-
-		def to_ntriples
-			@serializer.model_to_string(Redland::Uri.new(@uri), @model)
-		end
-
-		def uri=(uri)
-			@uri = uri.chomp
-			# rewrite uri
-			@model.subjects(RDF['type'],OT[@ot_class]).each do |me|
-				@model.delete(me,RDF['type'],OT[@ot_class])
-				@model.add(uri,RDF['type'],OT[@ot_class])
-				id = @model.object(me, DC['identifier'])
-				@model.delete me, DC['identifier'], id
-				# find/replace metadata
-				@model.find(me, nil, nil) do |s,p,o|
-					@model.delete s,p,o
-					@model.add uri,p,o
+		def data
+			data = {}
+			@model.subjects(RDF['type'], OT['DataEntry']).each do |data_entry|
+				compound_node  = @model.object(data_entry, OT['compound'])
+				compound_uri = @model.object(compound_node, DC['identifier']).to_s
+				@model.find(data_entry, OT['values'], nil) do |s,p,values|
+					feature_node = @model.object values, OT['feature']
+					feature_uri = @model.object(feature_node, DC['identifier']).to_s.sub(/\^\^.*$/,'') # remove XML datatype
+					type = @model.object(values, RDF['type'])
+					if type == OT['FeatureValue']
+						value = @model.object(values, OT['value']).to_s
+						case value.to_s
+						when TRUE_REGEXP # defined in environment.rb
+							value = true
+						when FALSE_REGEXP # defined in environment.rb
+							value = false
+						else
+							LOGGER.warn compound_uri + " has value '" + value.to_s + "' for feature " + feature_uri
+							value = nil
+						end
+						data[compound_uri] = [] unless data[compound_uri]
+						data[compound_uri] << {feature_uri => value} unless value.nil?
+					elsif type == OT['Tuple']
+						entry = {}
+						data[compound_uri] = [] unless data[compound_uri]
+						#data[compound_uri][feature_uri] = [] unless data[compound_uri][feature_uri]
+						@model.find(values, OT['complexValue'],nil) do |s,p,complex_value|
+							name_node = @model.object complex_value, OT['feature']
+							name = @model.object(name_node, DC['title']).to_s
+							value = @model.object(complex_value, OT['value']).to_s
+							v = value.sub(/\^\^.*$/,'') # remove XML datatype
+							v = v.to_f if v.match(/^[\.|\d]+$/) # guess numeric datatype
+							entry[name] = v
+						end
+						data[compound_uri] << {feature_uri => entry} unless entry.empty?
+					end
 				end
-				@model.add uri, DC['identifier'], @uri 
 			end
+			data
 		end
-
-		def read(uri)
-			@parser.parse_into_model(@model,uri)
-			@uri = uri
-		end
-
-		def identifier
-			me = @model.subject(RDF['type'],OT[@ot_class])
-			@model.object(me, DC['identifier']).to_s unless me.nil?
-		end
-
-		def title=(title)
-			me = @model.subject(RDF['type'],OT[@ot_class])
-			begin
-				t = @model.object(me, DC['title'])
-				@model.delete me, DC['title'], t
-			rescue
-			end
-			@model.add me, DC['title'], title
-		end
-
-		def source=(source)
-			me = @model.subject(RDF['type'],OT[@ot_class])
-			begin
-				t = @model.object(me, DC['source'])
-				@model.delete me, DC['source'], t
-			rescue
-			end
-			@model.add me, DC['source'], source
-		end
-
-		def title
-			# I have no idea, why 2 subjects are returned
-			# iterating over all subjects leads to memory allocation problems
-			# SPARQL queries also do not work 
-			#me = @model.subjects(RDF['type'],OT[@ot_class])[1]
-			me = @model.subject(RDF['type'],OT[@ot_class])
-			@model.object(me, DC['title']).to_s
-		end
-
-		def source
-			me = @model.subject(RDF['type'],OT[@ot_class])
-			@model.object(me, DC['source']).to_s unless me.nil?
-		end
-		def create_owl_statement(name,value)
-			r = @model.create_resource
-			dc_class = DC[name.gsub(/^[a-z]/) { |a| a.upcase }] # capitalize only the first letter
-			#puts "DC:" + name.gsub(/^[a-z]/) { |a| a.upcase }
-			@model.add dc_class, RDF['type'], OWL["Class"]
-			@model.add r, RDF['type'], dc_class
-			@model.add r, DC[name], value
-		end
-
-		def method_missing(name, *args)
-			# create magic setter methods
-			if /=/ =~ name.to_s
-				create_owl_statement name.to_s.sub(/=/,''), args.first
-			else
-				raise "No method #{name}"
-			end
-		end
-=end
 
 	end
-
 end

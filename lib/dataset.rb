@@ -13,7 +13,25 @@ module OpenTox
 		end
 
 		def self.find(uri)
-			YAML.load RestClient.get(uri, :accept => 'application/x-yaml').to_s 
+			if uri.match(/webservices.in-silico.ch|localhost/) # try to get YAML first
+				YAML.load RestClient.get(uri, :accept => 'application/x-yaml').to_s 
+			else # get default rdf+xml
+				owl = OpenTox::Owl.from_uri(uri)
+				@title = owl.title
+				@source = owl.source
+				@identifier = owl.identifier.sub(/^\[/,'').sub(/\]$/,'')
+				@uri = @identifier
+				@data = owl.data
+				halt 404, "Dataset #{uri} empty!" if @data.empty?
+				@data.each do |compound,features|
+					@compounds << compound
+					features.each do |f,v|
+						@features << f
+					end
+				end
+				@compounds.uniq!
+				@features.uniq!
+			end
 		end
 
 
@@ -114,47 +132,6 @@ module OpenTox
 			features
 		end
 
-		def data
-			data = {}
-			@model.subjects(RDF['type'], OT['DataEntry']).each do |data_entry|
-				compound_node  = @model.object(data_entry, OT['compound'])
-				compound_uri = @model.object(compound_node, DC['identifier']).to_s
-				@model.find(data_entry, OT['values'], nil) do |s,p,values|
-					feature_node = @model.object values, OT['feature']
-					feature_uri = @model.object(feature_node, DC['identifier']).to_s.sub(/\^\^.*$/,'') # remove XML datatype
-					type = @model.object(values, RDF['type'])
-					if type == OT['FeatureValue']
-						value = @model.object(values, OT['value']).to_s
-						case value.to_s
-						when TRUE_REGEXP # defined in environment.rb
-							value = true
-						when FALSE_REGEXP # defined in environment.rb
-							value = false
-						else
-							LOGGER.warn compound_uri + " has value '" + value.to_s + "' for feature " + feature_uri
-							value = nil
-						end
-						data[compound_uri] = {} unless data[compound_uri]
-						data[compound_uri][feature_uri] = [] unless data[compound_uri][feature_uri]
-						data[compound_uri][feature_uri] << value unless value.nil?
-					elsif type == OT['Tuple']
-						entry = {}
-						data[compound_uri] = {} unless data[compound_uri]
-						data[compound_uri][feature_uri] = [] unless data[compound_uri][feature_uri]
-						@model.find(values, OT['complexValue'],nil) do |s,p,complex_value|
-							name_node = @model.object complex_value, OT['feature']
-							name = @model.object(name_node, DC['title']).to_s
-							value = @model.object(complex_value, OT['value']).to_s
-							v = value.sub(/\^\^.*$/,'') # remove XML datatype
-							v = v.to_f if v.match(/^[\.|\d]+$/) # guess numeric datatype
-							entry[name] = v
-						end
-						data[compound_uri][feature_uri] << entry
-					end
-				end
-			end
-			data
-		end
 
 		def compounds
 			compounds = []
