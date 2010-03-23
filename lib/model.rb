@@ -2,7 +2,9 @@ module OpenTox
 	module Model
    
 		class Lazar
-			include Owl
+    	include Owl
+      
+      PREDICTION_FEATURE_MODIFIER = "_lazar_prediction"
 
 			# Create a new prediction model from a dataset
 			def initialize
@@ -24,7 +26,7 @@ module OpenTox
 				lazar.algorithm = File.join(@@config[:services]["opentox-algorithm"],"lazar")
 				lazar.trainingDataset = yaml[:activity_dataset]
 				lazar.dependentVariables = yaml[:endpoint]
-				lazar.predictedVariables = yaml[:endpoint] + "_lazar_prediction"
+				lazar.predictedVariables = yaml[:endpoint] + PREDICTION_FEATURE_MODIFIER
 				lazar
 			end
 
@@ -35,7 +37,8 @@ module OpenTox
 			def self.find(uri)
 				yaml = RestClient.get(uri, :accept => "application/x-yaml")
 				OpenTox::Model::Lazar.from_yaml(yaml)
-			end
+  		end
+    
 			
 			# Predict a compound
 			def predict(compound)
@@ -80,7 +83,7 @@ module OpenTox
 
 			def trainingDataset=(trainingDataset)
 				me = @model.subject(RDF['type'],OT[self.owl_class])
-				@model.add me, OT['trainingDataset'], Redland::Uri.new(trainingDataset) # untyped individual comes from this line, why??
+        @model.add me, OT['trainingDataset'], Redland::Uri.new(trainingDataset) # untyped individual comes from this line, why??
 				@model.add Redland::Uri.new(trainingDataset), RDF['type'], OT['Dataset']
 			end
 
@@ -100,7 +103,8 @@ module OpenTox
 				me = @model.subject(RDF['type'],OT[self.owl_class])
 				@model.add me, OT['predictedVariables'], Redland::Uri.new(predictedVariables) # untyped individual comes from this line, why??
 				@model.add Redland::Uri.new(predictedVariables), RDF['type'], OT['Feature']
-			end
+		  end
+    
 		end
 	end
 end

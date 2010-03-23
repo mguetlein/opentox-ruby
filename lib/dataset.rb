@@ -123,6 +123,16 @@ module OpenTox
 							value = true
 						when FALSE_REGEXP # defined in environment.rb
 							value = false
+				  	when /.*\^\^<.*XMLSchema#.*>/
+              case value.to_s
+              when /XMLSchema#string/
+                value = value.to_s[0..(value.to_s.index("^^")-1)]
+              when /XMLSchema#double/
+                value = value.to_s[0..(value.to_s.index("^^")-1)].to_f
+              else
+                LOGGER.warn " ILLEGAL TYPE "+compound_uri + " has value '" + value.to_s + "' for feature " + feature_uri
+                value = nil
+              end
 						else
 							LOGGER.warn compound_uri + " has value '" + value.to_s + "' for feature " + feature_uri
 							value = nil

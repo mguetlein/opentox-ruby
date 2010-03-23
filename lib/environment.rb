@@ -113,8 +113,7 @@ end
 begin
   0 < @@users[:users].keys.length
 rescue
-  puts "Please edit #{user_file} and restart your application. Create at least one user with password."
-  exit
+  raise "Please edit #{user_file} and restart your application. Create at least one user with password."
 end
 
 # RDF namespaces

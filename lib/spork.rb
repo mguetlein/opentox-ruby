@@ -37,6 +37,7 @@ module Spork
   def self.spork(options={})
     logger = options[:logger]
     logger.debug "spork> parent PID = #{Process.pid}" if logger
+    
     child = fork do
       begin
         start = Time.now
@@ -52,6 +53,7 @@ module Spork
         yield
 
       rescue => ex
+        raise ex
         logger.error "spork> Exception in child[#{Process.pid}] - #{ex.class}: #{ex.message}" if logger
       ensure
         logger.info "spork> child[#{Process.pid}] took #{Time.now - start} sec" if logger
