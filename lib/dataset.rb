@@ -1,12 +1,47 @@
+LOGGER.progname = File.expand_path(__FILE__)
+
 module OpenTox
 
 	class Dataset 
-		include Owl
+
+		attr_accessor :uri, :title, :source, :identifier, :data, :features, :compounds
 
 		def initialize 
-			super
+			@data = {}
+			@features = []
+			@compounds = []
 		end
 
+		def self.find(uri)
+			if uri.match(/webservices.in-silico.ch|localhost/) # try to get YAML first
+				YAML.load RestClient.get(uri, :accept => 'application/x-yaml').to_s 
+			else # get default rdf+xml
+				owl = OpenTox::Owl.from_uri(uri)
+				@title = owl.title
+				@source = owl.source
+				@identifier = owl.identifier.sub(/^\[/,'').sub(/\]$/,'')
+				@uri = @identifier
+				@data = owl.data
+				halt 404, "Dataset #{uri} empty!" if @data.empty?
+				@data.each do |compound,features|
+					@compounds << compound
+					features.each do |f,v|
+						@features << f
+					end
+				end
+				@compounds.uniq!
+				@features.uniq!
+			end
+		end
+
+
+		def save
+			@features.uniq!
+			@compounds.uniq!
+      RestClient::Resource.new(@@config[:services]["opentox-dataset"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0]).post(self.to_yaml, :content_type =>  "application/x-yaml").chomp.to_s		
+		end
+
+=begin
 		# create/add to entry from uris or Redland::Resources
 		def add(compound,feature,value)
 			compound = self.find_or_create_compound compound unless compound.class == Redland::Resource
@@ -85,6 +120,7 @@ module OpenTox
       resource = RestClient::Resource.new(@@config[:services]["opentox-dataset"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])		  
 		  uri = resource.post data, :content_type => content_type
 			dataset = Dataset.new
+<<<<<<< HEAD
 			dataset.read uri.to_s
 			dataset
 		end
@@ -96,6 +132,9 @@ module OpenTox
 			#LOGGER.debug data
 			#data = RestClient.get(uri, :accept => 'application/rdf+xml') # unclear why this does not work for complex uris, Dataset.find works from irb
 			dataset.rdf = data
+=======
+			dataset.read uri.chomp.to_s
+>>>>>>> helma/development
 			dataset
 		end
 
@@ -107,6 +146,7 @@ module OpenTox
 			features
 		end
 
+<<<<<<< HEAD
 		def data
 			data = {}
 			@model.subjects(RDF['type'], OT['DataEntry']).each do |data_entry|
@@ -158,6 +198,8 @@ module OpenTox
 			end
 			data
 		end
+=======
+>>>>>>> helma/development
 
 		def compounds
 			compounds = []
@@ -173,35 +215,13 @@ module OpenTox
       resource.delete
     end
 
-		def save
-			LOGGER.debug "Saving dataset"
-			#task_uri = RestClient.post(@@config[:services]["opentox-dataset"], self.rdf, :content_type =>  "application/rdf+xml").to_s
-      task_uri = RestClient::Resource.new(@@config[:services]["opentox-dataset"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0]).post(self.rdf, :content_type =>  "application/rdf+xml").to_s		
-			task = OpenTox::Task.find(task_uri)
-			LOGGER.debug "Waiting for task #{task_uri}"
-			task.wait_for_completion
-			LOGGER.debug "Dataset task #{task_uri} completed"
-			if task.failed?
-				LOGGER.error "Saving dataset failed"
-				task.failed
-				exit
-			end
-			task.resource
+		def to_owl
 		end
 
-		def to_yaml
-			{
-				:uri => self.uri,
-				:opentox_class => self.owl_class,
-				:title => self.title,
-				:source => self.source,
-				:identifier => self.identifier,
-				:compounds => self.compounds.collect{|c| c.to_s.to_s.sub(/^\[(.*)\]$/,'\1')},
-				:features => self.features.collect{|f| f.to_s },
-				:data => self.data
-			}.to_yaml
+		def from_owl
 		end
 
+=end
 	end
 
 end

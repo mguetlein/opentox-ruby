@@ -5,14 +5,14 @@
 
 Gem::Specification.new do |s|
   s.name = %q{opentox-ruby-api-wrapper}
-  s.version = "1.2.7"
+  s.version = "1.4.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Christoph Helma"]
-  s.date = %q{2010-02-09}
+  s.date = %q{2010-03-18}
   s.description = %q{Ruby wrapper for the OpenTox REST API (http://www.opentox.org)}
   s.email = %q{helma@in-silico.ch}
-  s.executables = ["yaml2owl.rb", "opentox-install-debian.sh"]
+  s.executables = ["opentox-install-ubuntu.sh", "opentox-install-debian.sh", "yaml2owl.rb"]
   s.extra_rdoc_files = [
     "LICENSE",
      "README.rdoc"
@@ -23,8 +23,10 @@ Gem::Specification.new do |s|
      "Rakefile",
      "VERSION",
      "bin/opentox-install-debian.sh",
+     "bin/opentox-install-ubuntu.sh",
      "bin/yaml2owl.rb",
      "lib/algorithm.rb",
+     "lib/authorization.rb",
      "lib/compound.rb",
      "lib/config/config_ru.rb",
      "lib/dataset.rb",
@@ -38,7 +40,9 @@ Gem::Specification.new do |s|
      "lib/task.rb",
      "lib/tasks/opentox.rb",
      "lib/templates/config.yaml",
-     "lib/utils.rb"
+     "lib/templates/users.yaml",
+     "lib/utils.rb",
+     "lib/validation.rb"
   ]
   s.homepage = %q{http://github.com/helma/opentox-ruby-api-wrapper}
   s.rdoc_options = ["--charset=UTF-8"]
@@ -56,28 +60,28 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<rack>, [">= 0"])
       s.add_runtime_dependency(%q<rack-contrib>, [">= 0"])
       s.add_runtime_dependency(%q<rack-flash>, [">= 0"])
-      s.add_runtime_dependency(%q<thin>, [">= 0"])
       s.add_runtime_dependency(%q<emk-sinatra-url-for>, [">= 0"])
       s.add_runtime_dependency(%q<cehoffman-sinatra-respond_to>, [">= 0"])
       s.add_runtime_dependency(%q<dm-more>, [">= 0"])
       s.add_runtime_dependency(%q<dm-core>, [">= 0"])
       s.add_runtime_dependency(%q<sinatra-static-assets>, [">= 0"])
-      s.add_development_dependency(%q<cucmber>, [">= 0"])
+      s.add_development_dependency(%q<cucumber>, [">= 0"])
       s.add_development_dependency(%q<jeweler>, [">= 0"])
+      s.add_development_dependency(%q<thin>, [">= 0"])
     else
       s.add_dependency(%q<sinatra>, [">= 0"])
       s.add_dependency(%q<rest-client>, [">= 0"])
       s.add_dependency(%q<rack>, [">= 0"])
       s.add_dependency(%q<rack-contrib>, [">= 0"])
       s.add_dependency(%q<rack-flash>, [">= 0"])
-      s.add_dependency(%q<thin>, [">= 0"])
       s.add_dependency(%q<emk-sinatra-url-for>, [">= 0"])
       s.add_dependency(%q<cehoffman-sinatra-respond_to>, [">= 0"])
       s.add_dependency(%q<dm-more>, [">= 0"])
       s.add_dependency(%q<dm-core>, [">= 0"])
       s.add_dependency(%q<sinatra-static-assets>, [">= 0"])
-      s.add_dependency(%q<cucmber>, [">= 0"])
+      s.add_dependency(%q<cucumber>, [">= 0"])
       s.add_dependency(%q<jeweler>, [">= 0"])
+      s.add_dependency(%q<thin>, [">= 0"])
     end
   else
     s.add_dependency(%q<sinatra>, [">= 0"])
@@ -85,14 +89,14 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<rack>, [">= 0"])
     s.add_dependency(%q<rack-contrib>, [">= 0"])
     s.add_dependency(%q<rack-flash>, [">= 0"])
-    s.add_dependency(%q<thin>, [">= 0"])
     s.add_dependency(%q<emk-sinatra-url-for>, [">= 0"])
     s.add_dependency(%q<cehoffman-sinatra-respond_to>, [">= 0"])
     s.add_dependency(%q<dm-more>, [">= 0"])
     s.add_dependency(%q<dm-core>, [">= 0"])
     s.add_dependency(%q<sinatra-static-assets>, [">= 0"])
-    s.add_dependency(%q<cucmber>, [">= 0"])
+    s.add_dependency(%q<cucumber>, [">= 0"])
     s.add_dependency(%q<jeweler>, [">= 0"])
+    s.add_dependency(%q<thin>, [">= 0"])
   end
 end
 

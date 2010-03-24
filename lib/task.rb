@@ -1,3 +1,5 @@
+LOGGER.progname = File.expand_path(__FILE__)
+
 module OpenTox
 
 	class Task
@@ -5,16 +7,13 @@ module OpenTox
 		attr_accessor :uri
 
 		def initialize(uri)
-			#super()
-			@uri = uri
+			@uri = uri.chomp
 		end
 
 		def self.create
-			#uri = RestClient.post @@config[:services]["opentox-task"], {}
       resource = RestClient::Resource.new(@@config[:services]["opentox-task"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
-			#uri = resource.post(nil)
-			uri = resource.post({})
-			Task.new(uri)
+			uri = resource.post({}).chomp
+			Task.new(uri.chomp)
 		end
 
 		def self.find(uri)
@@ -26,7 +25,7 @@ module OpenTox
 		end
 
 		def self.all
-			task_uris = RestClient.get(@@config[:services]["opentox-task"]).split(/\n/)
+			task_uris = RestClient.get(@@config[:services]["opentox-task"]).chomp.split(/\n/)
 			task_uris.collect{|uri| Task.new(uri)}
 		end
 
@@ -53,7 +52,7 @@ module OpenTox
 		end
 
 		def cancel
-			resource = RestClient::Resource.new(@File.join(@uri,'cancelled'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+			resource = RestClient::Resource.new(File.join(@uri,'cancelled'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
 			resource.put({})
 		end
 
@@ -62,23 +61,8 @@ module OpenTox
 			resource.put :resource => uri
 		end
 
-=begin
-		def started
-			RestClient.put File.join(@uri,'started'), {}
-		end
-
-		def cancel
-			RestClient.put File.join(@uri,'cancelled'), {}
-		end
-
-		def completed(uri)
-			RestClient.put File.join(@uri,'completed'), :resource => uri
-		end
-
-=end
 		def failed
-			#RestClient.put File.join(@uri,'failed'), {}
-			resource = RestClient::Resource.new(@File.join(@uri,'failed'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+			resource = RestClient::Resource.new(File.join(@uri,'failed'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
 			resource.put({})
 		end
 
@@ -102,9 +86,9 @@ module OpenTox
 			self.status.to_s == 'failed'
 		end
 
-		def wait_for_completion
+		def wait_for_completion(dur=0.1)
 			until self.completed? or self.failed?
-				sleep 1
+				sleep dur
 			end
 		end
 

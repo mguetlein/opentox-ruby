@@ -1,51 +1,32 @@
+LOGGER.progname = File.expand_path(__FILE__)
+
 module OpenTox
   module Algorithm 
 
     class Fminer 
-      include Owl
-
-      def initialize
-        super
-        self.uri = File.join(@@config[:services]["opentox-algorithm"],'fminer')
-        self.title = "fminer"
-        self.source = "http://github.com/amaunz/libfminer"
-        self.parameters = {
-          "Dataset URI" => { :scope => "mandatory", :value => "dataset_uri" },
-          "Feature URI for dependent variable" => { :scope => "mandatory", :value => "feature_uri" }
-        }
-      end
 
       def self.create_feature_dataset(params)
 				LOGGER.debug File.basename(__FILE__) + ": creating feature dataset"
         resource = RestClient::Resource.new(params[:feature_generation_uri], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
         resource.post :dataset_uri => params[:dataset_uri], :feature_uri => params[:feature_uri]
       end
+
+			def self.uri
+				File.join(@@config[:services]["opentox-algorithm"], "fminer")
+			end
     end
 
     class Lazar 
-      include Owl
-
-			def initialize
-				super
-				self.uri = File.join(@@config[:services]["opentox-algorithm"],'lazar')
-				self.title = "lazar"
-				self.source = "http://github.com/helma/opentox-algorithm"
-				self.parameters = {
-					"Dataset URI" =>
-						{ :scope => "mandatory", :value => "dataset_uri" },
-					"Feature URI for dependent variable" =>
-						{ :scope => "mandatory", :value => "feature_uri" },
-					"Feature generation URI" =>
-						{ :scope => "mandatory", :value => "feature_generation_uri" }
-				}
-			end
 			
 			def self.create_model(params)
 				LOGGER.debug params
 				LOGGER.debug File.basename(__FILE__) + ": creating model"
-				#@uri = RestClient.post File.join(@@config[:services]["opentox-algorithm"], "lazar"), :dataset_uri => params[:dataset_uri], :feature_uri => params[:feature_uri], :feature_generation_uri => File.join(@@config[:services]["opentox-algorithm"], "fminer")
-        resource = RestClient::Resource.new(File.join(@@config[:services]["opentox-algorithm"], "lazar"), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
-        @uri = resource.post :dataset_uri => params[:dataset_uri], :feature_uri => params[:feature_uri], :feature_generation_uri => File.join(@@config[:services]["opentox-algorithm"], "fminer")
+        resource = RestClient::Resource.new(File.join(@@config[:services]["opentox-algorithm"], "lazar"), :user => @@users[:users].keys[0], :password => @@users[:users].values[0], :content_type => "application/x-yaml")
+        @uri = resource.post(:dataset_uri => params[:dataset_uri], :feature_uri => params[:feature_uri], :feature_generation_uri => File.join(@@config[:services]["opentox-algorithm"], "fminer")).chomp
+			end
+
+			def self.uri
+				File.join(@@config[:services]["opentox-algorithm"], "lazar")
 			end
 
     end
