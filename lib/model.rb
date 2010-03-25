@@ -3,11 +3,16 @@ module OpenTox
 
 		class Generic
 
-			attr_accessor :predicted_variables, :independent_variables, :dependent_variables, :activity_dataset_uri, :feature_dataset_uri, :effects, :activities, :p_values, :fingerprints, :features, :algorithm
+			attr_accessor :uri, :title, :source, :identifier, :predicted_variables, :independent_variables, :dependent_variables, :activity_dataset_uri, :feature_dataset_uri, :effects, :activities, :p_values, :fingerprints, :features, :algorithm
 
 			def self.find(uri)
 				owl = OpenTox::Owl.from_uri(uri)
-				@title = owl.title
+        return self.new(owl)
+      end
+      
+      protected
+      def initialize(owl)
+        @title = owl.title
 				@source = owl.source
 				@identifier = owl.identifier.sub(/^\[/,'').sub(/\]$/,'')
 				@uri = @identifier
@@ -16,8 +21,46 @@ module OpenTox
 				@independent_variables = owl.independentVariables
 				@predicted_variables = owl.predictedVariables
 			end
-			
-		end
+	 end
+  
+  
+   class PredictionModel < Generic
+     
+     def self.build( algorithm_uri, algorithm_params )
+        
+       LOGGER.debug "Build model, algorithm_uri:"+algorithm_uri.to_s+", algorithm_parms: "+algorithm_params.to_s
+       uri = OpenTox::RestClientWrapper.post(algorithm_uri,algorithm_params).to_s
+       uri = OpenTox::Task.find(uri).wait_for_resource.to_s if Utils.task_uri?(uri)
+       return PredictionModel.find(uri)
+     end
+    
+     def predict_dataset( dataset_uri )
+
+       LOGGER.debug "Predict dataset: "+dataset_uri.to_s+" with model "+@uri.to_s
+       
+       #HACK using curl
+       uri = ""
+       IO.popen("curl -X POST -d dataset_uri='"+dataset_uri+"' "+@uri.to_s+" 2> /dev/null") do |f| 
+         while line = f.gets
+           uri += line
+         end
+       end
+       uri = OpenTox::Task.find(uri).wait_for_resource.to_s if Utils.task_uri?(uri)
+       return uri if Utils.dataset_uri?(uri)
+       raise "not sure about prediction result: "+uri.to_s
+     end
+    
+     def classification?
+       #HACK replace with request to ontology server
+       case @title
+       when /lazar classification/
+         return true
+       else
+         raise "unknown model: "+@title.to_s
+       end
+     end
+   end
+  
    
 		class Lazar < Generic
 

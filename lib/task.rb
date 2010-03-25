@@ -90,7 +90,37 @@ module OpenTox
 			until self.completed? or self.failed?
 				sleep dur
 			end
-		end
+	  end
+  
+    def self.as_task
+      task = OpenTox::Task.create
+      LOGGER.debug "Starting task"
+      pid = Spork.spork(:logger => LOGGER) do
+        task.started
+        LOGGER.debug "Task #{task.uri} started #{Time.now}"
+        begin
+          result = yield
+          task.completed(result)
+        rescue => ex
+          raise ex
+          LOGGER.error ex.message
+          task.failed
+        end
+        raise "Invalid task state" unless task.completed? || task.failed?
+      end  
+      LOGGER.debug "task PID: " + pid.to_s
+      task.pid = pid
+      task.uri
+    end  
+  
+    def wait_for_resource
+      wait_for_completion
+      if failed?
+        LOGGER.error "task failed: "+uri.to_s
+        return nil
+      end
+      return resource
+    end
 
 	end
 

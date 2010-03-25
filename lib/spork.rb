@@ -53,7 +53,7 @@ module Spork
         yield
 
       rescue => ex
-        raise ex
+        #raise ex
         logger.error "spork> Exception in child[#{Process.pid}] - #{ex.class}: #{ex.message}" if logger
       ensure
         logger.info "spork> child[#{Process.pid}] took #{Time.now - start} sec" if logger

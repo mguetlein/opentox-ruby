@@ -1,7 +1,7 @@
 LOGGER.progname = File.expand_path(__FILE__)
 
 module OpenTox
-
+  
 	class Dataset 
 
 		attr_accessor :uri, :title, :source, :identifier, :data, :features, :compounds
@@ -13,26 +13,96 @@ module OpenTox
 		end
 
 		def self.find(uri)
-			if uri.match(/webservices.in-silico.ch|localhost/) # try to get YAML first
-				YAML.load RestClient.get(uri, :accept => 'application/x-yaml').to_s 
+    
+			if uri.match(/webservices.in-silico.ch|localhost|ot.dataset.de/) # try to get YAML first
+				d = YAML.load RestClient.get(uri, :accept => 'application/x-yaml').to_s 
 			else # get default rdf+xml
 				owl = OpenTox::Owl.from_uri(uri)
-				@title = owl.title
-				@source = owl.source
-				@identifier = owl.identifier.sub(/^\[/,'').sub(/\]$/,'')
-				@uri = @identifier
-				@data = owl.data
-				halt 404, "Dataset #{uri} empty!" if @data.empty?
-				@data.each do |compound,features|
-					@compounds << compound
+        
+        d = Dataset.new
+				d.title = owl.title
+				d.source = owl.source
+				d.identifier = owl.identifier.sub(/^\[/,'').sub(/\]$/,'')
+				d.uri = d.identifier
+				d.data = owl.data
+				halt 404, "Dataset #{uri} empty!" if d.data.empty?
+				d.data.each do |compound,features|
+					d.compounds << compound
 					features.each do |f,v|
-						@features << f
+						d.features << f
 					end
 				end
-				@compounds.uniq!
-				@features.uniq!
-			end
+				d.compounds.uniq!
+				d.features.uniq!
+		  end
+      return d
 		end
+    
+    # creates a new dataset, using only those compounsd specified in new_compounds
+    # returns uri of new dataset
+    def create_new_dataset( new_compounds, new_title, new_source )
+      
+      dataset = OpenTox::Dataset.new
+      dataset.title = new_title
+      dataset.source = new_source
+      dataset.features = @features
+      dataset.compounds = new_compounds
+      new_compounds.each do |c|
+        dataset.data[c] = @data[c] 
+      end
+      return dataset.save
+    end
+    
+    # returns classification value
+    def get_predicted_class(compound, feature)
+      v = get_value(compound, feature)
+      if v.is_a?(Hash)
+        if v.has_key?(:classification)
+          return v[:classification]
+        else
+          return "no classification key"
+        end
+      else
+        raise "invalid value type"
+      end
+      
+    end
+    
+    # returns prediction confidence if available
+    def get_prediction_confidence(compound, feature)
+      v = get_value(compound, feature)
+      if v.is_a?(Hash)
+        if v.has_key?(:confidence)
+          return v[:confidence].abs
+        else
+          # PENDING: return nil isntead of raising an exception
+          raise "no confidence key"
+        end
+      else
+        raise "invalid value type"
+      end
+    end
+    
+    # return compound-feature value
+    def get_value(compound, feature)
+      v = @data[compound]
+      raise "no values for compound "+compound.to_s if v==nil
+      if v.is_a?(Array)
+        # PENDING: why using an array here?
+        v.each do |e|
+          if e.is_a?(Hash)
+            if e.has_key?(feature)
+              return e[feature]
+            end
+          else
+            raise "invalid internal value type"
+          end
+        end
+        raise "feature value no found: "+feature.to_s
+      else
+        raise "invalid value type"
+      end
+    end
 
 
 		def save
@@ -120,21 +190,7 @@ module OpenTox
       resource = RestClient::Resource.new(@@config[:services]["opentox-dataset"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])		  
 		  uri = resource.post data, :content_type => content_type
 			dataset = Dataset.new
-<<<<<<< HEAD
-			dataset.read uri.to_s
-			dataset
-		end
-
-		def self.find(uri)
-			dataset = Dataset.new
-      LOGGER.debug "Getting data from #{uri}"
-      data = `curl "#{uri}" 2> /dev/null`
-			#LOGGER.debug data
-			#data = RestClient.get(uri, :accept => 'application/rdf+xml') # unclear why this does not work for complex uris, Dataset.find works from irb
-			dataset.rdf = data
-=======
 			dataset.read uri.chomp.to_s
->>>>>>> helma/development
 			dataset
 		end
 
@@ -145,61 +201,6 @@ module OpenTox
 			end
 			features
 		end
-
-<<<<<<< HEAD
-		def data
-			data = {}
-			@model.subjects(RDF['type'], OT['DataEntry']).each do |data_entry|
-				compound_node  = @model.object(data_entry, OT['compound'])
-				compound_uri = @model.object(compound_node, DC['identifier']).to_s
-				@model.find(data_entry, OT['values'], nil) do |s,p,values|
-					feature_node = @model.object values, OT['feature']
-					feature_uri = @model.object(feature_node, DC['identifier']).to_s.sub(/\^\^.*$/,'') # remove XML datatype
-					type = @model.object(values, RDF['type'])
-					if type == OT['FeatureValue']
-						value = @model.object(values, OT['value']).to_s
-						case value.to_s
-						when TRUE_REGEXP # defined in environment.rb
-							value = true
-						when FALSE_REGEXP # defined in environment.rb
-							value = false
-				  	when /.*\^\^<.*XMLSchema#.*>/
-              case value.to_s
-              when /XMLSchema#string/
-                value = value.to_s[0..(value.to_s.index("^^")-1)]
-              when /XMLSchema#double/
-                value = value.to_s[0..(value.to_s.index("^^")-1)].to_f
-              else
-                LOGGER.warn " ILLEGAL TYPE "+compound_uri + " has value '" + value.to_s + "' for feature " + feature_uri
-                value = nil
-              end
-						else
-							LOGGER.warn compound_uri + " has value '" + value.to_s + "' for feature " + feature_uri
-							value = nil
-						end
-						data[compound_uri] = {} unless data[compound_uri]
-						data[compound_uri][feature_uri] = [] unless data[compound_uri][feature_uri]
-						data[compound_uri][feature_uri] << value unless value.nil?
-					elsif type == OT['Tuple']
-						entry = {}
-						data[compound_uri] = {} unless data[compound_uri]
-						data[compound_uri][feature_uri] = [] unless data[compound_uri][feature_uri]
-						@model.find(values, OT['complexValue'],nil) do |s,p,complex_value|
-							name_node = @model.object complex_value, OT['feature']
-							name = @model.object(name_node, DC['title']).to_s
-							value = @model.object(complex_value, OT['value']).to_s
-							v = value.sub(/\^\^.*$/,'') # remove XML datatype
-							v = v.to_f if v.match(/^[\.|\d]+$/) # guess numeric datatype
-							entry[name] = v
-						end
-						data[compound_uri][feature_uri] << entry
-					end
-				end
-			end
-			data
-		end
-=======
->>>>>>> helma/development
 
 		def compounds
 			compounds = []

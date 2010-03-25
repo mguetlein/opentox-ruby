@@ -15,15 +15,18 @@ module OpenTox
 			owl.model.add owl.uri, RDF['type'], OT[owl.ot_class]
 			owl.model.add owl.uri, DC['identifier'], owl.uri
 			owl
-		end
-
+	 end
+  
 		def self.from_uri(uri)
 			owl = OpenTox::Owl.new
 			parser = Redland::Parser.new
 			begin
-				parser.parse_into_model(owl.model,uri)
-			rescue => e
-				raise "Error parsing #{uri}: #{e.message + e.backtrace}"
+        data = RestClient.get(uri,:accept => "application/rdf+xml").to_s
+        parser.parse_string_into_model(owl.model, data, uri)
+				#parser.parse_into_model(owl.model,uri)
+		  rescue => e
+        raise "Error parsing #{uri}: "+e.message
+				#raise "Error parsing #{uri}: #{e.message.to_s + e.backtrace.to_s}"
 			end
 			owl.uri =  Redland::Uri.new(uri.chomp)
 			owl
