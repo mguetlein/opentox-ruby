@@ -15,13 +15,13 @@ module OpenTox
         @title = owl.title
 				@source = owl.source
 				@identifier = owl.identifier.sub(/^\[/,'').sub(/\]$/,'')
-				@uri = @identifier
+				@uri = owl.uri.to_s #@identifier
 				@algorithm = owl.algorithm
 				@dependent_variables = owl.dependentVariables
 				@independent_variables = owl.independentVariables
 				@predicted_variables = owl.predictedVariables
         
-        raise "invalid model: "+self.to_yaml unless @dependent_variables.to_s.size>0 &&  @independent_variables.to_s.size>0 && @predicted_variables.to_s.size>0
+        raise "invalid model:\n"+self.to_yaml+"\n" unless Utils.is_uri?(@uri) && @dependent_variables.to_s.size>0 &&  @independent_variables.to_s.size>0 && @predicted_variables.to_s.size>0
 			end
 	 end
   
@@ -47,18 +47,37 @@ module OpenTox
            uri += line
          end
        end
-       uri = OpenTox::Task.find(uri).wait_for_resource.to_s if Utils.task_uri?(uri)
-       return uri if Utils.dataset_uri?(uri)
-       raise "not sure about prediction result: "+uri.to_s
+         
+       if uri.to_s =~ /ambit.*task/
+         #HACK handle redirect
+         LOGGER.debug "AMBIT TASK "+uri.to_s
+         redirect = ""
+         while (redirect.size == 0)
+           IO.popen("bin/redirect.sh "+uri.to_s) do |f| 
+             while line = f.gets
+               redirect += line.chomp
+             end
+           end
+           sleep 0.3
+         end
+         LOGGER.debug "REDIRECT to: "+redirect.to_s
+         raise "invalid redirect result" unless redirect =~ /ambit.*dataset/
+         return uri
+       else
+         uri = OpenTox::Task.find(uri).wait_for_resource.to_s if Utils.task_uri?(uri)
+         return uri if Utils.dataset_uri?(uri)
+         raise "not sure about prediction result: "+uri.to_s
+       end
      end
     
      def classification?
        #HACK replace with request to ontology server
-       case @title
-       when /lazar classification/
+       if @title =~ /lazar classification/
          return true
+       elsif @uri =~/ntua/ and @title =~ /mlr/
+         return false
        else
-         raise "unknown model: "+@title.to_s
+         raise "unknown model, uri:"+@uri.to_s+" title:"+@title.to_s
        end
      end
    end

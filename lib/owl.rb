@@ -15,29 +15,34 @@ module OpenTox
 			owl.model.add owl.uri, RDF['type'], OT[owl.ot_class]
 			owl.model.add owl.uri, DC['identifier'], owl.uri
 			owl
-	 end
+	  end
   
-		def self.from_uri(uri)
-			owl = OpenTox::Owl.new
-			parser = Redland::Parser.new
-			begin
-        data = RestClient.get(uri,:accept => "application/rdf+xml").to_s
-        parser.parse_string_into_model(owl.model, data, uri)
-				#parser.parse_into_model(owl.model,uri)
-		  rescue => e
-        raise "Error parsing #{uri}: "+e.message
-				#raise "Error parsing #{uri}: #{e.message.to_s + e.backtrace.to_s}"
-			end
-			owl.uri =  Redland::Uri.new(uri.chomp)
-			owl
+    def self.from_data(data,uri)
+      owl = OpenTox::Owl.new
+      parser = Redland::Parser.new
+      begin
+         parser.parse_string_into_model(owl.model, data, uri)
+      rescue => e
+         raise "Error parsing #{uri}: "+e.message
+      end
+      owl.uri =  Redland::Uri.new(uri.chomp)
+      owl
+    end
+  
+	  def self.from_uri(uri)
+     return from_data(RestClient.get(uri,:accept => "application/rdf+xml").to_s, uri) 
 		end
 
 		def rdf
 			@model.to_string
 		end
 
+    #def predictedVariables
+       #
+    #end
+
 		def method_missing(name, *args)
-			methods = ['title', 'source', 'identifier', 'algorithm', 'independentVariables', 'dependentVariables', 'predictedVariables', 'date','trainingDataset' ]
+			methods = ['title', 'source', 'identifier', 'algorithm', 'independentVariables', 'dependentVariables', 'predictedVariables', 'date','trainingDataset', 'hasStatus', "percentageCompleted" ]
 			if methods.include? name.to_s.sub(/=/,'')
 				if /=/ =~ name.to_s # setter
 					name = name.to_s.sub(/=/,'')
@@ -48,6 +53,16 @@ module OpenTox
 					end
 					@model.add @uri, DC[name], args.first
 				else # getter
+          #HACK for reading Panteli's models
+          if @uri.to_s =~ /ntua.*model/ and !["title", "source", "identifier"].include?(name.to_s)
+            me = @model.subject(RDF['type'],OT['Model'])
+            #puts "going for "+name.to_s
+            return @model.object(me, OT[name.to_s]).uri.to_s
+          elsif @uri.to_s =~ /ambit.*task/ and ["hasStatus", "percentageCompleted"].include?(name.to_s)
+            me = @model.subject(RDF['type'],OT['Task'])
+            return @model.object(me, OT[name.to_s]).literal.value.to_s
+          end
+          #raise "stop there "+name.to_s
 					@model.object(@uri, DC[name.to_s]).to_s
 				end
 			else
@@ -145,8 +160,19 @@ module OpenTox
 							value = true
 						when FALSE_REGEXP # defined in environment.rb
 							value = false
+					 when /.*\^\^<.*XMLSchema#.*>/
+              #HACK for reading ambit datasets
+              case value.to_s
+              when /XMLSchema#string/
+                value = value.to_s[0..(value.to_s.index("^^")-1)]
+              when /XMLSchema#double/
+                value = value.to_s[0..(value.to_s.index("^^")-1)].to_f
+              else
+                LOGGER.warn " ILLEGAL TYPE "+compound_uri + " has value '" + value.to_s + "' for feature " + feature_uri
+                value = nil
+              end
 						else
-							LOGGER.warn compound_uri + " has value '" + value.to_s + "' for feature " + feature_uri
+	 						LOGGER.warn compound_uri + " has value '" + value.to_s + "' for feature " + feature_uri
 							value = nil
 						end
 						data[compound_uri] = [] unless data[compound_uri]

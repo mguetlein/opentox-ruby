@@ -29,11 +29,20 @@ module OpenTox
 				d.data.each do |compound,features|
 					d.compounds << compound
 					features.each do |f,v|
-						d.features << f
+						d.features << f.keys[0]
 					end
 				end
 				d.compounds.uniq!
 				d.features.uniq!
+        
+        #PENDING: remove debug checks
+        d.data.each do |c,f|
+          f.each do |ff,v|
+            raise "illegal data: feature is no string "+ff.inspect unless ff.is_a?(Hash)
+          end
+        end
+        raise "illedal dataset data\n"+d.data.inspect+"\n" unless d.data.is_a?(Hash) and d.data.values.is_a?(Array)
+        raise "illegal dataset features:\n"+d.features.inspect+"\n" unless d.features.size>0 and d.features[0].is_a?(String)
 		  end
       return d
 		end
