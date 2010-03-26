@@ -20,6 +20,8 @@ module OpenTox
 				@dependent_variables = owl.dependentVariables
 				@independent_variables = owl.independentVariables
 				@predicted_variables = owl.predictedVariables
+        
+        raise "invalid model: "+self.to_yaml unless @dependent_variables.to_s.size>0 &&  @independent_variables.to_s.size>0 && @predicted_variables.to_s.size>0
 			end
 	 end
   
@@ -28,7 +30,7 @@ module OpenTox
      
      def self.build( algorithm_uri, algorithm_params )
         
-       LOGGER.debug "Build model, algorithm_uri:"+algorithm_uri.to_s+", algorithm_parms: "+algorithm_params.to_s
+       LOGGER.debug "Build model, algorithm_uri:"+algorithm_uri.to_s+", algorithm_parms: "+algorithm_params.inspect.to_s
        uri = OpenTox::RestClientWrapper.post(algorithm_uri,algorithm_params).to_s
        uri = OpenTox::Task.find(uri).wait_for_resource.to_s if Utils.task_uri?(uri)
        return PredictionModel.find(uri)

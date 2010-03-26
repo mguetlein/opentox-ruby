@@ -40,6 +40,14 @@ if @@config[:database]
 	end
 end
 
+class Sinatra::Base
+  # overwriting halt to log halts (!= 202)
+  def halt(status,msg)
+    LOGGER.error "halt "+status.to_s+" "+msg.to_s if (status != 202)
+    throw :halt, [status, msg] 
+  end
+end
+
 # logging
 class MyLogger < Logger
   
@@ -57,7 +65,7 @@ class MyLogger < Logger
     n = 2
     line = lines[n]
     
-    while (line =~ /spork.rb/ or line =~ /as_task/)
+    while (line =~ /spork.rb/ or line =~ /as_task/ or line =~ /environment.rb/)
       #puts "skip line "+line.to_s
       n += 1
       line = lines[n]
