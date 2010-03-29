@@ -133,5 +133,5 @@ DC = Redland::Namespace.new 'http://purl.org/dc/elements/1.1/'
 OT = Redland::Namespace.new 'http://www.opentox.org/api/1.1#'
 
 # Regular expressions for parsing classification data
-TRUE_REGEXP = /^(true|active|1)/
-FALSE_REGEXP = /^(false|inactive|0)/
+TRUE_REGEXP = /^(true|active|$1^)/
+FALSE_REGEXP = /^(false|inactive|$0^)/
