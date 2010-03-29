@@ -54,7 +54,7 @@ module OpenTox
 					@model.add @uri, DC[name], args.first
 				else # getter
           #HACK for reading Panteli's models
-          if @uri.to_s =~ /ntua.*model/ and !["title", "source", "identifier"].include?(name.to_s)
+          if @uri.to_s =~ /ntua.*model|tu-muenchen.*model/ and !["title", "source", "identifier"].include?(name.to_s)
             me = @model.subject(RDF['type'],OT['Model'])
             #puts "going for "+name.to_s
             return @model.object(me, OT[name.to_s]).uri.to_s

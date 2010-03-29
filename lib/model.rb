@@ -21,7 +21,8 @@ module OpenTox
 				@independent_variables = owl.independentVariables
 				@predicted_variables = owl.predictedVariables
         
-        raise "invalid model:\n"+self.to_yaml+"\n" unless Utils.is_uri?(@uri) && @dependent_variables.to_s.size>0 &&  @independent_variables.to_s.size>0 && @predicted_variables.to_s.size>0
+        raise "invalid model:\n"+self.to_yaml+"\n" unless Utils.is_uri?(@uri) && @dependent_variables.to_s.size>0 &&  
+          @independent_variables.to_s.size>0 && @predicted_variables.to_s.size>0 if ENV['RACK_ENV'] =~ /test|debug/
 			end
 	 end
   
@@ -32,8 +33,35 @@ module OpenTox
         
        LOGGER.debug "Build model, algorithm_uri:"+algorithm_uri.to_s+", algorithm_parms: "+algorithm_params.inspect.to_s
        uri = OpenTox::RestClientWrapper.post(algorithm_uri,algorithm_params).to_s
-       uri = OpenTox::Task.find(uri).wait_for_resource.to_s if Utils.task_uri?(uri)
+       
+       if uri.to_s =~ /ambit.*task|tu-muenchen.*task/
+         uri = PredictionModel.redirect_task(uri)
+       elsif Utils.task_uri?(uri)
+        uri = OpenTox::Task.find(uri).wait_for_resource.to_s
+       end
+       raise "invalid build model result: "+uri.to_s unless uri =~ /model/
        return PredictionModel.find(uri)
+     end
+     
+     def self.redirect_task( uri )
+       raise "no redirect task uri: "+uri.to_s unless uri.to_s =~ /ambit.*task|tu-muenchen.*task/
+       
+       while (uri.to_s =~ /ambit.*task|tu-muenchen.*task/) 
+         #HACK handle redirect
+         LOGGER.debug "REDIRECT TASK: "+uri.to_s
+         redirect = ""
+         while (redirect.size == 0)
+           IO.popen("bin/redirect.sh "+uri.to_s) do |f| 
+             while line = f.gets
+               redirect += line.chomp
+             end
+           end
+           sleep 0.3
+         end
+         uri = redirect
+         LOGGER.debug "REDIRECT TO: "+uri.to_s
+       end
+       return uri
      end
     
      def predict_dataset( dataset_uri )
@@ -47,21 +75,10 @@ module OpenTox
            uri += line
          end
        end
-         
-       if uri.to_s =~ /ambit.*task/
-         #HACK handle redirect
-         LOGGER.debug "AMBIT TASK "+uri.to_s
-         redirect = ""
-         while (redirect.size == 0)
-           IO.popen("bin/redirect.sh "+uri.to_s) do |f| 
-             while line = f.gets
-               redirect += line.chomp
-             end
-           end
-           sleep 0.3
-         end
-         LOGGER.debug "REDIRECT to: "+redirect.to_s
-         raise "invalid redirect result" unless redirect =~ /ambit.*dataset/
+
+       if uri.to_s =~ /ambit.*task|tu-muenchen.*task/
+         uri = PredictionModel.redirect_task(uri)
+         raise "invalid redirect result: " unless uri =~ /ambit.*dataset/
          return uri
        else
          uri = OpenTox::Task.find(uri).wait_for_resource.to_s if Utils.task_uri?(uri)
@@ -76,8 +93,10 @@ module OpenTox
          return true
        elsif @uri =~/ntua/ and @title =~ /mlr/
          return false
+       elsif @uri =~/tu-muenchen/ and @title =~ /regression/
+         return false
        else
-         raise "unknown model, uri:"+@uri.to_s+" title:"+@title.to_s
+         raise "unknown model, uri:'"+@uri.to_s+"' title:'"+@title.to_s+"'"
        end
      end
    end
