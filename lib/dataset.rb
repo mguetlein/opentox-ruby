@@ -14,7 +14,7 @@ module OpenTox
 
 		def self.find(uri)
     
-			if uri.match(/webservices.in-silico.ch|localhost|ot.dataset.de/) # try to get YAML first
+			if uri.match(/webservices.in-silico.ch|localhost|ot.dataset.de|opentox.informatik.uni-freiburg.de/) # try to get YAML first
 				d = YAML.load RestClient.get(uri, :accept => 'application/x-yaml').to_s 
 			else # get default rdf+xml
 				owl = OpenTox::Owl.from_uri(uri)
