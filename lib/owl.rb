@@ -160,7 +160,7 @@ module OpenTox
 							value = true
 						when FALSE_REGEXP # defined in environment.rb
 							value = false
-					 when /.*\^\^<.*XMLSchema#.*>/
+				  	when /.*\^\^<.*XMLSchema#.*>/
               #HACK for reading ambit datasets
               case value.to_s
               when /XMLSchema#string/
@@ -174,7 +174,13 @@ module OpenTox
 						else
 	 						LOGGER.warn compound_uri + " has value '" + value.to_s + "' for feature " + feature_uri
 							value = nil
-						end
+					  end
+            LOGGER.debug "converting owl to yaml, #compounds: "+(data.keys.size+1).to_s if (data.keys.size+1)%10==0 && !data.has_key?(compound_uri)
+            #return data if (data.keys.size+1)%2==0 && !data.has_key?(compound_uri)
+            #puts "c "+compound_uri.to_s
+            #puts "f "+feature_uri.to_s
+            #puts "v "+value.to_s
+            #puts ""
 						data[compound_uri] = [] unless data[compound_uri]
 						data[compound_uri] << {feature_uri => value} unless value.nil?
 					elsif type == OT['Tuple']

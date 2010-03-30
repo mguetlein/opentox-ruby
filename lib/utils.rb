@@ -52,7 +52,7 @@ end
       rescue RestClient::RequestFailed, RestClient::RequestTimeout => ex
         do_halt 502,ex.message,uri,payload,headers
       rescue SocketError, RestClient::ResourceNotFound => ex
-        do_halt 400,"X"+ex.message,uri,payload,headers
+        do_halt 400,ex.message,uri,payload,headers
       rescue Exception => ex
         do_halt 500,"add error '"+ex.class.to_s+"'' to rescue in OpenTox::RestClientWrapper::execute(), msg: '"+ex.message.to_s+"'",uri,payload,headers
       end

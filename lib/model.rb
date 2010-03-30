@@ -56,6 +56,7 @@ module OpenTox
                redirect += line.chomp
              end
            end
+           raise "TASK ERROR" if $?!=0
            sleep 0.3
          end
          uri = redirect
@@ -93,7 +94,7 @@ module OpenTox
          return true
        elsif @uri =~/ntua/ and @title =~ /mlr/
          return false
-       elsif @uri =~/tu-muenchen/ and @title =~ /regression/
+       elsif @uri =~/tu-muenchen/ and @title =~ /regression|M5P|GaussP/
          return false
        else
          raise "unknown model, uri:'"+@uri.to_s+"' title:'"+@title.to_s+"'"
