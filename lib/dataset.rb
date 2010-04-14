@@ -24,40 +24,46 @@ module OpenTox
 				d.source = owl.source
 				d.identifier = owl.identifier.sub(/^\[/,'').sub(/\]$/,'')
 				d.uri = d.identifier
-				d.data = owl.data
-				halt 404, "Dataset #{uri} empty!" if d.data.empty?
-				d.data.each do |compound,features|
-					d.compounds << compound
-					features.each do |f,v|
-						d.features << f.keys[0]
-					end
-				end
-				d.compounds.uniq!
-				d.features.uniq!
         
-        #PENDING: remove debug checks
-        d.data.each do |c,f|
-          f.each do |ff,v|
-            raise "illegal data: feature is no string "+ff.inspect unless ff.is_a?(Hash)
-          end
-        end
-        raise "illedal dataset data\n"+d.data.inspect+"\n" unless d.data.is_a?(Hash) and d.data.values.is_a?(Array)
-        raise "illegal dataset features:\n"+d.features.inspect+"\n" unless d.features.size>0 and d.features[0].is_a?(String)
+        # when loading a dataset from owl, only compound- and feature-uris are loaded 
+        owl.load_data_compounds_and_features(d.compounds, d.features)
+				# all features are marked as dirty, loaded dynamically later
+        d.init_dirty_features(owl)
+        
+        d.compounds.uniq!
+        d.features.uniq!
 		  end
       return d
 		end
     
     # creates a new dataset, using only those compounsd specified in new_compounds
     # returns uri of new dataset
-    def create_new_dataset( new_compounds, new_title, new_source )
+    def create_new_dataset( new_compounds, new_features, new_title, new_source )
+      
+      # load require features 
+      if ((defined? @dirty_features) && (@dirty_features - new_features).size > 0)
+        (@dirty_features - new_features).each{|f| load_feature_values(f)}
+      end
       
       dataset = OpenTox::Dataset.new
       dataset.title = new_title
       dataset.source = new_source
-      dataset.features = @features
+      dataset.features = new_features
       dataset.compounds = new_compounds
+      
+      # Ccopy dataset data for compounds and features
+      # PENDING: why storing feature values in an array? 
       new_compounds.each do |c|
-        dataset.data[c] = @data[c] 
+        data_c = []
+        @data[c].each do |d|
+          m = {}
+          new_features.each do |f|
+            m[f] = d[f]
+          end
+          data_c << m 
+        end
+        
+        dataset.data[c] = data_c
       end
       return dataset.save
     end
@@ -94,6 +100,10 @@ module OpenTox
     
     # return compound-feature value
     def get_value(compound, feature)
+      if (defined? @dirty_features) && @dirty_features.include?(feature)
+        load_feature_values(feature)
+      end
+      
       v = @data[compound]
       raise "no values for compound "+compound.to_s if v==nil
       if v.is_a?(Array)
@@ -113,8 +123,25 @@ module OpenTox
       end
     end
 
+    # loads specified feature and removes dirty-flag, loads all features if feature is nil
+    def load_feature_values(feature=nil)
+      if feature
+        raise "feature already loaded" unless @dirty_features.include?(feature)
+        @owl.load_data_compounds_and_features(@compounds, @data, feature)
+        @dirty_features.delete(feature)
+      else
+        @data = {}
+        @owl.load_dataset_feature_values(@compounds, @data)
+        @dirty_features.clear
+      end
+    end
 
 		def save
+      # loads all features before loading  
+      if ((defined? @dirty_features) && @dirty_features.size > 0)
+        load_feature_values()
+      end
+    
 			@features.uniq!
 			@compounds.uniq!
       RestClient::Resource.new(@@config[:services]["opentox-dataset"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0]).post(self.to_yaml, :content_type =>  "application/x-yaml").chomp.to_s		
@@ -232,6 +259,12 @@ module OpenTox
 		end
 
 =end
-	end
+
+    def init_dirty_features(owl)
+      @dirty_features = @features
+      @owl = owl
+    end
+  end
+
 
 end
