@@ -261,7 +261,6 @@ module OpenTox
         end
         count += 1
         LOGGER.debug "loaded "+count.to_s+" feature values" if (count%500 == 0)
-        break if count == 1000
       end
       
       LOGGER.debug "loaded "+count.to_s+" feature values"
