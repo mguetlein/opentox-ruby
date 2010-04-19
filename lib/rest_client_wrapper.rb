@@ -74,36 +74,36 @@ module OpenTox
         payload.each{ |k,v| payload.delete(k) if v==nil } if payload #remove keys with empty values, as this can cause problems
         unless curl_hack
           if payload
-            result = RestClient.send(rest_call, uri, payload, headers)
+            result = RestClient.send(rest_call, uri, payload, headers).to_s
           else  
-            result = RestClient.send(rest_call, uri, headers)
+            result = RestClient.send(rest_call, uri, headers).to_s
           end
         else
-         result = ""
-         cmd = " curl -v -X "+rest_call.upcase+" "+payload.collect{|k,v| "-d "+k.to_s+"='"+v.to_s+"' "}.join("")+" "+uri.to_s
-         LOGGER.debug "CURL HACK: "+cmd
-         IO.popen(cmd+" 2> /dev/null") do |f| 
-           while line = f.gets
-             result += line
-           end
-         end
-         result.chomp!("\n")
-         LOGGER.debug "CURL -> "+result.to_s
-         raise "curl call failed "+result if $?!=0
-         #raise "STOP "+result
-      end
-       
-      if wait_for_task
-        if result.to_s =~ /ambit.*task|tu-muenchen.*task/
-          result = redirect_task(result)
-        elsif Utils.task_uri?(result)
-          task = OpenTox::Task.find(result)
-          task.wait_for_completion
-          raise task.description if task.failed?
-          result = task.resource
+          result = ""
+          cmd = " curl -v -X "+rest_call.upcase+" "+payload.collect{|k,v| "-d "+k.to_s+"='"+v.to_s+"' "}.join("")+" "+uri.to_s
+          LOGGER.debug "CURL HACK: "+cmd
+          IO.popen(cmd+" 2> /dev/null") do |f| 
+            while line = f.gets
+              result += line
+            end
+          end
+          result.chomp!("\n")
+          LOGGER.debug "CURL -> "+result.to_s
+          raise "curl call failed "+result if $?!=0
+          #raise "STOP "+result
         end
-      end
-      return result
+       
+        if wait_for_task
+          if result.to_s =~ /ambit.*task|tu-muenchen.*task/
+            result = redirect_task(result)
+          elsif Utils.task_uri?(result)
+            task = OpenTox::Task.find(result)
+            task.wait_for_completion
+            raise task.description if task.failed?
+            result = task.resource
+          end
+        end
+        return result
         
       rescue RestClient::RequestFailed => ex
         do_halt ex.http_code,ex.http_body,uri,payload,headers
