@@ -8,6 +8,6 @@ rescue LoadError
 	puts "Please install Openbabel with 'rake openbabel:install' in the compound component"
 end
 
-['owl', 'compound','dataset','algorithm','model','task','validation','utils','authorization','features'].each do |lib|
+['owl', 'compound','dataset','algorithm','model','task','validation','utils','authorization','features', 'rest_client_wrapper'].each do |lib|
 	require lib
 end

@@ -35,8 +35,12 @@ module OpenTox
 		 
 		def finished_at
 			RestClient.get File.join(@uri, 'finished_at')
-		end
-		 
+	 end
+  
+    def description
+      RestClient.get File.join(@uri, 'description')
+    end
+    
 		def status
 			RestClient.get File.join(@uri, 'status')
 		end
@@ -61,9 +65,10 @@ module OpenTox
 			resource.put :resource => uri
 		end
 
-		def failed
+		def failed(description)
 			resource = RestClient::Resource.new(File.join(@uri,'failed'), :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
-			resource.put({})
+			resource.put :description => description
+      #resource.put({})
 		end
 
 		def parent=(task)
@@ -92,19 +97,30 @@ module OpenTox
 			end
 	  end
   
-    def self.as_task
+    def self.as_task(parent_task=nil)
+      #return yield
+      
       task = OpenTox::Task.create
+      task.parent = parent_task if parent_task
       LOGGER.debug "Starting task"
       pid = Spork.spork(:logger => LOGGER) do
         task.started
         LOGGER.debug "Task #{task.uri} started #{Time.now}"
         begin
-          result = yield
+          result = catch(:halt) do
+            yield task
+          end
+          if result && result.is_a?(Array) && result.size==2 && result[0]>202
+            # halted while executing task
+            LOGGER.error "task was halted: "+result.inspect
+            task.failed(result[1])
+            throw :halt,result 
+          end
           task.completed(result)
         rescue => ex
-          raise ex
-          LOGGER.error ex.message
-          task.failed
+          #raise ex
+          LOGGER.error "task failed: "+ex.message
+          task.failed(ex.message)
         end
         raise "Invalid task state" unless task.completed? || task.failed?
       end  
@@ -113,15 +129,6 @@ module OpenTox
       task.uri
     end  
   
-    def wait_for_resource
-      wait_for_completion
-      if failed?
-        LOGGER.error "task failed: "+uri.to_s
-        return nil
-      end
-      return resource
-    end
-
 	end
 
 end

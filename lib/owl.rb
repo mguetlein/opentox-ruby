@@ -62,16 +62,25 @@ module OpenTox
 					@model.add @uri, DC[name], args.first
 				else # getter
           #HACK for reading Panteli's models
-          if @uri.to_s =~ /ntua.*model|tu-muenchen.*model/ and !["title", "source", "identifier"].include?(name.to_s)
-            me = @model.subject(RDF['type'],OT['Model'])
-            #puts "going for "+name.to_s
-            return @model.object(me, OT[name.to_s]).uri.to_s
+          if @uri.to_s =~ /194.141.0.136.*model|ambit2.*model|ntua.*model|tu-muenchen.*model/ and !["title", "source", "identifier"].include?(name.to_s)
+            begin
+              me = @model.subject(RDF['type'],OT['Model'])
+              return @model.object(me, OT[name.to_s]).uri.to_s
+            rescue
+              LOGGER.warn "cannot get "+name.to_s+" from model"
+              return nil
+            end
           elsif @uri.to_s =~ /ambit.*task/ and ["hasStatus", "percentageCompleted"].include?(name.to_s)
             me = @model.subject(RDF['type'],OT['Task'])
             return @model.object(me, OT[name.to_s]).literal.value.to_s
           end
           #raise "stop there "+name.to_s
-					@model.object(@uri, DC[name.to_s]).to_s
+					val = @model.object(@uri, DC[name.to_s])
+          if val.is_a?(Redland::Literal)
+            return val.value
+          else
+            return val.to_s
+          end
 				end
 			else
 				raise "Method '#{name.to_s}' not found."
