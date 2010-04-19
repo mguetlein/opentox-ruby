@@ -26,13 +26,14 @@ module OpenTox
 				d.uri = d.identifier
         
         # when loading a dataset from owl, only compound- and feature-uris are loaded 
-        owl.load_data_compounds_and_features(d.compounds, d.features)
+        owl.load_dataset(d.compounds, d.features)
 				# all features are marked as dirty, loaded dynamically later
         d.init_dirty_features(owl)
         
         d.compounds.uniq!
         d.features.uniq!
 		  end
+      d.uri = uri unless d.uri
       return d
 		end
     
@@ -78,7 +79,12 @@ module OpenTox
           return "no classification key"
         end
       else
-        raise "invalid value type"
+        raise "predicted class value is not a hash\n"+
+          "value "+v.to_s+"\n"+
+          "value-class "+v.class.to_s+"\n"+
+          "dataset "+@uri.to_s+"\n"+
+          "compound "+compound.to_s+"\n"+
+          "feature "+feature.to_s+"\n"
       end
       
     end
@@ -94,7 +100,12 @@ module OpenTox
           raise "no confidence key"
         end
       else
-        raise "invalid value type"
+        raise "prediction confidence value is not a hash value\n"+
+          "value "+v.to_s+"\n"+
+          "value-class "+v.class.to_s+"\n"+
+          "dataset "+@uri.to_s+"\n"+
+          "compound "+compound.to_s+"\n"+
+          "feature "+feature.to_s+"\n"
       end
     end
     
@@ -119,7 +130,12 @@ module OpenTox
         end
         raise "feature value no found: "+feature.to_s
       else
-        raise "invalid value type"
+        raise "value is not an array\n"+
+              "value "+v.to_s+"\n"+
+              "value-class "+v.class.to_s+"\n"+
+              "dataset "+@uri.to_s+"\n"+
+              "compound "+compound.to_s+"\n"+
+              "feature "+feature.to_s+"\n"
       end
     end
 
@@ -127,7 +143,7 @@ module OpenTox
     def load_feature_values(feature=nil)
       if feature
         raise "feature already loaded" unless @dirty_features.include?(feature)
-        @owl.load_data_compounds_and_features(@compounds, @data, feature)
+        @owl.load_dataset_feature_values(@compounds, @data, feature)
         @dirty_features.delete(feature)
       else
         @data = {}

@@ -21,8 +21,10 @@ module OpenTox
 				@independent_variables = owl.independentVariables
 				@predicted_variables = owl.predictedVariables
         
-        raise "invalid model:\n"+self.to_yaml+"\n" unless Utils.is_uri?(@uri) && @dependent_variables.to_s.size>0 &&  
-          @independent_variables.to_s.size>0 && @predicted_variables.to_s.size>0 if ENV['RACK_ENV'] =~ /test|debug/
+        raise "invalid model:\n"+self.to_yaml+"\n" unless Utils.is_uri?(@uri) && 
+          #@dependent_variables.to_s.size>0 &&  
+          #@independent_variables.to_s.size>0 && 
+          @predicted_variables.to_s.size>0 if ENV['RACK_ENV'] =~ /test|debug/
 			end
 	 end
   
@@ -31,61 +33,24 @@ module OpenTox
      
      def self.build( algorithm_uri, algorithm_params )
         
+       if algorithm_uri =~ /ambit2/
+         LOGGER.warn "Ambit hack, replacing 'prediction_feature' with 'target'"
+         algorithm_params[:target] = algorithm_params[:prediction_feature]
+         algorithm_params.delete(:prediction_feature)
+       end
+       
        LOGGER.debug "Build model, algorithm_uri:"+algorithm_uri.to_s+", algorithm_parms: "+algorithm_params.inspect.to_s
-       uri = OpenTox::RestClientWrapper.post(algorithm_uri,algorithm_params).to_s
-       
-       if uri.to_s =~ /ambit.*task|tu-muenchen.*task/
-         uri = PredictionModel.redirect_task(uri)
-       elsif Utils.task_uri?(uri)
-        uri = OpenTox::Task.find(uri).wait_for_resource.to_s
-       end
-       raise "invalid build model result: "+uri.to_s unless uri =~ /model/
+       uri = OpenTox::RestClientWrapper.post(algorithm_uri,algorithm_params, nil, true).to_s
+       raise "Invalid build model result: "+uri.to_s unless uri =~ /model/
        return PredictionModel.find(uri)
-     end
-     
-     def self.redirect_task( uri )
-       raise "no redirect task uri: "+uri.to_s unless uri.to_s =~ /ambit.*task|tu-muenchen.*task/
-       
-       while (uri.to_s =~ /ambit.*task|tu-muenchen.*task/) 
-         #HACK handle redirect
-         LOGGER.debug "REDIRECT TASK: "+uri.to_s
-         redirect = ""
-         while (redirect.size == 0)
-           IO.popen("bin/redirect.sh "+uri.to_s) do |f| 
-             while line = f.gets
-               redirect += line.chomp
-             end
-           end
-           raise "TASK ERROR" if $?!=0
-           sleep 0.3
-         end
-         uri = redirect
-         LOGGER.debug "REDIRECT TO: "+uri.to_s
-       end
-       return uri
      end
     
      def predict_dataset( dataset_uri )
 
        LOGGER.debug "Predict dataset: "+dataset_uri.to_s+" with model "+@uri.to_s
-       
-       #HACK using curl
-       uri = ""
-       IO.popen("curl -X POST -d dataset_uri='"+dataset_uri+"' "+@uri.to_s+" 2> /dev/null") do |f| 
-         while line = f.gets
-           uri += line
-         end
-       end
-
-       if uri.to_s =~ /ambit.*task|tu-muenchen.*task/
-         uri = PredictionModel.redirect_task(uri)
-         raise "invalid redirect result: " unless uri =~ /ambit.*dataset/
-         return uri
-       else
-         uri = OpenTox::Task.find(uri).wait_for_resource.to_s if Utils.task_uri?(uri)
-         return uri if Utils.dataset_uri?(uri)
-         raise "not sure about prediction result: "+uri.to_s
-       end
+       uri = RestClientWrapper.post(@uri, {:dataset_uri=>dataset_uri}, nil, true)
+       raise "Prediciton result no dataset uri: "+uri.to_s unless Utils.dataset_uri?(uri)
+       uri
      end
     
      def classification?
@@ -95,6 +60,8 @@ module OpenTox
        elsif @uri =~/ntua/ and @title =~ /mlr/
          return false
        elsif @uri =~/tu-muenchen/ and @title =~ /regression|M5P|GaussP/
+         return false
+       elsif @uri =~/ambit2/ and @title =~ /pKa/
          return false
        else
          raise "unknown model, uri:'"+@uri.to_s+"' title:'"+@title.to_s+"'"
