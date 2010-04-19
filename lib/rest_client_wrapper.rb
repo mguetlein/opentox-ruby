@@ -143,11 +143,15 @@ module OpenTox
       
       # return error (by halting, halts should be logged)
       # PENDING always return yaml for now
-      if defined?(halt)
-        halt(502,error.to_yaml)
-      elsif defined?($sinatra)
-        $sinatra.halt(502,error.to_yaml)
-      else
+      begin
+        if defined?(halt)
+          halt(502,error.to_yaml)
+        elsif defined?($sinatra)
+          $sinatra.halt(502,error.to_yaml)
+        else
+          raise ""
+        end
+      rescue
         raise error.to_yaml
       end
     end
