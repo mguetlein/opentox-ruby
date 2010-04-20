@@ -44,7 +44,7 @@ module OpenTox
              redirect += line.chomp
            end
          end
-         raise "TASK ERROR" if $?!=0
+         raise redirect!=nil && redirect.size>0 ? redirect : "TASK ERROR" if $?!=0
          sleep 0.3
        end
        uri = redirect
