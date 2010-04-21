@@ -82,7 +82,7 @@ module OpenTox
       begin
         unless curl_hack
           
-          LOGGER.debug "RestCall: "+rest_call.to_s+" "+uri.to_s+" "+headers.inspect
+          #LOGGER.debug "RestCall: "+rest_call.to_s+" "+uri.to_s+" "+headers.inspect
           resource = RestClient::Resource.new(uri, :timeout => 60)
           if payload
             result = resource.send(rest_call, payload, headers).to_s
