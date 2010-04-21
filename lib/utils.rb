@@ -13,6 +13,11 @@ module OpenTox
     def self.dataset_uri?(uri)
      is_uri?(uri) && uri.to_s =~ /dataset/
     end
+   
+    def self.model_uri?(uri)
+     is_uri?(uri) && uri.to_s =~ /model/
+    end
+
   
     def self.is_uri?(uri)
       begin

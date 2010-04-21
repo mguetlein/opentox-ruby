@@ -98,7 +98,7 @@ module OpenTox
 	  end
   
     def self.as_task(parent_task=nil)
-      #return yield
+      #return yield nil
       
       task = OpenTox::Task.create
       task.parent = parent_task if parent_task

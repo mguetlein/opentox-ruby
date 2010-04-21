@@ -40,16 +40,16 @@ module OpenTox
        end
        
        LOGGER.debug "Build model, algorithm_uri:"+algorithm_uri.to_s+", algorithm_parms: "+algorithm_params.inspect.to_s
-       uri = OpenTox::RestClientWrapper.post(algorithm_uri,algorithm_params, nil, true).to_s
-       raise "Invalid build model result: "+uri.to_s unless uri =~ /model/
+       uri = OpenTox::RestClientWrapper.post(algorithm_uri,algorithm_params).to_s
+       RestClientWrapper.illegal_result("Invalid build model result: "+uri.to_s, algorithm_uri, algorithm_params ) unless Utils.model_uri?(uri)
        return PredictionModel.find(uri)
      end
     
      def predict_dataset( dataset_uri )
 
        LOGGER.debug "Predict dataset: "+dataset_uri.to_s+" with model "+@uri.to_s
-       uri = RestClientWrapper.post(@uri, {:dataset_uri=>dataset_uri}, nil, true)
-       raise "Prediciton result no dataset uri: "+uri.to_s unless Utils.dataset_uri?(uri)
+       uri = RestClientWrapper.post(@uri, {:dataset_uri=>dataset_uri})
+       RestClientWrapper.illegal_result("Prediciton result no dataset uri: "+uri.to_s, @uri, {:dataset_uri=>dataset_uri} ) unless Utils.dataset_uri?(uri)
        uri
      end
     

@@ -16,7 +16,7 @@ module OpenTox
     def self.parse(error_array_string)
       begin
         err = YAML.load(error_array_string)
-        if err.is_a?(Array) and err.size>0 and err[0].is_a?(Error)
+        if err and err.is_a?(Array) and err.size>0 and err[0].is_a?(Error)
           return err
         else
           return nil
@@ -27,7 +27,7 @@ module OpenTox
     end
     
   end
-
+  
   module RestClientWrapper
     
     # PENDING: remove as soon as redirect tasks are remove from partner webservices
@@ -53,30 +53,45 @@ module OpenTox
      return uri
     end
      
-    def self.get(uri, headers=nil, wait_for_task=false, curl_hack=false)
-      execute( "get", uri, nil, headers, wait_for_task, curl_hack )
+    def self.get(uri, headers=nil, curl_hack=false)
+      execute( "get", uri, headers, nil, curl_hack )
     end
     
-    def self.post(uri, payload=nil, headers=nil, wait_for_task=false, curl_hack=false)
-      execute( "post", uri, payload, headers, wait_for_task, curl_hack )
+    def self.post(uri, headers, payload=nil, curl_hack=false)
+      raise "payload and headers switched" if payload.is_a?(Hash) and headers==nil
+      raise "illegal headers" unless headers==nil || headers.is_a?(Hash)
+      execute( "post", uri, headers, payload, curl_hack )
     end
 
-    def self.delete(uri, headers=nil, wait_for_task=false, curl_hack=false)
-      execute( "delete", uri, nil, headers, wait_for_task, curl_hack )
+    def self.delete(uri, headers=nil, curl_hack=false)
+      execute( "delete", uri, headers, nil, curl_hack )
     end
 
+    def self.illegal_result(error_msg, uri, headers, payload=nil)
+      do_halt( "-", error_msg, uri, headers, payload )         
+    end
+    
     private
-    def self.execute( rest_call, uri, payload, headers, wait_for_task=false, curl_hack=false )
+    def self.execute( rest_call, uri, headers, payload=nil, curl_hack=false )
+
+      do_halt 400,"uri is null",uri,headers,payload unless uri
+      do_halt 400,"not an uri",uri,headers,payload unless Utils.is_uri?(uri)
+      do_halt 400,"headers are no hash",uri,headers,payload unless headers==nil or headers.is_a?(Hash)
+      headers.each{ |k,v| headers.delete(k) if v==nil } if headers #remove keys with empty values, as this can cause problems
       
-      do_halt 400,"uri is null",uri,payload,headers unless uri
       begin
-        
-        payload.each{ |k,v| payload.delete(k) if v==nil } if payload #remove keys with empty values, as this can cause problems
         unless curl_hack
+          
+          LOGGER.debug "RestCall: "+rest_call.to_s+" "+uri.to_s+" "+headers.inspect
+          resource = RestClient::Resource.new(uri, :timeout => 60)
           if payload
-            result = RestClient.send(rest_call, uri, payload, headers).to_s
-          else  
-            result = RestClient.send(rest_call, uri, headers).to_s
+            result = resource.send(rest_call, payload, headers).to_s
+            #result = RestClient.send(rest_call, uri, payload, headers).to_s
+          elsif headers
+            #result = RestClient.send(rest_call, uri, headers).to_s
+            result = resource.send(rest_call, headers).to_s
+          else
+            result = resource.send(rest_call).to_s
           end
         else
           result = ""
@@ -93,23 +108,22 @@ module OpenTox
           #raise "STOP "+result
         end
        
-        if wait_for_task
-          if result.to_s =~ /ambit.*task|tu-muenchen.*task/
-            result = redirect_task(result)
-          elsif Utils.task_uri?(result)
-            task = OpenTox::Task.find(result)
-            task.wait_for_completion
-            raise task.description if task.failed?
-            result = task.resource
-          end
+        if result.to_s =~ /ambit.*task|tu-muenchen.*task/
+          result = redirect_task(result)
+        elsif Utils.task_uri?(result)
+          task = OpenTox::Task.find(result)
+          task.wait_for_completion
+          raise task.description if task.failed?
+          result = task.resource
         end
         return result
         
       rescue RestClient::RequestFailed => ex
-        do_halt ex.http_code,ex.http_body,uri,payload,headers
+        do_halt ex.http_code,ex.http_body,uri,headers,payload
       rescue RestClient::RequestTimeout => ex
-        do_halt 408,ex.message,uri,payload,headers
+        do_halt 408,ex.message,uri,headers,payload
       rescue => ex
+        #raise ex
         begin
           code = ex.http_code
           msg = ex.http_body
@@ -117,11 +131,11 @@ module OpenTox
           code = 500
           msg = ex.to_s
         end
-        do_halt code,msg,uri,payload,headers
+        do_halt code,msg,uri,headers,payload
       end
     end
     
-    def self.do_halt( code, body, uri, payload, headers )
+    def self.do_halt( code, body, uri, headers, payload=nil )
       
       #build error
       causing_errors = Error.parse(body)
@@ -132,14 +146,14 @@ module OpenTox
       end
 
 #     debug utility: write error to file       
-#      error_dir = "/tmp/ot_errors"
-#      FileUtils.mkdir(error_dir) unless File.exist?(error_dir)
-#      raise "could not create error dir" unless File.exist?(error_dir) and File.directory?(error_dir)
-#      file_name = "error"
-#      time=Time.now.strftime("%m.%d.%Y-%H:%M:%S")
-#      count = 1
-#      count+=1 while File.exist?(File.join(error_dir,file_name+"_"+time+"_"+count.to_s))
-#      File.new(File.join(error_dir,file_name+"_"+time+"_"+count.to_s),"w").puts(body)
+      #error_dir = "/tmp/ot_errors"
+      #FileUtils.mkdir(error_dir) unless File.exist?(error_dir)
+      #raise "could not create error dir" unless File.exist?(error_dir) and File.directory?(error_dir)
+      #file_name = "error"
+      #time=Time.now.strftime("%m.%d.%Y-%H:%M:%S")
+      #count = 1
+      #count+=1 while File.exist?(File.join(error_dir,file_name+"_"+time+"_"+count.to_s))
+      #File.new(File.join(error_dir,file_name+"_"+time+"_"+count.to_s),"w").puts(body)
       
       # return error (by halting, halts should be logged)
       # PENDING always return yaml for now

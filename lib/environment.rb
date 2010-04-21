@@ -60,29 +60,21 @@ class MyLogger < Logger
   
   def trace()
     lines = caller(0)
-#    puts lines.join("\n")
-#    puts "-"
     n = 2
     line = lines[n]
     
     while (line =~ /spork.rb/ or line =~ /as_task/ or line =~ /environment.rb/)
-      #puts "skip line "+line.to_s
       n += 1
       line = lines[n]
     end
   
-#    puts line
-#    puts "-"
     index = line.rindex(/\/.*\.rb/)
-#    raise "index = nil" if index==nil
     return line if index==nil
-#    puts "<<< "+line[index..-1].size.to_s+" <<< "+line[index..-1]
-#    raise "stop"
     line[index..-1]
   end
   
   def format(msg)
-    pwd.ljust(18)+" :: "+msg.to_s+"           :: "+trace
+    pwd.ljust(18)+" :: "+msg.to_s+"           :: "+trace+" :: "+ENV['REMOTE_ADDR'].to_s
   end
   
   def debug(msg)
