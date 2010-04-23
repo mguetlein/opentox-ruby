@@ -4,7 +4,7 @@ module OpenTox
   
 	class Dataset 
 
-		attr_accessor :uri, :title, :source, :identifier, :data, :features, :compounds
+		attr_accessor :uri, :title, :creator, :data, :features, :compounds
 
 		def initialize 
 			@data = {}
@@ -15,15 +15,15 @@ module OpenTox
 		def self.find(uri)
     
 			if uri.match(/webservices.in-silico.ch|localhost|ot.dataset.de|opentox.informatik.uni-freiburg.de/) # try to get YAML first
-				d = YAML.load RestClientWrapper.get(uri, :accept => 'application/x-yaml').to_s 
+				d = YAML.load RestClientWrapper.get(uri.to_s.strip, :accept => 'application/x-yaml').to_s 
+        d.uri = uri unless d.uri
 			else # get default rdf+xml
-				owl = OpenTox::Owl.from_uri(uri)
+				owl = OpenTox::Owl.from_uri(uri.to_s.strip, "Dataset")
         
         d = Dataset.new
-				d.title = owl.title
-				d.source = owl.source
-				d.identifier = owl.identifier.sub(/^\[/,'').sub(/\]$/,'')
-				d.uri = d.identifier
+				d.title = owl.get("title")
+				d.creator = owl.get("creator")
+				d.uri = owl.uri
         
         # when loading a dataset from owl, only compound- and feature-uris are loaded 
         owl.load_dataset(d.compounds, d.features)
@@ -33,13 +33,12 @@ module OpenTox
         d.compounds.uniq!
         d.features.uniq!
 		  end
-      d.uri = uri unless d.uri
       return d
 		end
     
     # creates a new dataset, using only those compounsd specified in new_compounds
     # returns uri of new dataset
-    def create_new_dataset( new_compounds, new_features, new_title, new_source )
+    def create_new_dataset( new_compounds, new_features, new_title, new_creator )
       
       # load require features 
       if ((defined? @dirty_features) && (@dirty_features - new_features).size > 0)
@@ -48,7 +47,7 @@ module OpenTox
       
       dataset = OpenTox::Dataset.new
       dataset.title = new_title
-      dataset.source = new_source
+      dataset.creator = new_creator
       dataset.features = new_features
       dataset.compounds = new_compounds
       

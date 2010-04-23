@@ -19,24 +19,24 @@ module OpenTox
    
     # ot_class is the class of the object, e.g. "Model","Dataset", ...
     # root_node is the root-object node in the rdf
-    # identifier is the uri of the object
-		attr_accessor :ot_class, :root_node, :identifier, :model
+    # uri the uri of the object
+		attr_accessor :ot_class, :root_node, :uri, :model
 
 		def initialize
 			@model = Redland::Model.new Redland::MemoryStore.new
 		end
 
 		def self.create( ot_class, uri )
+    
 			owl = OpenTox::Owl.new
       owl.ot_class = ot_class
-      owl.root_node = Redland::Resource.new(uri.chomp+"XYZ")
-      owl.identifier = uri.chomp
-			owl.set("type",owl.ot_class)
-      owl.set('identifier', owl.identifier, "xsd:anyURI")
+      owl.root_node = Redland::Resource.new(uri.to_s.strip)
+			owl.set("type",owl.node(owl.ot_class))
 			owl
 	  end
   
-    def self.from_data(data,base_uri)
+    # loads owl from data
+    def self.from_data(data, base_uri, ot_class, no_wrong_class_exception=false )
       
       owl = OpenTox::Owl.new
       parser = Redland::Parser.new
@@ -44,50 +44,56 @@ module OpenTox
       begin
         parser.parse_string_into_model(owl.model, data, base_uri)
         
-        # getting object-(root)-node and identifier via identifier property
-        # PENDING easier solution?
-        owl.identifier = nil
-        owl.model.find(nil, owl.node('identifier'), nil) do |s,p,o|
-          #LOGGER.debug "ID Statements "+s.to_s+" . "+p.to_s+" -> "+o.to_s
-          root_id = true  
+        # now loading root_node and uri
+        owl.model.find(nil, owl.node("type"), owl.node(ot_class)) do |s,p,o|
+          #LOGGER.debug "about statements "+s.to_s+" . "+p.to_s+" -> "+o.to_s
+          is_root = true  
           owl.model.find(nil, nil, s) do |ss,pp,oo|
-            root_id = false
+            is_root = false
             break
           end
-          if root_id
-            if o.is_a?(Redland::Literal)
-              raise "cannot derieve object uri from rdf, more than one identifier" if owl.identifier
-              owl.root_node = s
-              owl.identifier = o.value
-            else
-              raise "illegal identifier, not a literal: "+o.to_s  
-            end
+          if is_root
+            raise "cannot derieve root object from rdf, more than one object specified" if owl.uri
+            raise "illegal root node type, no uri specified\n"+data.to_s if s.blank?
+            owl.uri = s.uri.to_s
+            owl.root_node = s
           end
         end
-        raise "Illegal RDF: root identifier missing" unless owl.identifier
-        owl.ot_class = owl.get("type")
-        LOGGER.debug "RDF loaded, uri/identifier:"+owl.identifier+", ot-class: "+owl.ot_class.to_s+", root-node:"+owl.root_node.to_s
+        
+        # handle error if no root node was found
+        unless owl.root_node
+          types = []
+          owl.model.find(nil, owl.node("type"), nil){ |s,p,o| types << o.to_s }
+          msg = "root node for class '"+ot_class+"' not found (available type nodes: "+types.inspect+")"
+          if no_wrong_class_exception
+            LOGGER.debug "suppressing error: "+msg
+            return nil
+          else
+            raise msg
+          end
+        end
+        
+        raise "no uri in rdf: '"+owl.uri+"'" unless owl.uri and Utils.is_uri?(owl.uri) 
+        owl.ot_class = ot_class
         owl
       rescue => e
         RestClientWrapper.raise_uri_error(e.message, base_uri)
       end
     end
   
-	  def self.from_uri(uri)
-     return from_data(RestClient.get(uri,:accept => "application/rdf+xml").to_s, uri) 
+	  def self.from_uri(uri, ot_class)
+     return from_data(RestClient.get(uri,:accept => "application/rdf+xml").to_s, uri, ot_class) 
 		end
 
 		def rdf
 			@model.to_string
 	  end
   
-    def uri
-      @identifier
-    end
-    
     def get(name)
+      #PENDING remove debug checks
+      raise "get identifier deprecated, use uri instead" if name=="identifier"
+      raise "uri is no prop, use owl.uri instead" if name=="uri"
       property_node = node(name.to_s)
-      raise "Method '#{name.to_s}' not found." unless property_node
       val = @model.object(@root_node, property_node)
       return nil unless val
       if val.is_a?(Redland::Literal)
@@ -98,20 +104,22 @@ module OpenTox
     end
     
     def set(name, value, datatype=nil)
+      #PENDING remove debug checks
+      raise "set identifier deprecated, use uri instead" if name=="identifier"
+      raise "uri is no prop, cannot set uri" if name=="uri"
       property_node = node(name.to_s)
-      raise "Method '#{name.to_s}' not found." unless property_node
-        begin # delete existing entry
-          t = @model.object(@root_node, property_node)
-          @model.delete @root_node, property_node, t
-        rescue
+      begin # delete existing entry
+        t = @model.object(@root_node, property_node)
+        @model.delete @root_node, property_node, t
+      rescue
       end
-      if value.first.is_a?(Redland::Node)
+      if value.is_a?(Redland::Node)
         raise "not nil datatype not allowed when setting redland node as value" if datatype
         @model.add @root_node, property_node, value
       elsif datatype
-        @model.add @root_node, property_node, Redland::Literal.create(value, datatype)
+        @model.add @root_node, property_node, Redland::Literal.create(value.to_s, datatype)
       else
-        @model.add @root_node, property_node, value
+        @model.add @root_node, property_node, value.to_s
       end
     end
 
@@ -122,7 +130,8 @@ module OpenTox
 				@model.add parameter, node('title'), name
 				@model.add parameter, node('paramScope'), settings[:scope]
 				@model.add parameter, node('paramValue'),  settings[:value]
-			end
+        @model.add @root_node, node('parameters'), parameter
+		  end
 		end
 
 		def add_data_entries(compound_uri,features)
@@ -246,7 +255,7 @@ module OpenTox
       
       # search for all feature_value_node with property 'ot_feature'
       # feature_node is either nil, i.e. a wildcard or specified      
-      @model.find(nil, ot_feature, feature_node) do |feature_value_node,p,o|
+      @model.find(nil, node('feature'), feature_node) do |feature_value_node,p,o|
     
         # get compound_uri by "backtracking" to values node (property is 'values'), then get compound_node via 'compound'
         value_nodes = @model.subjects(node('values'),feature_value_node)
@@ -294,6 +303,7 @@ module OpenTox
   end
   
   @@property_nodes = { "type" => RDF["type"], 
+    "about" => RDF["about"],
     "title" => DC["title"], 
     "creator" => DC["creator"],
     "uri" => DC["identifier"],

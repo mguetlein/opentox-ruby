@@ -9,7 +9,7 @@ module OpenTox
 
     private
     def initialize(uri)
-      @uri = uri
+      @uri = uri.to_s.strip
     end
     
     public
@@ -24,37 +24,43 @@ module OpenTox
       return task
     end
     
-    def self.from_data(data, content_type, base_uri)
-      begin
-        task = Task.new(nil)
-        task.reload_from_data(data, content_type, base_uri)
-        return task
-      rescue
+    # test_if_task = true -> error suppressed if data is no task, nil is returned
+    def self.from_data(data, content_type, base_uri, test_if_task)
+      task = Task.new(nil)
+      task.reload_from_data(data, content_type, base_uri, test_if_task)
+      if test_if_task and (!task.uri or task.uri.strip.size==0)
         return nil
+      else
+        return task
       end
     end
     
     def reload
       result = RestClientWrapper.get(uri)
-      reload_from_data(result, result.content_type)
+      reload_from_data(result, result.content_type, uri, false)
     end
     
-    def reload_from_data( data=nil, content_type=nil, base_uri=nil )
+    # test_if_task = true -> error suppressed if data is no task, empty task is returned
+    def reload_from_data( data, content_type, base_uri, test_if_task )
       case content_type
       when /text\/x-yaml/
         task =  YAML.load data
-        raise "yaml data is no task" if task.is_a?(Task)
-        TASK_ATTRIBS.each{ |a| send("#{a.to_s}=".to_sym,task[a]) }
+        if task.is_a?(Task)
+          TASK_ATTRIBS.each{ |a| send("#{a.to_s}=".to_sym,task[a]) }
+        else
+          raise "yaml data is no task: "+task.class.to_s unless test_if_task
+        end
       when /application\/rdf\+xml/
-        base_uri = uri unless base_uri
-        owl = OpenTox::Owl.from_data(data,base_uri)
-        raise "not a task" if owl.ot_class=="Task"
-        TASK_ATTRIBS.each{|a| self.send("#{a.to_s}=".to_sym, owl.get(a.to_s))} 
+        owl = OpenTox::Owl.from_data(data,base_uri,"Task",test_if_task)
+        if owl
+          self.uri = owl.uri
+          (TASK_ATTRIBS-[:uri]).each{|a| self.send("#{a.to_s}=".to_sym, owl.get(a.to_s))}
+        end
       else
         raise "content type for tasks not supported: "+content_type.to_s
       end
+      raise "uri is null after loading" unless @uri and @uri.to_s.strip.size>0 unless test_if_task
     end
-    
     
     # invalid: getters in task.rb should work for non-internal tasks as well
     #

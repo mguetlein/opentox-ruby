@@ -3,19 +3,20 @@ module OpenTox
 
 		class Generic
 
-			attr_accessor :uri, :title, :creator, :date, :format, :identifier, :predictedVariables, :independentVariables, :dependentVariables, :trainingDataset, :feature_dataset_uri, :effects, :activities, :p_values, :fingerprints, :features, :algorithm
+			attr_accessor :uri, :title, :creator, :date, :format, :predictedVariables, :independentVariables, :dependentVariables, :trainingDataset, :feature_dataset_uri, :effects, :activities, :p_values, :fingerprints, :features, :algorithm
 
 			def self.find(uri)
-				owl = OpenTox::Owl.from_uri(uri)
+				owl = OpenTox::Owl.from_uri(uri, "Model")
         return self.new(owl)
       end
       
       protected
       def initialize(owl)
-        [:uri, :date, :creator, :title, :format, :identifier, :algorithm, 
-         :dependentVariables, :independentVariables, :predictedVariables, :trainingDataset].each do |a|
+        [:date, :creator, :title, :format, :algorithm, :dependentVariables, 
+         :independentVariables, :predictedVariables, :trainingDataset].each do |a|
           self.send("#{a.to_s}=".to_sym, owl.get(a.to_s)) 
         end
+        @uri = owl.uri 
         RestClientWrapper.raise_uri_error "invalid model:\n"+
           self.to_yaml+"\n",@uri.to_s unless (Utils.is_uri?(@uri) and 
           @dependentVariables and @independentVariables and @predictedVariables) if ENV['RACK_ENV'] =~ /test|debug/

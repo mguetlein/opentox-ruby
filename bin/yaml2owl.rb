@@ -5,7 +5,7 @@ require 'opentox-ruby-api-wrapper'
 input = YAML.load_file(ARGV[0])
 dataset = OpenTox::Dataset.new
 dataset.title = input[:title]
-dataset.source = input[:source]
+dataset.creator = input[:source]
 input[:data].each do |c,f|
 	f.each do |k,v|
 		v.each do |value|

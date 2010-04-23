@@ -111,7 +111,7 @@ module OpenTox
         task = nil
         case res.content_type
         when /application\/rdf\+xml|text\/x-yaml/
-          task = OpenTox::Task.from_data(res, res.content_type, uri)
+          task = OpenTox::Task.from_data(res, res.content_type, uri, true)
         when /text\// 
           return res if res.content_type=~/text\/uri-list/ and
             res.split("\n").size > 1 #if uri list contains more then one uri, its not a task
@@ -121,14 +121,14 @@ module OpenTox
             res.content_type = "text/uri-list"
             return res
           end
-          task = OpenTox::Task.find(res) if Utils.task_uri?(res)
+          task = OpenTox::Task.find(res.to_s) if Utils.task_uri?(res)
         else
           raise "unknown content-type when checking for task: "+res.content_type+" content: "+res[0..200]
         end
         
         # task could be loaded, wait for task to finish
         if task
-          LOGGER.debug "result is a task "+task.uri.to_s+", wait for completion"
+          LOGGER.debug "result is a task '"+task.uri.to_s+"', wait for completion"
           task.wait_for_completion
           raise task.description if task.error?
           res = WrapperResult.new(task.resultURI)
@@ -165,15 +165,15 @@ module OpenTox
         error = [Error.new(code, body, uri, payload, headers)]
       end
 
-      ##debug utility: write error to file       
-      #error_dir = "/tmp/ot_errors"
-      #FileUtils.mkdir(error_dir) unless File.exist?(error_dir)
-      #raise "could not create error dir" unless File.exist?(error_dir) and File.directory?(error_dir)
-      #file_name = "error"
-      #time=Time.now.strftime("%m.%d.%Y-%H:%M:%S")
-      #count = 1
-      #count+=1 while File.exist?(File.join(error_dir,file_name+"_"+time+"_"+count.to_s))
-      #File.new(File.join(error_dir,file_name+"_"+time+"_"+count.to_s),"w").puts(body)
+#      #debug utility: write error to file       
+#      error_dir = "/tmp/ot_errors"
+#      FileUtils.mkdir(error_dir) unless File.exist?(error_dir)
+#      raise "could not create error dir" unless File.exist?(error_dir) and File.directory?(error_dir)
+#      file_name = "error"
+#      time=Time.now.strftime("%m.%d.%Y-%H:%M:%S")
+#      count = 1
+#      count+=1 while File.exist?(File.join(error_dir,file_name+"_"+time+"_"+count.to_s))
+#      File.new(File.join(error_dir,file_name+"_"+time+"_"+count.to_s),"w").puts(body)
       
       # return error (by halting, halts should be logged)
       # PENDING always return yaml for now
