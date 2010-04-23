@@ -14,7 +14,7 @@ module OpenTox
     
     public
 		def self.create  
-      task_uri = RestClientWrapper.post(@@config[:services]["opentox-task"], nil, nil, false).to_s
+      task_uri = RestClientWrapper.post(@@config[:services]["opentox-task"], {}, nil, false).to_s
 			Task.find(task_uri.chomp)
 		end
 
@@ -116,7 +116,6 @@ module OpenTox
         begin
           result = catch(:halt) do
             yield task
-            LOGGER.debug "Task #{task.uri} done #{Time.now}"
           end
           if result && result.is_a?(Array) && result.size==2 && result[0]>202
             # halted while executing task
@@ -124,6 +123,7 @@ module OpenTox
             task.error(result[1])
             throw :halt,result 
           end
+          LOGGER.debug "Task #{task.uri} done #{Time.now} -> "+result.to_s
           task.completed(result)
         rescue => ex
           #raise ex

@@ -85,6 +85,7 @@ module OpenTox
       do_halt 400,"uri is null",uri,headers,payload unless uri
       do_halt 400,"not a uri",uri,headers,payload unless Utils.is_uri?(uri)
       do_halt 400,"headers are no hash",uri,headers,payload unless headers==nil or headers.is_a?(Hash)
+      do_halt 400,"nil headers for post not allowed, use {}",uri,headers,payload if rest_call=="post" and headers==nil
       headers.each{ |k,v| headers.delete(k) if v==nil } if headers #remove keys with empty values, as this can cause problems
       
       begin
@@ -131,6 +132,7 @@ module OpenTox
           task.wait_for_completion
           raise task.description if task.error?
           res = WrapperResult.new(task.resultURI)
+          LOGGER.debug "task resultURI "+res.to_s
           res.content_type = "text/uri-list"
         end
         return res
@@ -140,7 +142,8 @@ module OpenTox
       rescue RestClient::RequestTimeout => ex
         do_halt 408,ex.message,uri,headers,payload
       rescue => ex
-        #raise ex.message+" uri: "+uri.to_s
+        #raise ex
+        #raise "'"+ex.message+"' uri: "+uri.to_s
         begin
           code = ex.http_code
           msg = ex.http_body
