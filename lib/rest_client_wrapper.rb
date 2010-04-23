@@ -1,3 +1,5 @@
+
+
 module OpenTox
 
   #PENDING: implement ot error api, move to own file
@@ -28,7 +30,11 @@ module OpenTox
     
   end
   
-  module RestClientWrapper
+  class WrapperResult < String
+    attr_accessor :content_type
+  end
+  
+  class RestClientWrapper
     
     # PENDING: remove as soon as redirect tasks are remove from partner webservices
     def self.redirect_task( uri )
@@ -53,77 +59,88 @@ module OpenTox
      return uri
     end
      
-    def self.get(uri, headers=nil, curl_hack=false)
-      execute( "get", uri, headers, nil, curl_hack )
+    def self.get(uri, headers=nil)
+      execute( "get", uri, headers)
     end
     
-    def self.post(uri, headers, payload=nil, curl_hack=false)
-      raise "payload and headers switched" if payload.is_a?(Hash) and headers==nil
-      raise "illegal headers" unless headers==nil || headers.is_a?(Hash)
-      execute( "post", uri, headers, payload, curl_hack )
+    def self.post(uri, headers, payload=nil, wait=true)
+      execute( "post", uri, headers, payload, wait )
+    end
+    
+    def self.put(uri, headers, payload=nil )
+      execute( "put", uri, headers, payload )
     end
 
-    def self.delete(uri, headers=nil, curl_hack=false)
-      execute( "delete", uri, headers, nil, curl_hack )
+    def self.delete(uri, headers=nil)
+      execute( "delete", uri, headers, nil)
     end
 
-    def self.illegal_result(error_msg, uri, headers, payload=nil)
+    def self.raise_uri_error(error_msg, uri, headers=nil, payload=nil)
       do_halt( "-", error_msg, uri, headers, payload )         
     end
     
     private
-    def self.execute( rest_call, uri, headers, payload=nil, curl_hack=false )
+    def self.execute( rest_call, uri, headers, payload=nil, wait=true )
 
       do_halt 400,"uri is null",uri,headers,payload unless uri
-      do_halt 400,"not an uri",uri,headers,payload unless Utils.is_uri?(uri)
+      do_halt 400,"not a uri",uri,headers,payload unless Utils.is_uri?(uri)
       do_halt 400,"headers are no hash",uri,headers,payload unless headers==nil or headers.is_a?(Hash)
       headers.each{ |k,v| headers.delete(k) if v==nil } if headers #remove keys with empty values, as this can cause problems
       
       begin
-        unless curl_hack
-          
-          #LOGGER.debug "RestCall: "+rest_call.to_s+" "+uri.to_s+" "+headers.inspect
-          resource = RestClient::Resource.new(uri, :timeout => 60)
-          if payload
-            result = resource.send(rest_call, payload, headers).to_s
-            #result = RestClient.send(rest_call, uri, payload, headers).to_s
-          elsif headers
-            #result = RestClient.send(rest_call, uri, headers).to_s
-            result = resource.send(rest_call, headers).to_s
-          else
-            result = resource.send(rest_call).to_s
-          end
+        #LOGGER.debug "RestCall: "+rest_call.to_s+" "+uri.to_s+" "+headers.inspect
+        resource = RestClient::Resource.new(uri,{:timeout => 60, :user => @@users[:users].keys[0], :password => @@users[:users].values[0]})
+        if payload
+          result = resource.send(rest_call, payload, headers)
+        elsif headers
+          result = resource.send(rest_call, headers)
         else
-          result = ""
-          cmd = " curl -v -X "+rest_call.upcase+" "+payload.collect{|k,v| "-d "+k.to_s+"='"+v.to_s+"' "}.join("")+" "+uri.to_s
-          LOGGER.debug "CURL HACK: "+cmd
-          IO.popen(cmd+" 2> /dev/null") do |f| 
-            while line = f.gets
-              result += line
-            end
+          result = resource.send(rest_call)
+        end
+        
+        # result is a string, with the additional filed content_type
+        res = WrapperResult.new(result.to_s)
+        res.content_type = result.headers[:content_type]
+        
+        # get result cannot be a task
+        return res if rest_call=="get" or !wait 
+        return res if res.strip.size==0
+        
+        # try to load task from result (maybe task-uri, or task-object)        
+        task = nil
+        case res.content_type
+        when /application\/rdf\+xml|text\/x-yaml/
+          task = OpenTox::Task.from_data(res, res.content_type, uri)
+        when /text\// 
+          return res if res.content_type=~/text\/uri-list/ and
+            res.split("\n").size > 1 #if uri list contains more then one uri, its not a task
+          # HACK for redirect tasks
+          if res =~ /ambit.*task|tu-muenchen.*task/
+            res = WrapperResult.new(redirect_task(res))
+            res.content_type = "text/uri-list"
+            return res
           end
-          result.chomp!("\n")
-          LOGGER.debug "CURL -> "+result.to_s
-          raise "curl call failed "+result if $?!=0
-          #raise "STOP "+result
+          task = OpenTox::Task.find(res) if Utils.task_uri?(res)
+        else
+          raise "unknown content-type when checking for task: "+res.content_type+" content: "+res[0..200]
         end
-       
-        if result.to_s =~ /ambit.*task|tu-muenchen.*task/
-          result = redirect_task(result)
-        elsif Utils.task_uri?(result)
-          task = OpenTox::Task.find(result)
+        
+        # task could be loaded, wait for task to finish
+        if task
+          LOGGER.debug "result is a task "+task.uri.to_s+", wait for completion"
           task.wait_for_completion
-          raise task.description if task.failed?
-          result = task.resource
+          raise task.description if task.error?
+          res = WrapperResult.new(task.resultURI)
+          res.content_type = "text/uri-list"
         end
-        return result
+        return res
         
       rescue RestClient::RequestFailed => ex
         do_halt ex.http_code,ex.http_body,uri,headers,payload
       rescue RestClient::RequestTimeout => ex
         do_halt 408,ex.message,uri,headers,payload
       rescue => ex
-        #raise ex
+        #raise ex.message+" uri: "+uri.to_s
         begin
           code = ex.http_code
           msg = ex.http_body
@@ -145,7 +162,7 @@ module OpenTox
         error = [Error.new(code, body, uri, payload, headers)]
       end
 
-#     debug utility: write error to file       
+      ##debug utility: write error to file       
       #error_dir = "/tmp/ot_errors"
       #FileUtils.mkdir(error_dir) unless File.exist?(error_dir)
       #raise "could not create error dir" unless File.exist?(error_dir) and File.directory?(error_dir)

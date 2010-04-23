@@ -3,7 +3,7 @@ module OpenTox
 
 		class Generic
 
-			attr_accessor :uri, :title, :source, :identifier, :predicted_variables, :independent_variables, :dependent_variables, :activity_dataset_uri, :feature_dataset_uri, :effects, :activities, :p_values, :fingerprints, :features, :algorithm
+			attr_accessor :uri, :title, :creator, :date, :format, :identifier, :predictedVariables, :independentVariables, :dependentVariables, :trainingDataset, :feature_dataset_uri, :effects, :activities, :p_values, :fingerprints, :features, :algorithm
 
 			def self.find(uri)
 				owl = OpenTox::Owl.from_uri(uri)
@@ -12,22 +12,15 @@ module OpenTox
       
       protected
       def initialize(owl)
-        @title = owl.title
-				@source = owl.source
-				@identifier = owl.identifier.sub(/^\[/,'').sub(/\]$/,'')
-				@uri = owl.uri.to_s #@identifier
-				@algorithm = owl.algorithm
-				@dependent_variables = owl.dependentVariables
-				@independent_variables = owl.independentVariables
-				@predicted_variables = owl.predictedVariables
-        
-        raise "invalid model:\n"+self.to_yaml+"\n" unless Utils.is_uri?(@uri) && 
-          #@dependent_variables.to_s.size>0 &&  
-          #@independent_variables.to_s.size>0 && 
-          @predicted_variables.to_s.size>0 if ENV['RACK_ENV'] =~ /test|debug/
+        [:uri, :date, :creator, :title, :format, :identifier, :algorithm, 
+         :dependentVariables, :independentVariables, :predictedVariables, :trainingDataset].each do |a|
+          self.send("#{a.to_s}=".to_sym, owl.get(a.to_s)) 
+        end
+        RestClientWrapper.raise_uri_error "invalid model:\n"+
+          self.to_yaml+"\n",@uri.to_s unless (Utils.is_uri?(@uri) and 
+          @dependentVariables and @independentVariables and @predictedVariables) if ENV['RACK_ENV'] =~ /test|debug/
 			end
 	 end
-  
   
    class PredictionModel < Generic
      
@@ -41,7 +34,7 @@ module OpenTox
        
        LOGGER.debug "Build model, algorithm_uri:"+algorithm_uri.to_s+", algorithm_parms: "+algorithm_params.inspect.to_s
        uri = OpenTox::RestClientWrapper.post(algorithm_uri,algorithm_params).to_s
-       RestClientWrapper.illegal_result("Invalid build model result: "+uri.to_s, algorithm_uri, algorithm_params ) unless Utils.model_uri?(uri)
+       RestClientWrapper.raise_uri_error("Invalid build model result: "+uri.to_s, algorithm_uri, algorithm_params ) unless Utils.model_uri?(uri)
        return PredictionModel.find(uri)
      end
     
@@ -49,7 +42,7 @@ module OpenTox
 
        LOGGER.debug "Predict dataset: "+dataset_uri.to_s+" with model "+@uri.to_s
        uri = RestClientWrapper.post(@uri, {:dataset_uri=>dataset_uri})
-       RestClientWrapper.illegal_result("Prediciton result no dataset uri: "+uri.to_s, @uri, {:dataset_uri=>dataset_uri} ) unless Utils.dataset_uri?(uri)
+       RestClientWrapper.raise_uri_error("Prediciton result no dataset uri: "+uri.to_s, @uri, {:dataset_uri=>dataset_uri} ) unless Utils.dataset_uri?(uri)
        uri
      end
     

@@ -1,5 +1,9 @@
 class Redland::Literal
   
+  def self.create(value, datatype)
+    Redland::Literal.new(value,nil,Redland::Uri.new(datatype))
+  end
+  
   # the literal node of the ruby swig api provdides the 'value' of a literal but not the 'datatype'
   # found solution in mailing list
   def datatype()
@@ -12,33 +16,61 @@ end
 module OpenTox
 
 	class Owl
-
-		attr_accessor :uri, :ot_class, :model
+   
+    # ot_class is the class of the object, e.g. "Model","Dataset", ...
+    # root_node is the root-object node in the rdf
+    # identifier is the uri of the object
+		attr_accessor :ot_class, :root_node, :identifier, :model
 
 		def initialize
 			@model = Redland::Model.new Redland::MemoryStore.new
 		end
 
-		def self.create(ot_class,uri)
+		def self.create( ot_class, uri )
 			owl = OpenTox::Owl.new
-			owl.ot_class = ot_class
-			owl.uri = Redland::Uri.new(uri.chomp)
-			owl.model.add owl.uri, RDF['type'], OT[owl.ot_class]
-			owl.model.add owl.uri, DC['identifier'], owl.uri
+      owl.ot_class = ot_class
+      owl.root_node = Redland::Resource.new(uri.chomp+"XYZ")
+      owl.identifier = uri.chomp
+			owl.set("type",owl.ot_class)
+      owl.set('identifier', owl.identifier, "xsd:anyURI")
 			owl
 	  end
   
-    def self.from_data(data,uri)
+    def self.from_data(data,base_uri)
       
       owl = OpenTox::Owl.new
       parser = Redland::Parser.new
+      
       begin
-         parser.parse_string_into_model(owl.model, data, uri)
+        parser.parse_string_into_model(owl.model, data, base_uri)
+        
+        # getting object-(root)-node and identifier via identifier property
+        # PENDING easier solution?
+        owl.identifier = nil
+        owl.model.find(nil, owl.node('identifier'), nil) do |s,p,o|
+          #LOGGER.debug "ID Statements "+s.to_s+" . "+p.to_s+" -> "+o.to_s
+          root_id = true  
+          owl.model.find(nil, nil, s) do |ss,pp,oo|
+            root_id = false
+            break
+          end
+          if root_id
+            if o.is_a?(Redland::Literal)
+              raise "cannot derieve object uri from rdf, more than one identifier" if owl.identifier
+              owl.root_node = s
+              owl.identifier = o.value
+            else
+              raise "illegal identifier, not a literal: "+o.to_s  
+            end
+          end
+        end
+        raise "Illegal RDF: root identifier missing" unless owl.identifier
+        owl.ot_class = owl.get("type")
+        LOGGER.debug "RDF loaded, uri/identifier:"+owl.identifier+", ot-class: "+owl.ot_class.to_s+", root-node:"+owl.root_node.to_s
+        owl
       rescue => e
-         raise "Error parsing #{uri}: "+e.message
+        RestClientWrapper.raise_uri_error(e.message, base_uri)
       end
-      owl.uri =  Redland::Uri.new(uri.chomp)
-      owl
     end
   
 	  def self.from_uri(uri)
@@ -47,53 +79,49 @@ module OpenTox
 
 		def rdf
 			@model.to_string
-		end
-
-		def method_missing(name, *args)
-			methods = ['title', 'source', 'identifier', 'algorithm', 'independentVariables', 'dependentVariables', 'predictedVariables', 'date','trainingDataset', 'hasStatus', "percentageCompleted" ]
-			if methods.include? name.to_s.sub(/=/,'')
-				if /=/ =~ name.to_s # setter
-					name = name.to_s.sub(/=/,'')
-					begin # delete existing entry
-						t = @model.object(@uri, DC[name])
-						@model.delete @uri, DC[name], t
-					rescue
-					end
-					@model.add @uri, DC[name], args.first
-				else # getter
-          #HACK for reading Panteli's models
-          if @uri.to_s =~ /194.141.0.136.*model|ambit2.*model|ntua.*model|tu-muenchen.*model/ and !["title", "source", "identifier"].include?(name.to_s)
-            begin
-              me = @model.subject(RDF['type'],OT['Model'])
-              return @model.object(me, OT[name.to_s]).uri.to_s
-            rescue
-              LOGGER.warn "cannot get "+name.to_s+" from model"
-              return nil
-            end
-          elsif @uri.to_s =~ /ambit.*task/ and ["hasStatus", "percentageCompleted"].include?(name.to_s)
-            me = @model.subject(RDF['type'],OT['Task'])
-            return @model.object(me, OT[name.to_s]).literal.value.to_s
-          end
-          #raise "stop there "+name.to_s
-					val = @model.object(@uri, DC[name.to_s])
-          if val.is_a?(Redland::Literal)
-            return val.value
-          else
-            return val.to_s
-          end
-				end
-			else
-				raise "Method '#{name.to_s}' not found."
-			end
-		end
+	  end
+  
+    def uri
+      @identifier
+    end
+    
+    def get(name)
+      property_node = node(name.to_s)
+      raise "Method '#{name.to_s}' not found." unless property_node
+      val = @model.object(@root_node, property_node)
+      return nil unless val
+      if val.is_a?(Redland::Literal)
+        return val.value
+      else
+        return val.uri.to_s
+      end
+    end
+    
+    def set(name, value, datatype=nil)
+      property_node = node(name.to_s)
+      raise "Method '#{name.to_s}' not found." unless property_node
+        begin # delete existing entry
+          t = @model.object(@root_node, property_node)
+          @model.delete @root_node, property_node, t
+        rescue
+      end
+      if value.first.is_a?(Redland::Node)
+        raise "not nil datatype not allowed when setting redland node as value" if datatype
+        @model.add @root_node, property_node, value
+      elsif datatype
+        @model.add @root_node, property_node, Redland::Literal.create(value, datatype)
+      else
+        @model.add @root_node, property_node, value
+      end
+    end
 
 		def parameters=(params)
 			params.each do |name, settings|
 				parameter = @model.create_resource
-				@model.add parameter, RDF['type'], OT['Parameter']
-				@model.add parameter, DC['title'], name
-				@model.add parameter, OT['paramScope'], settings[:scope]
-				@model.add parameter, OT['paramValue'],  settings[:value]
+				@model.add parameter, node('type'), node('Parameter')
+				@model.add parameter, node('title'), name
+				@model.add parameter, node('paramScope'), settings[:scope]
+				@model.add parameter, node('paramValue'),  settings[:value]
 			end
 		end
 
@@ -102,8 +130,8 @@ module OpenTox
 			compound = @model.subject(DC["identifier"], compound_uri)
 			if compound.nil?
 				compound = @model.create_resource(compound_uri)
-				@model.add compound, RDF['type'], OT["Compound"]
-				@model.add compound, DC["identifier"], compound_uri
+				@model.add compound, node('type'), node("Compound")
+				@model.add compound, node("identifier"), compound_uri
 			end
 			features.each do |f|
 				f.each do |feature_uri,value|
@@ -112,51 +140,51 @@ module OpenTox
 					if value.class.to_s == 'Hash'
 						# create tuple
 						tuple = @model.create_resource
-						@model.add tuple, RDF['type'], OT["Tuple"]
-						@model.add tuple, OT['feature'], feature
+						@model.add tuple, node('type'), node("Tuple")
+						@model.add tuple, node('feature'), feature
 						value.each do |uri,v|
 							f = find_or_create_feature uri
 							complex_value = @model.create_resource
-							@model.add tuple, OT['complexValue'], complex_value
-							@model.add complex_value, RDF['type'], OT["FeatureValue"]
-							@model.add complex_value, OT['feature'], f
-							@model.add complex_value, OT['value'], v.to_s
+							@model.add tuple, node('complexValue'), complex_value
+							@model.add complex_value, node('type'), node("FeatureValue")
+							@model.add complex_value, node('feature'), f
+							@model.add complex_value, node('value'), v.to_s
 						end
 						# add data entry
-						data_entry = @model.subject OT['compound'], compound
+						data_entry = @model.subject node('compound'), compound
 						if data_entry.nil?
 							data_entry = @model.create_resource
-							@model.add @uri, OT['dataEntry'], data_entry
-							@model.add data_entry, RDF['type'], OT["DataEntry"]
-							@model.add data_entry, OT['compound'], compound
+							@model.add @root_node, node('dataEntry'), data_entry
+							@model.add data_entry, node('type'), node("DataEntry")
+							@model.add data_entry, node('compound'), compound
 						end
-						@model.add data_entry, OT['values'], tuple
+						@model.add data_entry, node('values'), tuple
 					else
-						data_entry = @model.subject OT['compound'], compound
+						data_entry = @model.subject node('compound'), compound
 						if data_entry.nil?
 							data_entry = @model.create_resource
-							@model.add @uri, OT['dataEntry'], data_entry
-							@model.add data_entry, RDF['type'], OT["DataEntry"]
-							@model.add data_entry, OT['compound'], compound
+							@model.add @root_node, node('dataEntry'), data_entry
+							@model.add data_entry,node('type'), node("DataEntry")
+							@model.add data_entry, node('compound'), compound
 						end
 						values = @model.create_resource
-						@model.add data_entry, OT['values'], values
-						@model.add values, RDF['type'], OT['FeatureValue']
-						@model.add values, OT['feature'], feature
-						@model.add values, OT['value'], value.to_s
+						@model.add data_entry, node('values'), values
+						@model.add values, node('type'), node('FeatureValue')
+						@model.add values, node('feature'), feature
+						@model.add values, node('value'), value.to_s
 					end
 				end
 			end
 		end
 
 		def find_or_create_feature(feature_uri)
-			feature = @model.subject(DC["identifier"], feature_uri)
+			feature = @model.subject(node("identifier"), feature_uri)
 			if feature.nil?
 				feature = @model.create_resource(feature_uri)
-				@model.add feature, RDF['type'], OT["Feature"]
-				@model.add feature, DC["identifier"], feature_uri
-				@model.add feature, DC["title"], File.basename(feature_uri).split(/#/)[1]
-				@model.add feature, DC['source'], feature_uri
+				@model.add feature, node('type'), node("Feature")
+				@model.add feature, node("identifier"), feature_uri
+				@model.add feature, node("title"), File.basename(feature_uri).split(/#/)[1]
+				@model.add feature, node('creator'), feature_uri
 			end
 			feature
 	  end
@@ -164,15 +192,13 @@ module OpenTox
     # feature values are not loaded for performance reasons
     # loading compounds and features into arrays that are given as params
     def load_dataset( compounds, features )
-      ot_compound = OT['compound']
-      dc_identifier = DC['identifier']
-      @model.subjects(RDF['type'], OT['DataEntry']).each do |data_entry|
-        compound_node  = @model.object(data_entry, ot_compound)
-        compound_uri = @model.object(compound_node, dc_identifier).to_s
+      @model.subjects(node('type'), node('DataEntry')).each do |data_entry|
+        compound_node  = @model.object(data_entry, node('compound'))
+        compound_uri = @model.object(compound_node, node('identifier')).to_s
         compounds << compound_uri
       end
-      @model.subjects(RDF['type'], OT['Feature']).each do |feature|
-        feature_literal = @model.object(feature, dc_identifier)
+      @model.subjects(node('type'), node('Feature')).each do |feature|
+        feature_literal = @model.object(feature, node('identifier'))
         raise "feature is no literal" unless feature_literal.is_a?(Redland::Literal)
         # PENDING: to be able to recreate literal nodes for features, the datatype is stored 
         @@feature_datatype = feature_literal.datatype
@@ -194,24 +220,16 @@ module OpenTox
        # values are stored in the data-hash, hash has a key for each compound
       compounds.each{|c| data[c] = [] unless data[c]}
       
-      ot_values = OT['values']
-      ot_feature = OT['feature']
-      ot_compound = OT['compound']
-      dc_identifier = DC['identifier']
-      ot_value = OT['value']
-      rdf_type = RDF['type']
-      ot_feature_value = OT['FeatureValue']
-      
       load_all_features = feature_uri==nil
       feature_node = nil
       
       # create feature node for feature uri if specified
       unless load_all_features
         feature_literal = Redland::Literal.new(feature_uri,nil,Redland::Uri.new(@@feature_datatype))
-        feature_node = @model.subject(dc_identifier, feature_literal)
+        feature_node = @model.subject(node('identifier'), feature_literal)
         # remark: solution without creating the literal node:
         #@model.subjects(RDF['type'], OT['Feature']).each do |feature|
-        #  f_uri = @model.object(feature, dc_identifier).value
+        #  f_uri = @model.object(feature, node('identifier')).value
         #  if feature_uri==f_uri 
         #    feature_node = feature
         #    break
@@ -230,14 +248,14 @@ module OpenTox
       # feature_node is either nil, i.e. a wildcard or specified      
       @model.find(nil, ot_feature, feature_node) do |feature_value_node,p,o|
     
-        # get compound_uri by "backtracking" to values node (property is 'ot_values'), then get compound_node via 'ot_compound'
-        value_nodes = @model.subjects(ot_values,feature_value_node)
+        # get compound_uri by "backtracking" to values node (property is 'values'), then get compound_node via 'compound'
+        value_nodes = @model.subjects(node('values'),feature_value_node)
         raise "more than one value node "+value_nodes.size.to_s unless value_nodes.size==1
         value_node = value_nodes[0]
-        compound_node  = @model.object(value_node, ot_compound)
+        compound_node  = @model.object(value_node, node('compound'))
         compound_uri = compound_uri_store[compound_node.to_s]
         unless compound_uri
-          compound_uri = @model.object(compound_node, dc_identifier).to_s
+          compound_uri = @model.object(compound_node, node('identifier')).to_s
           compound_uri_store[compound_node.to_s] = compound_uri
         end
         
@@ -245,16 +263,16 @@ module OpenTox
           # if load all features, feautre_uri is not specified, derieve from feature_node
           feature_uri = feature_uri_store[o.to_s]
           unless feature_uri
-            feature_literal = @model.object(o, dc_identifier)
+            feature_literal = @model.object(o, node('identifier'))
             raise "feature is no literal" unless feature_literal.is_a?(Redland::Literal)
             feature_uri = feature_literal.value
             feature_uri_store[o.to_s] = feature_uri
           end
         end
         
-        value_node_type = @model.object(feature_value_node, rdf_type)
-        if (value_node_type == ot_feature_value)
-           value_literal = @model.object( feature_value_node, ot_value)
+        value_node_type = @model.object(feature_value_node, node('type'))
+        if (value_node_type == node('FeatureValue'))
+           value_literal = @model.object( feature_value_node, node('value'))
            raise "feature value no literal" unless value_literal.is_a?(Redland::Literal)
            
            case value_literal.datatype
@@ -273,7 +291,27 @@ module OpenTox
       end
       
       LOGGER.debug "loaded "+count.to_s+" feature values"
+  end
+  
+  @@property_nodes = { "type" => RDF["type"], 
+    "title" => DC["title"], 
+    "creator" => DC["creator"],
+    "uri" => DC["identifier"],
+    "identifier" => DC["identifier"],
+    "date" => DC["date"],
+    "format" => DC["format"]}
+  
+  # this method has to purposes:
+  # * distinguishing ot-properties from dc- and rdf- properties
+  # * caching nodes, as creating nodes is costly
+  def node(name)
+    n = @@property_nodes[name]
+    unless n
+      n = OT[name]
+      @@property_nodes[name] = n
     end
+    return n
+  end
 
 =begin
     def data
@@ -341,3 +379,4 @@ module OpenTox
 
   end
 end
+
