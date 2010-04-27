@@ -40,6 +40,9 @@ if @@config[:database]
 	end
 end
 
+# hack: store sinatra in global var to make url_for and halt methods accessible
+before {$sinatra = self unless $sinatra}
+
 class Sinatra::Base
   # overwriting halt to log halts (!= 202)
   def halt(status,msg)

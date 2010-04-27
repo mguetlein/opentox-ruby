@@ -36,29 +36,6 @@ module OpenTox
   
   class RestClientWrapper
     
-    # PENDING: remove as soon as redirect tasks are remove from partner webservices
-    def self.redirect_task( uri )
-     raise "no redirect task uri: "+uri.to_s unless uri.to_s =~ /194.141.0.136|ambit.*task|tu-muenchen.*task/
-     
-     while (uri.to_s =~ /194.141.0.136|ambit.*task|tu-muenchen.*task/) 
-       #HACK handle redirect
-       LOGGER.debug "REDIRECT TASK: "+uri.to_s
-       redirect = ""
-       while (redirect.size == 0)
-         IO.popen("bin/redirect.sh "+uri.to_s) do |f| 
-           while line = f.gets
-             redirect += line.chomp
-           end
-         end
-         raise redirect!=nil && redirect.size>0 ? redirect : "TASK ERROR" if $?!=0
-         sleep 0.3
-       end
-       uri = redirect
-       LOGGER.debug "REDIRECT TO: "+uri.to_s
-     end
-     return uri
-    end
-     
     def self.get(uri, headers=nil)
       execute( "get", uri, headers)
     end
@@ -81,7 +58,7 @@ module OpenTox
     
     private
     def self.execute( rest_call, uri, headers, payload=nil, wait=true )
-
+      
       do_halt 400,"uri is null",uri,headers,payload unless uri
       do_halt 400,"not a uri",uri,headers,payload unless Utils.is_uri?(uri)
       do_halt 400,"headers are no hash",uri,headers,payload unless headers==nil or headers.is_a?(Hash)
@@ -112,15 +89,9 @@ module OpenTox
         case res.content_type
         when /application\/rdf\+xml|text\/x-yaml/
           task = OpenTox::Task.from_data(res, res.content_type, uri, true)
-        when /text\// 
+        when /text\//
           return res if res.content_type=~/text\/uri-list/ and
             res.split("\n").size > 1 #if uri list contains more then one uri, its not a task
-          # HACK for redirect tasks
-          if res =~ /ambit.*task|tu-muenchen.*task/
-            res = WrapperResult.new(redirect_task(res))
-            res.content_type = "text/uri-list"
-            return res
-          end
           task = OpenTox::Task.find(res.to_s) if Utils.task_uri?(res)
         else
           raise "unknown content-type when checking for task: "+res.content_type+" content: "+res[0..200]
@@ -130,7 +101,7 @@ module OpenTox
         if task
           LOGGER.debug "result is a task '"+task.uri.to_s+"', wait for completion"
           task.wait_for_completion
-          raise task.description if task.error?
+          raise task.description unless task.completed?
           res = WrapperResult.new(task.resultURI)
           LOGGER.debug "task resultURI "+res.to_s
           res.content_type = "text/uri-list"
@@ -175,18 +146,17 @@ module OpenTox
 #      count+=1 while File.exist?(File.join(error_dir,file_name+"_"+time+"_"+count.to_s))
 #      File.new(File.join(error_dir,file_name+"_"+time+"_"+count.to_s),"w").puts(body)
       
-      # return error (by halting, halts should be logged)
-      # PENDING always return yaml for now
-      begin
-        if defined?(halt)
-          halt(502,error.to_yaml)
-        elsif defined?($sinatra)
-          $sinatra.halt(502,error.to_yaml)
-        else
-          raise ""
-        end
-      rescue
-        raise error.to_yaml
+      # handle error
+      # we are either in a task, or in sinatra
+      # PENDING: always return yaml for now
+      
+      
+      if $self_task #this global var in Task.as_task to mark that the current process is running in a task
+        raise error.to_yaml # the error is caught, logged, and task state is set to error in Task.as_task
+      elsif $sinatra  #else halt sinatra
+         $sinatra.halt(502,error.to_yaml)
+      else
+        raise "internal error"
       end
     end
   end

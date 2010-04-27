@@ -1,10 +1,16 @@
 LOGGER.progname = File.expand_path(__FILE__)
 
+DEFAULT_TASK_MAX_DURATION = 120
+EXTERNAL_TASK_MAX_DURATION = 60
+
+$self_task=nil
+
 module OpenTox
 
 	class Task
 
-    TASK_ATTRIBS = [ :uri, :date, :title, :creator, :title, :description, :hasStatus, :percentageCompleted, :resultURI ]
+    # due_to_time is only set in local tasks 
+    TASK_ATTRIBS = [ :uri, :date, :title, :creator, :title, :description, :hasStatus, :percentageCompleted, :resultURI, :due_to_time ]
     TASK_ATTRIBS.each{ |a| attr_accessor(a) }
 
     private
@@ -12,12 +18,13 @@ module OpenTox
       @uri = uri.to_s.strip
     end
     
-    public
-		def self.create  
-      task_uri = RestClientWrapper.post(@@config[:services]["opentox-task"], {}, nil, false).to_s
+    # create is private now, use OpenTox::Task.as_task
+		def self.create(max_duration)
+      task_uri = RestClientWrapper.post(@@config[:services]["opentox-task"], {:max_duration => max_duration}, nil, false).to_s
 			Task.find(task_uri.chomp)
 		end
 
+    public
 		def self.find(uri)
       task = Task.new(uri)
       task.reload
@@ -36,7 +43,7 @@ module OpenTox
     end
     
     def reload
-      result = RestClientWrapper.get(uri)
+      result = RestClientWrapper.get(uri, {:accept => 'application/rdf+xml'})#'text/x-yaml'})
       reload_from_data(result, result.content_type, uri, false)
     end
     
@@ -45,10 +52,9 @@ module OpenTox
       case content_type
       when /text\/x-yaml/
         task =  YAML.load data
-        if task.is_a?(Task)
-          TASK_ATTRIBS.each{ |a| send("#{a.to_s}=".to_sym,task[a]) }
-        else
-          raise "yaml data is no task: "+task.class.to_s unless test_if_task
+        TASK_ATTRIBS.each do |a|
+          raise "task yaml data invalid, key missing: "+a.to_s unless task.has_key?(a)
+          send("#{a.to_s}=".to_sym,task[a])
         end
       when /application\/rdf\+xml/
         owl = OpenTox::Owl.from_data(data,base_uri,"Task",test_if_task)
@@ -62,16 +68,6 @@ module OpenTox
       raise "uri is null after loading" unless @uri and @uri.to_s.strip.size>0 unless test_if_task
     end
     
-    # invalid: getters in task.rb should work for non-internal tasks as well
-    #
-		#def self.base_uri
-		#	@@config[:services]["opentox-task"]
-		#end
-		#def self.all
-		#	task_uris = RestClientWrapper.get(@@config[:services]["opentox-task"]).chomp.split(/\n/)
-		#	task_uris.collect{|uri| Task.new(uri)}
-		#end
-
 		def cancel
       RestClientWrapper.put(File.join(@uri,'Cancelled'))
       reload
@@ -87,15 +83,9 @@ module OpenTox
       reload
 		end
 
-		def parent=(task)
-			RestClientWrapper.put(File.join(@uri,'parent'), {:uri => task.uri})
-      reload
-		end
-		 
-		def pid=(pid)
-		  RestClientWrapper.put(File.join(@uri,'pid'), {:pid => pid})
-      reload
-		end
+    def running?
+      @hasStatus.to_s == 'Running'
+    end
 
 		def completed?
 			@hasStatus.to_s == 'Completed'
@@ -105,44 +95,55 @@ module OpenTox
 			@hasStatus.to_s == 'Error'
 		end
 
-		def wait_for_completion(dur=0.1)
-			until self.completed? or self.error?
+    # waits for a task, unless time exceeds or state is no longer running
+		def wait_for_completion(dur=0.3)
+      
+      if (@uri.match(@@config[:services]["opentox-task"]))
+        due_to_time = Time.parse(@due_to_time)
+      else
+        # the date of the external task cannot be trusted, offest to local time might be to big
+        due_to_time = Time.new + EXTERNAL_TASK_MAX_DURATION
+      end
+      LOGGER.debug "start waiting for task "+@uri.to_s+" at: "+Time.new.to_s+", waiting at least until "+due_to_time.to_s
+			while self.running?
 				sleep dur
         reload
+        if (Time.new > due_to_time)
+          raise "max waiting time exceeded, task seems to be stalled, task: '"+@uri.to_s+"'"
+        end
 			end
 	  end
   
-    def self.as_task(parent_task=nil)
+    # returns the task uri
+    # catches halts and exceptions, task state is set to error then
+    def self.as_task(max_duration=DEFAULT_TASK_MAX_DURATION)
       #return yield nil
       
-      task = OpenTox::Task.create
-      task.parent = parent_task if parent_task
-      pid = Spork.spork(:logger => LOGGER) do
+      task = OpenTox::Task.create(max_duration)
+      Spork.spork(:logger => LOGGER) do
         LOGGER.debug "Task #{task.uri} started #{Time.now}"
+        $self_task = task
+        
         begin
           result = catch(:halt) do
             yield task
           end
+          # catching halt, set task state to error
           if result && result.is_a?(Array) && result.size==2 && result[0]>202
-            # halted while executing task
             LOGGER.error "task was halted: "+result.inspect
             task.error(result[1])
-            throw :halt,result 
+            return
           end
           LOGGER.debug "Task #{task.uri} done #{Time.now} -> "+result.to_s
           task.completed(result)
         rescue => ex
-          #raise ex
           LOGGER.error "task failed: "+ex.message
           task.error(ex.message)
         end
-        raise "Invalid task state" unless task.completed? || task.error?
       end  
-      LOGGER.debug "Started task with PID: " + pid.to_s
-      task.pid = pid
+      LOGGER.debug "Started task: "+task.uri.to_s
       task.uri
     end  
-  
 	end
 
 end
