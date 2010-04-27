@@ -82,6 +82,10 @@ module OpenTox
 			RestClientWrapper.put(File.join(@uri,'Error'),{:description => description})
       reload
 		end
+    
+    def pid=(pid)
+      RestClientWrapper.put(File.join(@uri,'pid'), {:pid => pid})
+    end
 
     def running?
       @hasStatus.to_s == 'Running'
@@ -120,7 +124,7 @@ module OpenTox
       #return yield nil
       
       task = OpenTox::Task.create(max_duration)
-      Spork.spork(:logger => LOGGER) do
+      task_pid = Spork.spork(:logger => LOGGER) do
         LOGGER.debug "Task #{task.uri} started #{Time.now}"
         $self_task = task
         
@@ -141,6 +145,7 @@ module OpenTox
           task.error(ex.message)
         end
       end  
+      task.pid = task_pid
       LOGGER.debug "Started task: "+task.uri.to_s
       task.uri
     end  
