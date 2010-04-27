@@ -102,6 +102,8 @@ module OpenTox
           LOGGER.debug "result is a task '"+task.uri.to_s+"', wait for completion"
           task.wait_for_completion
           raise task.description unless task.completed?
+          do_halt 502,"task resultURI is invalid: '"+task.resultURI.to_s+
+            "'",task.uri,nil unless task.resultURI and Utils.is_uri?(task.resultURI)
           res = WrapperResult.new(task.resultURI)
           LOGGER.debug "task resultURI "+res.to_s
           res.content_type = "text/uri-list"
