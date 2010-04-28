@@ -14,7 +14,7 @@ module OpenTox
       def initialize(owl)
         [:date, :creator, :title, :format, :algorithm, :dependentVariables, 
          :independentVariables, :predictedVariables, :trainingDataset].each do |a|
-          self.send("#{a.to_s}=".to_sym, owl.get(a.to_s)) 
+            self.send("#{a.to_s}=".to_sym, owl.get(a.to_s))
         end
         @uri = owl.uri 
         RestClientWrapper.raise_uri_error "invalid model:\n"+
@@ -35,7 +35,7 @@ module OpenTox
        
        LOGGER.debug "Build model, algorithm_uri:"+algorithm_uri.to_s+", algorithm_parms: "+algorithm_params.inspect.to_s
        uri = OpenTox::RestClientWrapper.post(algorithm_uri,algorithm_params).to_s
-       RestClientWrapper.raise_uri_error("Invalid build model result: "+uri.to_s, algorithm_uri, algorithm_params ) unless Utils.model_uri?(uri)
+       RestClientWrapper.raise_uri_error("Invalid build model result: '"+uri.to_s+"'", algorithm_uri, algorithm_params ) unless Utils.model_uri?(uri)
        return PredictionModel.find(uri)
      end
     

@@ -1,7 +1,7 @@
 LOGGER.progname = File.expand_path(__FILE__)
 
-DEFAULT_TASK_MAX_DURATION = 120
-EXTERNAL_TASK_MAX_DURATION = 60
+DEFAULT_TASK_MAX_DURATION = 360
+EXTERNAL_TASK_MAX_DURATION = 120
 
 $self_task=nil
 
@@ -12,7 +12,8 @@ module OpenTox
     # due_to_time is only set in local tasks 
     TASK_ATTRIBS = [ :uri, :date, :title, :creator, :title, :description, :hasStatus, :percentageCompleted, :resultURI, :due_to_time ]
     TASK_ATTRIBS.each{ |a| attr_accessor(a) }
-
+    attr_accessor :http_code
+    
     private
     def initialize(uri)
       @uri = uri.to_s.strip
@@ -31,24 +32,20 @@ module OpenTox
       return task
     end
     
-    # test_if_task = true -> error suppressed if data is no task, nil is returned
-    def self.from_data(data, content_type, base_uri, test_if_task)
+    def self.from_data(data, content_type, code, base_uri)
       task = Task.new(nil)
-      task.reload_from_data(data, content_type, base_uri, test_if_task)
-      if test_if_task and (!task.uri or task.uri.strip.size==0)
-        return nil
-      else
-        return task
-      end
+      task.http_code = code
+      task.reload_from_data(data, content_type, base_uri)
+      return task
     end
     
     def reload
-      result = RestClientWrapper.get(uri, {:accept => 'application/rdf+xml'})#'text/x-yaml'})
-      reload_from_data(result, result.content_type, uri, false)
+      result = RestClientWrapper.get(uri, {:accept => 'application/rdf+xml'}, false)#'text/x-yaml'})
+      @http_code = result.code
+      reload_from_data(result, result.content_type, uri)
     end
     
-    # test_if_task = true -> error suppressed if data is no task, empty task is returned
-    def reload_from_data( data, content_type, base_uri, test_if_task )
+    def reload_from_data( data, content_type, base_uri )
       case content_type
       when /text\/x-yaml/
         task =  YAML.load data
@@ -57,15 +54,13 @@ module OpenTox
           send("#{a.to_s}=".to_sym,task[a])
         end
       when /application\/rdf\+xml/
-        owl = OpenTox::Owl.from_data(data,base_uri,"Task",test_if_task)
-        if owl
-          self.uri = owl.uri
-          (TASK_ATTRIBS-[:uri]).each{|a| self.send("#{a.to_s}=".to_sym, owl.get(a.to_s))}
-        end
+        owl = OpenTox::Owl.from_data(data,base_uri,"Task")
+        self.uri = owl.uri
+        (TASK_ATTRIBS-[:uri]).each{|a| self.send("#{a.to_s}=".to_sym, owl.get(a.to_s))}
       else
         raise "content type for tasks not supported: "+content_type.to_s
       end
-      raise "uri is null after loading" unless @uri and @uri.to_s.strip.size>0 unless test_if_task
+      raise "uri is null after loading" unless @uri and @uri.to_s.strip.size>0
     end
     
 		def cancel
@@ -104,19 +99,43 @@ module OpenTox
       
       if (@uri.match(@@config[:services]["opentox-task"]))
         due_to_time = Time.parse(@due_to_time)
+        running_time = due_to_time - Time.parse(@date)
       else
         # the date of the external task cannot be trusted, offest to local time might be to big
         due_to_time = Time.new + EXTERNAL_TASK_MAX_DURATION
+        running_time = EXTERNAL_TASK_MAX_DURATION
       end
       LOGGER.debug "start waiting for task "+@uri.to_s+" at: "+Time.new.to_s+", waiting at least until "+due_to_time.to_s
+      
 			while self.running?
 				sleep dur
         reload
+        check_state
         if (Time.new > due_to_time)
-          raise "max waiting time exceeded, task seems to be stalled, task: '"+@uri.to_s+"'"
+          raise "max wait time exceeded ("+running_time.to_s+"sec), task: '"+@uri.to_s+"'"
         end
 			end
+      
+      LOGGER.debug "task no longer running: "+@uri.to_s+", result: "+@resultURI.to_s
 	  end
+  
+    def check_state
+      begin
+        raise "illegal task state, task is completed, resultURI is no URI: '"+@resultURI.to_s+
+            "'" unless @resultURI and Utils.is_uri?(@resultURI) if completed?
+        
+        if @http_code == 202
+          raise "illegal task state, code is 202, but hasStatus is not Running: '"+@hasStatus+"'" unless running?
+        elsif @http_code == 201
+          raise "illegal task state, code is 201, but hasStatus is not Completed: '"+@hasStatus+"'" unless completed?
+          raise "illegal task state, code is 201, resultURI is no task-URI: '"+@resultURI.to_s+
+              "'" unless @resultURI and Utils.task_uri?(@resultURI)
+        end
+      rescue => ex
+        RestClientWrapper.raise_uri_error(ex.message, @uri)
+      end
+      
+    end
   
     # returns the task uri
     # catches halts and exceptions, task state is set to error then

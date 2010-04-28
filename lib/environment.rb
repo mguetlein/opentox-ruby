@@ -45,9 +45,11 @@ before {$sinatra = self unless $sinatra}
 
 class Sinatra::Base
   # overwriting halt to log halts (!= 202)
-  def halt(status,msg)
-    LOGGER.error "halt "+status.to_s+" "+msg.to_s if (status != 202)
-    throw :halt, [status, msg] 
+  def halt(*response)
+    LOGGER.error "halt "+response.first.to_s+" "+(response.size>1 ? response[1].to_s : "") if response.first >= 300
+    # orig sinatra code:
+    response = response.first if response.length == 1
+    throw :halt, response
   end
 end
 

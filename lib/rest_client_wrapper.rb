@@ -31,13 +31,13 @@ module OpenTox
   end
   
   class WrapperResult < String
-    attr_accessor :content_type
+    attr_accessor :content_type, :code
   end
   
   class RestClientWrapper
     
-    def self.get(uri, headers=nil)
-      execute( "get", uri, headers)
+    def self.get(uri, headers=nil, wait=true)
+      execute( "get", uri, headers, nil, wait)
     end
     
     def self.post(uri, headers, payload=nil, wait=true)
@@ -79,35 +79,14 @@ module OpenTox
         # result is a string, with the additional filed content_type
         res = WrapperResult.new(result.to_s)
         res.content_type = result.headers[:content_type]
+        res.code = result.code
         
-        # get result cannot be a task
-        return res if rest_call=="get" or !wait 
-        return res if res.strip.size==0
+        return res if res.code==200 || !wait
         
-        # try to load task from result (maybe task-uri, or task-object)        
-        task = nil
-        case res.content_type
-        when /application\/rdf\+xml|text\/x-yaml/
-          task = OpenTox::Task.from_data(res, res.content_type, uri, true)
-        when /text\//
-          return res if res.content_type=~/text\/uri-list/ and
-            res.split("\n").size > 1 #if uri list contains more then one uri, its not a task
-          task = OpenTox::Task.find(res.to_s) if Utils.task_uri?(res)
-        else
-          raise "unknown content-type when checking for task: "+res.content_type+" content: "+res[0..200]
+        while (res.code==201 || res.code==202)
+          res = wait_for_task(res, uri)
         end
-        
-        # task could be loaded, wait for task to finish
-        if task
-          LOGGER.debug "result is a task '"+task.uri.to_s+"', wait for completion"
-          task.wait_for_completion
-          raise task.description unless task.completed?
-          do_halt 502,"task resultURI is invalid: '"+task.resultURI.to_s+
-            "'",task.uri,nil unless task.resultURI and Utils.is_uri?(task.resultURI)
-          res = WrapperResult.new(task.resultURI)
-          LOGGER.debug "task resultURI "+res.to_s
-          res.content_type = "text/uri-list"
-        end
+        raise "illegal status code: '"+res.code.to_s+"'" unless res.code==200
         return res
         
       rescue RestClient::RequestFailed => ex
@@ -126,6 +105,30 @@ module OpenTox
         end
         do_halt code,msg,uri,headers,payload
       end
+    end
+    
+    def self.wait_for_task( res, base_uri )
+                          
+      task = nil
+      case res.content_type
+      when /application\/rdf\+xml|text\/x-yaml/
+        task = OpenTox::Task.from_data(res, res.content_type, res.code, base_uri)
+      when /text\//
+        raise "uri list has more than one entry, should be a task" if res.content_type=~/text\/uri-list/ and
+          res.split("\n").size > 1 #if uri list contains more then one uri, its not a task
+        task = OpenTox::Task.find(res.to_s) if Utils.task_uri?(res)
+      else
+        raise "unknown content-type for task: "+res.content_type+" content: "+res[0..200]
+      end
+      
+      LOGGER.debug "result is a task '"+task.uri.to_s+"', wait for completion"
+      task.wait_for_completion
+      raise task.description unless task.completed? # maybe task was cancelled / error
+      
+      res = WrapperResult.new task.resultURI
+      res.code = task.http_code
+      res.content_type = "text/uri-list"
+      return res
     end
     
     def self.do_halt( code, body, uri, headers, payload=nil )
@@ -152,13 +155,14 @@ module OpenTox
       # we are either in a task, or in sinatra
       # PENDING: always return yaml for now
       
-      
       if $self_task #this global var in Task.as_task to mark that the current process is running in a task
         raise error.to_yaml # the error is caught, logged, and task state is set to error in Task.as_task
-      elsif $sinatra  #else halt sinatra
-         $sinatra.halt(502,error.to_yaml)
-      else
-        raise "internal error"
+      #elsif $sinatra  #else halt sinatra
+         #$sinatra.halt(502,error.to_yaml)
+      elsif defined?(halt)         
+         halt(502,error.to_yaml)
+      else #for testing purposes (if classes used directly)
+        raise error.to_yaml
       end
     end
   end

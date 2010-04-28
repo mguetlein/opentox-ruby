@@ -36,7 +36,7 @@ module OpenTox
 	  end
   
     # loads owl from data
-    def self.from_data(data, base_uri, ot_class, no_wrong_class_exception=false )
+    def self.from_data(data, base_uri, ot_class)
       
       owl = OpenTox::Owl.new
       parser = Redland::Parser.new
@@ -64,15 +64,8 @@ module OpenTox
         unless owl.root_node
           types = []
           owl.model.find(nil, owl.node("type"), nil){ |s,p,o| types << o.to_s }
-          msg = "root node for class '"+ot_class+"' not found (available type nodes: "+types.inspect+")"
-          if no_wrong_class_exception
-            LOGGER.debug "suppressing error: "+msg
-            return nil
-          else
-            raise msg
-          end
+          raise "root node for class '"+ot_class+"' not found (available type nodes: "+types.inspect+")"
         end
-        
         raise "no uri in rdf: '"+owl.uri+"'" unless owl.uri and Utils.is_uri?(owl.uri) 
         owl.ot_class = ot_class
         owl
@@ -98,6 +91,8 @@ module OpenTox
       return nil unless val
       if val.is_a?(Redland::Literal)
         return val.value
+      elsif val.blank?
+        return nil
       else
         return val.uri.to_s
       end
