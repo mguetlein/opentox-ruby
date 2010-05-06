@@ -160,7 +160,7 @@ module OpenTox
           task.completed(result)
         rescue => ex
           LOGGER.error "task failed: "+ex.message
-          #LOGGER.error ": "+ex.backtrace.join("\n")
+          LOGGER.error ": "+ex.backtrace.join("\n")
           task.error(ex.message)
         end
       end  

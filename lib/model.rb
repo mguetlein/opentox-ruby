@@ -76,7 +76,7 @@ module OpenTox
        elsif @uri =~/ambit2/ and @title =~ /pKa/
          return false
        elsif @uri =~/majority/
-         return @uri =~ /class/
+         return (@uri =~ /class/) != nil
        else
          raise "unknown model, uri:'"+@uri.to_s+"' title:'"+@title.to_s+"'"
        end

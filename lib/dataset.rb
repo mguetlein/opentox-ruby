@@ -15,7 +15,7 @@ module OpenTox
 		def self.find(uri, accept_header=nil) 
     
       unless accept_header
-        if uri.match(@@config[:services]["opentox-dataset"])
+        if uri.match(@@config[:services]["opentox-dataset"]) || uri=~ /188.40.32.88/
           accept_header = 'text/x-yaml'
         else
           accept_header = "application/rdf+xml"
@@ -51,6 +51,8 @@ module OpenTox
     # returns uri of new dataset
     def create_new_dataset( new_compounds, new_features, new_title, new_creator )
       
+      raise "no new compounds selected" unless new_compounds and new_compounds.size>0
+      
       # load require features 
       if ((defined? @dirty_features) && (@dirty_features - new_features).size > 0)
         (@dirty_features - new_features).each{|f| load_feature_values(f)}
@@ -62,7 +64,7 @@ module OpenTox
       dataset.features = new_features
       dataset.compounds = new_compounds
       
-      # Ccopy dataset data for compounds and features
+      # Copy dataset data for compounds and features
       # PENDING: why storing feature values in an array? 
       new_compounds.each do |c|
         data_c = []
