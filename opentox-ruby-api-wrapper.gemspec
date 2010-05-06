@@ -9,10 +9,10 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Christoph Helma"]
-  s.date = %q{2010-03-18}
+  s.date = %q{2010-05-04}
   s.description = %q{Ruby wrapper for the OpenTox REST API (http://www.opentox.org)}
   s.email = %q{helma@in-silico.ch}
-  s.executables = ["opentox-install-ubuntu.sh", "opentox-install-debian.sh", "yaml2owl.rb"]
+  s.executables = ["opentox-install-ubuntu.sh", "yaml2owl.rb", "opentox-install-debian.sh"]
   s.extra_rdoc_files = [
     "LICENSE",
      "README.rdoc"
@@ -31,11 +31,13 @@ Gem::Specification.new do |s|
      "lib/config/config_ru.rb",
      "lib/dataset.rb",
      "lib/environment.rb",
+     "lib/features.rb",
      "lib/helper.rb",
      "lib/model.rb",
      "lib/opentox-ruby-api-wrapper.rb",
      "lib/opentox.owl",
      "lib/owl.rb",
+     "lib/rest_client_wrapper.rb",
      "lib/spork.rb",
      "lib/task.rb",
      "lib/tasks/opentox.rb",
@@ -67,7 +69,6 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<sinatra-static-assets>, [">= 0"])
       s.add_development_dependency(%q<cucumber>, [">= 0"])
       s.add_development_dependency(%q<jeweler>, [">= 0"])
-      s.add_development_dependency(%q<thin>, [">= 0"])
     else
       s.add_dependency(%q<sinatra>, [">= 0"])
       s.add_dependency(%q<rest-client>, [">= 0"])
@@ -81,7 +82,6 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<sinatra-static-assets>, [">= 0"])
       s.add_dependency(%q<cucumber>, [">= 0"])
       s.add_dependency(%q<jeweler>, [">= 0"])
-      s.add_dependency(%q<thin>, [">= 0"])
     end
   else
     s.add_dependency(%q<sinatra>, [">= 0"])
@@ -96,7 +96,6 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<sinatra-static-assets>, [">= 0"])
     s.add_dependency(%q<cucumber>, [">= 0"])
     s.add_dependency(%q<jeweler>, [">= 0"])
-    s.add_dependency(%q<thin>, [">= 0"])
   end
 end
 

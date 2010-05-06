@@ -14,9 +14,10 @@ module OpenTox
 
 		def self.find(uri)
     
-			if uri.match(/webservices.in-silico.ch|localhost|ot.dataset.de|opentox.informatik.uni-freiburg.de/) # try to get YAML first
+			#if uri.match(/webservices.in-silico.ch|localhost|ot.dataset.de|opentox.informatik.uni-freiburg.de/) # try to get YAML first
 				d = YAML.load RestClientWrapper.get(uri.to_s.strip, :accept => 'application/x-yaml').to_s 
         d.uri = uri unless d.uri
+=begin
 			else # get default rdf+xml
 				owl = OpenTox::Owl.from_uri(uri.to_s.strip, "Dataset")
         
@@ -33,6 +34,7 @@ module OpenTox
         d.compounds.uniq!
         d.features.uniq!
 		  end
+=end
       return d
 		end
     
