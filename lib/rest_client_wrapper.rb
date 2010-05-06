@@ -67,7 +67,7 @@ module OpenTox
       
       begin
         #LOGGER.debug "RestCall: "+rest_call.to_s+" "+uri.to_s+" "+headers.inspect
-        resource = RestClient::Resource.new(uri,{:timeout => 60, :user => @@users[:users].keys[0], :password => @@users[:users].values[0]})
+        resource = RestClient::Resource.new(uri,{:timeout => 60}) #, :user => @@users[:users].keys[0], :password => @@users[:users].values[0]})
         if payload
           result = resource.send(rest_call, payload, headers)
         elsif headers
@@ -76,9 +76,10 @@ module OpenTox
           result = resource.send(rest_call)
         end
         
-        # result is a string, with the additional filed content_type
-        res = WrapperResult.new(result.to_s)
+        # result is a string, with the additional fields content_type and code
+        res = WrapperResult.new(result.body)
         res.content_type = result.headers[:content_type]
+        raise "content-type not set" unless res.content_type
         res.code = result.code
         
         return res if res.code==200 || !wait
@@ -118,7 +119,7 @@ module OpenTox
           res.split("\n").size > 1 #if uri list contains more then one uri, its not a task
         task = OpenTox::Task.find(res.to_s) if Utils.task_uri?(res)
       else
-        raise "unknown content-type for task: "+res.content_type+" content: "+res[0..200]
+        raise "unknown content-type for task: '"+res.content_type.to_s+"'" #+"' content: "+res[0..200].to_s
       end
       
       LOGGER.debug "result is a task '"+task.uri.to_s+"', wait for completion"

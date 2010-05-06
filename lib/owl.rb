@@ -1,16 +1,83 @@
 class Redland::Literal
   
-  def self.create(value, datatype)
-    Redland::Literal.new(value,nil,Redland::Uri.new(datatype))
+  def self.create(value, datatype=nil)
+    if datatype
+      if datatype.is_a?(Redland::Uri)
+        Redland::Literal.new(value.to_s,nil,datatype)
+      else
+        Redland::Literal.new(value.to_s,nil,Redland::Uri.new(datatype.to_s))
+      end
+    else
+      Redland::Literal.new(value.to_s,nil,Redland::Literal.parse_datatype_uri(value))
+    end
   end
   
   # the literal node of the ruby swig api provdides the 'value' of a literal but not the 'datatype'
   # found solution in mailing list
-  def datatype()
+  def datatype
       uri = Redland.librdf_node_get_literal_value_datatype_uri(self.node)
       return Redland.librdf_uri_to_string(uri) if uri
   end
   
+  # gets value of literal, value class is se according to literal datatype
+  def get_value
+    Redland::Literal.parse_value( self.value, self.datatype )
+  end
+  
+  private
+  @@type_string = XML["string"].uri
+  @@type_uri = XML["anyURI"].uri
+  @@type_float = XML["float"].uri
+  @@type_double = XML["double"].uri
+  @@type_date = XML["date"].uri
+  @@type_boolean = XML["boolean"].uri
+  @@type_datetime = XML["dateTime"].uri
+  
+  # parses value according to datatype uri
+  def self.parse_value(string_value, datatype_uri)
+    if (datatype_uri==nil || datatype_uri.size==0)
+      LOGGER.warn("empty datatype for literal with value: "+string_value)
+      return string_value
+    end
+    case datatype_uri
+    when @@type_string.to_s
+      return string_value
+    when @@type_uri.to_s
+      return string_value #PENDING uri as string?
+    when @@type_float.to_s 
+      return string_value.to_f
+    when @@type_double.to_s
+      return string_value.to_f
+    when @@type_boolean.to_s
+      return string_value.upcase=="TRUE"
+    when @@type_date.to_s
+      return string_value #PENDING date as string?
+    when @@type_datetime.to_s
+      return string_value #PENDING date as string?
+    else
+      raise "unknown literal datatype: '"+datatype_uri.to_s+"', value is "+string_value
+    end
+  end
+  
+  # parse datatype uri accoring to value class
+  def self.parse_datatype_uri(value)
+    if value==nil
+      raise "illegal datatype: value is nil"
+    elsif value.is_a?(String)
+      # PENDING: uri check too slow?
+      if OpenTox::Utils.is_uri?(value)
+        return @@type_uri
+      else
+        return @@type_string
+      end
+    elsif value.is_a?(Float)
+      return @@type_float
+    elsif value.is_a?(TrueClass) or value.is_a?(FalseClass)
+      return @@type_boolean
+    else
+      raise "illegal datatype: "+value.class.to_s+" "+value.to_s
+    end
+  end
 end
 
 module OpenTox
@@ -75,7 +142,7 @@ module OpenTox
     end
   
 	  def self.from_uri(uri, ot_class)
-     return from_data(RestClient.get(uri,:accept => "application/rdf+xml").to_s, uri, ot_class) 
+     return from_data(RestClientWrapper.get(uri,:accept => "application/rdf+xml").to_s, uri, ot_class) 
 		end
 
 		def rdf
@@ -83,24 +150,25 @@ module OpenTox
 	  end
   
     def get(name)
-      #PENDING remove debug checks
-      raise "get identifier deprecated, use uri instead" if name=="identifier"
       raise "uri is no prop, use owl.uri instead" if name=="uri"
       property_node = node(name.to_s)
-      val = @model.object(@root_node, property_node)
-      return nil unless val
-      if val.is_a?(Redland::Literal)
-        return val.value
-      elsif val.blank?
+      return get_value( @model.object(@root_node, property_node) )
+    end
+    
+    private
+    def get_value( node )
+      return nil unless node
+      if node.is_a?(Redland::Literal)
+        return node.get_value
+      elsif node.blank?
         return nil
       else
-        return val.uri.to_s
+        return node.uri.to_s
       end
     end
     
+    public
     def set(name, value, datatype=nil)
-      #PENDING remove debug checks
-      raise "set identifier deprecated, use uri instead" if name=="identifier"
       raise "uri is no prop, cannot set uri" if name=="uri"
       property_node = node(name.to_s)
       begin # delete existing entry
@@ -111,10 +179,8 @@ module OpenTox
       if value.is_a?(Redland::Node)
         raise "not nil datatype not allowed when setting redland node as value" if datatype
         @model.add @root_node, property_node, value
-      elsif datatype
+      else # if value is no node, a literal is created
         @model.add @root_node, property_node, Redland::Literal.create(value.to_s, datatype)
-      else
-        @model.add @root_node, property_node, value.to_s
       end
     end
 
@@ -135,7 +201,6 @@ module OpenTox
 			if compound.nil?
 				compound = @model.create_resource(compound_uri)
 				@model.add compound, node('type'), node("Compound")
-				@model.add compound, node("identifier"), compound_uri
 			end
 			features.each do |f|
 				f.each do |feature_uri,value|
@@ -152,7 +217,7 @@ module OpenTox
 							@model.add tuple, node('complexValue'), complex_value
 							@model.add complex_value, node('type'), node("FeatureValue")
 							@model.add complex_value, node('feature'), f
-							@model.add complex_value, node('value'), v.to_s
+							@model.add complex_value, node('value'), Redland::Literal.create(v)
 						end
 						# add data entry
 						data_entry = @model.subject node('compound'), compound
@@ -175,134 +240,118 @@ module OpenTox
 						@model.add data_entry, node('values'), values
 						@model.add values, node('type'), node('FeatureValue')
 						@model.add values, node('feature'), feature
-						@model.add values, node('value'), value.to_s
+						@model.add values, node('value'),  Redland::Literal.create(value)
 					end
 				end
 			end
-		end
-
-		def find_or_create_feature(feature_uri)
-			feature = @model.subject(node("identifier"), feature_uri)
-			if feature.nil?
-				feature = @model.create_resource(feature_uri)
-				@model.add feature, node('type'), node("Feature")
-				@model.add feature, node("identifier"), feature_uri
-				@model.add feature, node("title"), File.basename(feature_uri).split(/#/)[1]
-				@model.add feature, node('creator'), feature_uri
-			end
-			feature
-	  end
- 
-    # feature values are not loaded for performance reasons
-    # loading compounds and features into arrays that are given as params
-    def load_dataset( compounds, features )
-      @model.subjects(node('type'), node('DataEntry')).each do |data_entry|
-        compound_node  = @model.object(data_entry, node('compound'))
-        compound_uri = @model.object(compound_node, node('identifier')).to_s
-        compounds << compound_uri
-      end
-      @model.subjects(node('type'), node('Feature')).each do |feature|
-        feature_literal = @model.object(feature, node('identifier'))
-        raise "feature is no literal" unless feature_literal.is_a?(Redland::Literal)
-        # PENDING: to be able to recreate literal nodes for features, the datatype is stored 
-        @@feature_datatype = feature_literal.datatype
-        features << feature_literal.value
-      end
-      LOGGER.debug "loaded "+compounds.size.to_s+" compounds and "+features.size.to_s+" features"
+	end
+  
+  private
+  def find_feature(feature_uri)
+    # PENDING: more efficiently get feature node?
+    @model.subjects(RDF['type'], OT['Feature']).each do |feature|
+      return feature if feature_uri==get_value(feature)
     end
+    return nil
+  end
 
-    # loading feature values for the specified feature
-    # if feature is nil, all feature values are loaded
-    #
-    # general remark on the rdf loading (found out with some testing):
-    # the search methods (subjects/find) are fast, the time consuming parts is creating resources,
-    # which cannot be avoided in general (implemented some performance tweaks with uri storing when loading all features) 
-    def load_dataset_feature_values( compounds, data, feature_uri=nil )
-      
-      LOGGER.debug("load feature values"+ ( (feature_uri!=nil)?(" for feature: "+feature_uri):"") ) 
-
-       # values are stored in the data-hash, hash has a key for each compound
-      compounds.each{|c| data[c] = [] unless data[c]}
-      
-      load_all_features = feature_uri==nil
-      feature_node = nil
-      
-      # create feature node for feature uri if specified
-      unless load_all_features
-        feature_literal = Redland::Literal.new(feature_uri,nil,Redland::Uri.new(@@feature_datatype))
-        feature_node = @model.subject(node('identifier'), feature_literal)
-        # remark: solution without creating the literal node:
-        #@model.subjects(RDF['type'], OT['Feature']).each do |feature|
-        #  f_uri = @model.object(feature, node('identifier')).value
-        #  if feature_uri==f_uri 
-        #    feature_node = feature
-        #    break
-        #  end
-        #end
-        raise "feature node not found" unless feature_node
-      end
-      
-      count = 0
-      
-      # preformance tweak: store uirs to save some resource init time
-      compound_uri_store = {}
-      feature_uri_store = {}
-      
-      # search for all feature_value_node with property 'ot_feature'
-      # feature_node is either nil, i.e. a wildcard or specified      
-      @model.find(nil, node('feature'), feature_node) do |feature_value_node,p,o|
+  public
+	def find_or_create_feature(feature_uri)
+		feature = find_feature(feature_uri)
+		unless feature
+			feature = @model.create_resource(feature_uri)
+			@model.add feature, node('type'), node("Feature")
+			@model.add feature, node("title"), File.basename(feature_uri).split(/#/)[1]
+			@model.add feature, node('creator'), feature_uri
+		end
+		feature
+  end
+ 
+  # feature values are not loaded for performance reasons
+  # loading compounds and features into arrays that are given as params
+  def load_dataset( compounds, features )
     
-        # get compound_uri by "backtracking" to values node (property is 'values'), then get compound_node via 'compound'
-        value_nodes = @model.subjects(node('values'),feature_value_node)
-        raise "more than one value node "+value_nodes.size.to_s unless value_nodes.size==1
-        value_node = value_nodes[0]
-        compound_node  = @model.object(value_node, node('compound'))
-        compound_uri = compound_uri_store[compound_node.to_s]
-        unless compound_uri
-          compound_uri = @model.object(compound_node, node('identifier')).to_s
-          compound_uri_store[compound_node.to_s] = compound_uri
-        end
-        
-        if load_all_features
-          # if load all features, feautre_uri is not specified, derieve from feature_node
-          feature_uri = feature_uri_store[o.to_s]
-          unless feature_uri
-            feature_literal = @model.object(o, node('identifier'))
-            raise "feature is no literal" unless feature_literal.is_a?(Redland::Literal)
-            feature_uri = feature_literal.value
-            feature_uri_store[o.to_s] = feature_uri
-          end
-        end
-        
-        value_node_type = @model.object(feature_value_node, node('type'))
-        if (value_node_type == node('FeatureValue'))
-           value_literal = @model.object( feature_value_node, node('value'))
-           raise "feature value no literal" unless value_literal.is_a?(Redland::Literal)
-           
-           case value_literal.datatype
-             when /XMLSchema#double/
-               data[compound_uri] << {feature_uri => value_literal.value.to_f }
-             when /XMLSchema#string/
-               data[compound_uri] << {feature_uri => value_literal.value }
-             else
-               raise "feature value datatype undefined: "+value_literal.datatype
-           end
-        else
-          raise "feature value type not yet implemented "+value_node_type.to_s
-        end
-        count += 1
-        LOGGER.debug "loaded "+count.to_s+" feature values" if (count%500 == 0)
+    @model.subjects(node('type'), node('Compound')).each do |compound|
+      compounds << get_value(compound)
+    end
+    @model.subjects(node('type'), node('Feature')).each do |feature|
+      features << get_value(feature)
+    end
+    LOGGER.debug "loaded "+compounds.size.to_s+" compounds and "+features.size.to_s+" features"
+  end
+
+  # loading feature values for the specified feature
+  # if feature is nil, all feature values are loaded
+  #
+  # general remark on the rdf loading (found out with some testing):
+  # the search methods (subjects/find) are fast, the time consuming parts is creating resources,
+  # which cannot be avoided in general (implemented some performance tweaks with uri storing when loading all features) 
+  def load_dataset_feature_values( compounds, data, feature_uri=nil )
+    
+    LOGGER.debug("load feature values"+ ( (feature_uri!=nil)?(" for feature: "+feature_uri):"") ) 
+
+     # values are stored in the data-hash, hash has a key for each compound
+    compounds.each{|c| data[c] = [] unless data[c]}
+    
+    load_all_features = feature_uri==nil
+    feature_node = nil
+    
+    # create feature node for feature uri if specified
+    unless load_all_features
+      feature_node = find_feature(feature_uri)
+      raise "feature node not found" unless feature_node
+    end
+    
+    count = 0
+    
+    # preformance tweak: store uirs to save some resource init time
+    compound_uri_store = {}
+    feature_uri_store = {}
+    
+    # search for all feature_value_node with property 'ot_feature'
+    # feature_node is either nil, i.e. a wildcard or specified      
+    @model.find(nil, node('feature'), feature_node) do |feature_value_node,p,o|
+  
+      # get compound_uri by "backtracking" to values node (property is 'values'), then get compound_node via 'compound'
+      value_nodes = @model.subjects(node('values'),feature_value_node)
+      raise "more than one value node "+value_nodes.size.to_s unless value_nodes.size==1
+      value_node = value_nodes[0]
+      compound_node  = @model.object(value_node, node('compound'))
+      compound_uri = compound_uri_store[compound_node.to_s]
+      unless compound_uri
+        compound_uri = get_value(compound_node)
+        compound_uri_store[compound_node.to_s] = compound_uri
       end
       
-      LOGGER.debug "loaded "+count.to_s+" feature values"
+      if load_all_features
+        # if load all features, feautre_uri is not specified, derieve from feature_node
+        feature_uri = feature_uri_store[o.to_s]
+        unless feature_uri
+          feature_uri = get_value(o)
+          feature_uri_store[o.to_s] = feature_uri
+        end
+      end
+      
+      value_node_type = @model.object(feature_value_node, node('type'))
+      if (value_node_type == node('FeatureValue'))
+         value_literal = @model.object( feature_value_node, node('value'))
+         raise "feature value no literal" unless value_literal.is_a?(Redland::Literal)
+         data[compound_uri] << {feature_uri => value_literal.get_value }
+      else
+        raise "feature value type not yet implemented "+value_node_type.to_s
+      end
+      count += 1
+      LOGGER.debug "loaded "+count.to_s+" feature values" if (count%500 == 0)
+    end
+    
+    LOGGER.debug "loaded "+count.to_s+" feature values"
   end
   
   @@property_nodes = { "type" => RDF["type"], 
     "about" => RDF["about"],
     "title" => DC["title"], 
     "creator" => DC["creator"],
-    "uri" => DC["identifier"],
-    "identifier" => DC["identifier"],
+    #"identifier" => DC["identifier"], identifier is deprecated
     "date" => DC["date"],
     "format" => DC["format"]}
   
@@ -310,6 +359,7 @@ module OpenTox
   # * distinguishing ot-properties from dc- and rdf- properties
   # * caching nodes, as creating nodes is costly
   def node(name)
+    raise "dc[identifier] deprecated, use owl.uri" if name=="identifier"
     n = @@property_nodes[name]
     unless n
       n = OT[name]

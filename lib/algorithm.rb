@@ -21,7 +21,7 @@ module OpenTox
 			def self.create_model(params)
 				LOGGER.debug params
 				LOGGER.debug File.basename(__FILE__) + ": creating model"
-        resource = RestClient::Resource.new(File.join(@@config[:services]["opentox-algorithm"], "lazar"), :user => @@users[:users].keys[0], :password => @@users[:users].values[0], :content_type => "application/x-yaml")
+        resource = RestClient::Resource.new(File.join(@@config[:services]["opentox-algorithm"], "lazar"), :user => @@users[:users].keys[0], :password => @@users[:users].values[0], :content_type => "text/x-yaml")
         @uri = resource.post(:dataset_uri => params[:dataset_uri], :feature_uri => params[:feature_uri], :feature_generation_uri => File.join(@@config[:services]["opentox-algorithm"], "fminer")).chomp
 			end
 

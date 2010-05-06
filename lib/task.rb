@@ -10,7 +10,7 @@ module OpenTox
 	class Task
 
     # due_to_time is only set in local tasks 
-    TASK_ATTRIBS = [ :uri, :date, :title, :creator, :title, :description, :hasStatus, :percentageCompleted, :resultURI, :due_to_time ]
+    TASK_ATTRIBS = [ :uri, :date, :title, :creator, :description, :hasStatus, :percentageCompleted, :resultURI, :due_to_time ]
     TASK_ATTRIBS.each{ |a| attr_accessor(a) }
     attr_accessor :http_code
     
@@ -134,7 +134,6 @@ module OpenTox
       rescue => ex
         RestClientWrapper.raise_uri_error(ex.message, @uri)
       end
-      
     end
   
     # returns the task uri
@@ -161,6 +160,7 @@ module OpenTox
           task.completed(result)
         rescue => ex
           LOGGER.error "task failed: "+ex.message
+          #LOGGER.error ": "+ex.backtrace.join("\n")
           task.error(ex.message)
         end
       end  

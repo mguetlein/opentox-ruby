@@ -20,11 +20,22 @@ module OpenTox
 
   
     def self.is_uri?(uri)
+      return false if uri==nil || uri.to_s.size==0
       begin
-        URI::parse(uri)
+        u = URI::parse(uri)
+        return (u.scheme!=nil and u.host!=nil)
       rescue URI::InvalidURIError
-        false
+        return false
       end
     end
   end
+  
+#  ['rubygems', 'rest_client'].each do |r|
+#    require r
+#  end
+#  ["bla", "google.de", "http://google.de"].each do |u|
+#    puts u+"? "+Utils.is_uri?(u).to_s
+#  end
+
 end
+
