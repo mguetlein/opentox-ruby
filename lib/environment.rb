@@ -40,6 +40,9 @@ if @@config[:database]
 	end
 end
 
+# mail
+#load File.join config_dir,"mail.rb"
+
 # hack: store sinatra in global var to make url_for and halt methods accessible
 before {$sinatra = self unless $sinatra}
 
@@ -128,6 +131,7 @@ RDF = Redland::Namespace.new 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
 OWL = Redland::Namespace.new 'http://www.w3.org/2002/07/owl#'
 DC = Redland::Namespace.new 'http://purl.org/dc/elements/1.1/'
 OT = Redland::Namespace.new 'http://www.opentox.org/api/1.1#'
+XML = Redland::Namespace.new 'http://www.w3.org/2001/XMLSchema#'
 
 # Regular expressions for parsing classification data
 TRUE_REGEXP = /^(true|active|$1^)/

@@ -18,3 +18,8 @@ set :raise_errors, true
 end
  
 use Rack::ShowExceptions
+#use Rack::MailExceptions do |mail|
+#		mail.to '...@example.com'
+#		mail.subject '[ERROR] %s'
+#		mail.smtp MAIL
+#end 

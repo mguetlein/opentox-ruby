@@ -12,13 +12,21 @@ module OpenTox
 			@compounds = []
 		end
 
-		def self.find(uri)
+		def self.find(uri, accept_header=nil) 
     
-			#if uri.match(/webservices.in-silico.ch|localhost|ot.dataset.de|opentox.informatik.uni-freiburg.de/) # try to get YAML first
-				d = YAML.load RestClientWrapper.get(uri.to_s.strip, :accept => 'application/x-yaml').to_s 
+      unless accept_header
+        if uri.match(@@config[:services]["opentox-dataset"]) || uri=~ /188.40.32.88/
+          accept_header = 'text/x-yaml'
+        else
+          accept_header = "application/rdf+xml"
+        end
+      end
+      
+      case accept_header
+      when "text/x-yaml"
+				d = YAML.load RestClientWrapper.get(uri.to_s.strip, :accept => 'text/x-yaml').to_s 
         d.uri = uri unless d.uri
-=begin
-			else # get default rdf+xml
+			when "application/rdf+xml"
 				owl = OpenTox::Owl.from_uri(uri.to_s.strip, "Dataset")
         
         d = Dataset.new
@@ -33,14 +41,17 @@ module OpenTox
         
         d.compounds.uniq!
         d.features.uniq!
+      else
+        raise "cannot get datset with accept header: "+accept_header.to_s
 		  end
-=end
       return d
 		end
     
     # creates a new dataset, using only those compounsd specified in new_compounds
     # returns uri of new dataset
     def create_new_dataset( new_compounds, new_features, new_title, new_creator )
+      
+      raise "no new compounds selected" unless new_compounds and new_compounds.size>0
       
       # load require features 
       if ((defined? @dirty_features) && (@dirty_features - new_features).size > 0)
@@ -53,7 +64,7 @@ module OpenTox
       dataset.features = new_features
       dataset.compounds = new_compounds
       
-      # Ccopy dataset data for compounds and features
+      # Copy dataset data for compounds and features
       # PENDING: why storing feature values in an array? 
       new_compounds.each do |c|
         data_c = []
@@ -161,7 +172,7 @@ module OpenTox
     
 			@features.uniq!
 			@compounds.uniq!
-      RestClient::Resource.new(@@config[:services]["opentox-dataset"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0]).post(self.to_yaml, :content_type =>  "application/x-yaml").chomp.to_s		
+      OpenTox::RestClientWrapper.post(@@config[:services]["opentox-dataset"],{:content_type =>  "text/x-yaml"},self.to_yaml).strip 	
 		end
 
 =begin

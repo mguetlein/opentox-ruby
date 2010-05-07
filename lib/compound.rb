@@ -18,18 +18,18 @@ module OpenTox
 				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
 			elsif params[:name]
 				# paranoid URI encoding to keep SMILES charges and brackets
-				@inchi = RestClient.get("#{@@cactus_uri}#{URI.encode(params[:name], Regexp.new("[^#{URI::PATTERN::UNRESERVED}]"))}/stdinchi").chomp
+				@inchi = RestClientWrapper.get("#{@@cactus_uri}#{URI.encode(params[:name], Regexp.new("[^#{URI::PATTERN::UNRESERVED}]"))}/stdinchi").chomp
 				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
 			elsif params[:uri]
 				@uri = params[:uri]
 				case params[:uri]
 				when /ambit/ # Ambit does not deliver InChIs reliably
-					smiles = RestClient.get @uri, :accept => 'chemical/x-daylight-smiles'
+					smiles = RestClientWrapper.get @uri, :accept => 'chemical/x-daylight-smiles'
 					@inchi = obconversion(smiles,'smi','inchi')
 				when /InChI/ # shortcut for IST services
 					@inchi = params[:uri].sub(/^.*InChI/, 'InChI')
 				else
-					@inchi = RestClient.get @uri, :accept => 'chemical/x-inchi'
+					@inchi = RestClientWrapper.get @uri, :accept => 'chemical/x-inchi'
 				end
 			end
 		end
@@ -44,7 +44,7 @@ module OpenTox
 		end
 
 		def image
-			RestClient.get("#{@@cactus_uri}#{@inchi}/image")
+			RestClientWrapper.get("#{@@cactus_uri}#{@inchi}/image")
 		end
 
 		def image_uri
