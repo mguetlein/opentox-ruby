@@ -5,13 +5,15 @@ module OpenTox
 
 		def initialize(params)
 			#resource = RestClient::Resource.new(params[:uri], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
-			#@uri = resource.post(params).to_s
+			#@uri = resource.post(params).body
+			#LOGGER.debug "VALIDATION URI: " + @uri.to_s
 			call = "curl -X POST "
 			params.each do |k,v|
-				call += " -d "+k.to_s+"=\""+v.to_s+"\"" unless k == :uri
+				call += " -d "+k.to_s+"=\""+URI.encode(v.to_s)+"\"" unless k == :uri
 			end
 			call += " "+params[:uri]
 			LOGGER.debug call
+			@uri = `#{call}`
 		end
 		
 		def self.crossvalidation(params)
