@@ -172,7 +172,7 @@ module OpenTox
     
 			@features.uniq!
 			@compounds.uniq!
-      OpenTox::RestClientWrapper.post(@@config[:services]["opentox-dataset"],{:content_type =>  "text/x-yaml"},self.to_yaml).strip 	
+      OpenTox::RestClientWrapper.post(@@config[:services]["opentox-dataset"],{:content_type =>  "text/x-yaml"},self.to_yaml).strip.to_s
 		end
 
 =begin
