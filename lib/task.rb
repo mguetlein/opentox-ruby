@@ -1,6 +1,6 @@
 LOGGER.progname = File.expand_path(__FILE__)
 
-DEFAULT_TASK_MAX_DURATION = 360
+DEFAULT_TASK_MAX_DURATION = 480
 EXTERNAL_TASK_MAX_DURATION = 120
 
 $self_task=nil

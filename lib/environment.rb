@@ -41,7 +41,7 @@ if @@config[:database]
 end
 
 # hack: store sinatra in global var to make url_for and halt methods accessible
-before {$sinatra = self unless $sinatra}
+before{ $sinatra = self unless $sinatra }
 
 class Sinatra::Base
   # overwriting halt to log halts (!= 202)
@@ -79,7 +79,7 @@ class MyLogger < Logger
   end
   
   def format(msg)
-    pwd.ljust(18)+" :: "+msg.to_s+"           :: "+trace+" :: "+ENV['REMOTE_ADDR'].to_s
+    pwd.ljust(18)+" :: "+msg.to_s+"           :: "+trace+" :: "+($sinatra ? $sinatra.request.env['REMOTE_ADDR'] : nil).to_s
   end
   
   def debug(msg)
