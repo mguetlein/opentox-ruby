@@ -73,7 +73,7 @@ module OpenTox
          return false
        elsif @uri =~/tu-muenchen/ and @title =~ /regression|M5P|GaussP/
          return false
-       elsif @uri =~/ambit2/ and @title =~ /pKa/
+       elsif @uri =~/ambit2/ and @title =~ /pKa/ || @title =~ /Regression/
          return false
        elsif @uri =~/majority/
          return (@uri =~ /class/) != nil
