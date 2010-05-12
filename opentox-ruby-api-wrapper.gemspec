@@ -49,7 +49,7 @@ Gem::Specification.new do |s|
   s.homepage = %q{http://github.com/helma/opentox-ruby-api-wrapper}
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
-  s.rubygems_version = %q{1.3.5}
+  s.rubygems_version = %q{1.3.6}
   s.summary = %q{Ruby wrapper for the OpenTox REST API}
 
   if s.respond_to? :specification_version then
@@ -62,7 +62,7 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<rack>, [">= 0"])
       s.add_runtime_dependency(%q<rack-contrib>, [">= 0"])
       s.add_runtime_dependency(%q<rack-flash>, [">= 0"])
-      s.add_runtime_dependency(%q<sinatra-url-for>, [">= 0"])
+      s.add_runtime_dependency(%q<emk-sinatra-url-for>, [">= 0"])
       s.add_runtime_dependency(%q<sinatra-respond_to>, [">= 0"])
       s.add_runtime_dependency(%q<dm-more>, [">= 0"])
       s.add_runtime_dependency(%q<dm-core>, [">= 0"])
@@ -76,7 +76,7 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<rack>, [">= 0"])
       s.add_dependency(%q<rack-contrib>, [">= 0"])
       s.add_dependency(%q<rack-flash>, [">= 0"])
-      s.add_dependency(%q<sinatra-url-for>, [">= 0"])
+      s.add_dependency(%q<emk-sinatra-url-for>, [">= 0"])
       s.add_dependency(%q<sinatra-respond_to>, [">= 0"])
       s.add_dependency(%q<dm-more>, [">= 0"])
       s.add_dependency(%q<dm-core>, [">= 0"])
@@ -91,7 +91,7 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<rack>, [">= 0"])
     s.add_dependency(%q<rack-contrib>, [">= 0"])
     s.add_dependency(%q<rack-flash>, [">= 0"])
-    s.add_dependency(%q<sinatra-url-for>, [">= 0"])
+    s.add_dependency(%q<emk-sinatra-url-for>, [">= 0"])
     s.add_dependency(%q<sinatra-respond_to>, [">= 0"])
     s.add_dependency(%q<dm-more>, [">= 0"])
     s.add_dependency(%q<dm-core>, [">= 0"])
