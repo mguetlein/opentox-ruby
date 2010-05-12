@@ -90,8 +90,6 @@ module OpenTox
         raise "illegal status code: '"+res.code.to_s+"'" unless res.code==200
         return res
         
-      rescue RestClient::RequestFailed => ex
-        do_halt ex.http_code,ex.http_body,uri,headers,payload
       rescue RestClient::RequestTimeout => ex
         do_halt 408,ex.message,uri,headers,payload
       rescue => ex
