@@ -90,9 +90,9 @@ sudo apt-get install postgresql-server-dev-8.4 | tee -a $INSTALLLOG
 #echo "Installing gems jeweler sinatra emk-sinatra-url-for dm-core cehoffman-sinatra-respond_to rest-client rack-contrib thin cucumber datamapper data_objects do_sqlite3 rinruby"
 sudo gem install jeweler  | tee -a $INSTALLLOG
 sudo gem install sinatra | tee -a $INSTALLLOG
-sudo gem install emk-sinatra-url-for -s http://gems.github.com  | tee -a $INSTALLLOG
+sudo gem install sinatra-url-for | tee -a $INSTALLLOG
 sudo gem install dm-core  | tee -a $INSTALLLOG
-sudo gem install cehoffman-sinatra-respond_to -s http://gems.github.com  | tee -a $INSTALLLOG
+sudo gem install sinatra-respond_to | tee -a $INSTALLLOG
 sudo gem install rest-client | tee -a $INSTALLLOG
 sudo gem install rack-contrib | tee -a $INSTALLLOG
 sudo gem install thin | tee -a $INSTALLLOG
