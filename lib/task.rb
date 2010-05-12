@@ -1,8 +1,5 @@
 LOGGER.progname = File.expand_path(__FILE__)
 
-DEFAULT_TASK_MAX_DURATION = 3600
-EXTERNAL_TASK_MAX_DURATION = 1200
-
 $self_task=nil
 
 module OpenTox
@@ -40,14 +37,14 @@ module OpenTox
     end
     
     def reload
-      result = RestClientWrapper.get(uri, {:accept => 'application/rdf+xml'}, false)#'text/x-yaml'})
+      result = RestClientWrapper.get(uri, {:accept => 'application/rdf+xml'}, false)#'application/x-yaml'})
       @http_code = result.code
       reload_from_data(result, result.content_type, uri)
     end
     
     def reload_from_data( data, content_type, base_uri )
       case content_type
-      when /text\/x-yaml/
+      when /yaml/
         task =  YAML.load data
         TASK_ATTRIBS.each do |a|
           raise "task yaml data invalid, key missing: "+a.to_s unless task.has_key?(a)

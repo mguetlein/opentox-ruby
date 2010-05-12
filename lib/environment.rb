@@ -40,8 +40,8 @@ if @@config[:database]
 	end
 end
 
-# mail
-#load File.join config_dir,"mail.rb"
+# mail for error messages
+load File.join config_dir,"mail.rb" if File.exists?(File.join config_dir,"mail.rb")
 
 # hack: store sinatra in global var to make url_for and halt methods accessible
 before {$sinatra = self unless $sinatra}
@@ -136,3 +136,7 @@ XML = Redland::Namespace.new 'http://www.w3.org/2001/XMLSchema#'
 # Regular expressions for parsing classification data
 TRUE_REGEXP = /^(true|active|$1^)/
 FALSE_REGEXP = /^(false|inactive|$0^)/
+
+# Task durations
+DEFAULT_TASK_MAX_DURATION = @@config[:default_task_max_duration]
+EXTERNAL_TASK_MAX_DURATION = @@config[:external_task_max_duration]

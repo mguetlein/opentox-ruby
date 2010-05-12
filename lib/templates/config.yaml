@@ -1,13 +1,25 @@
 # Example configuration for OpenTox, please adjust to your settings
 # 
+# Database setup:
+#
+# Example MySql:
+#
+# :database: 
+#   :adapter:  mysql
+#   :database: production
+#   :username: production
+#   :password: your_password
+#   :host:     localhost
+#
 # Example 1: Using external test services
 #
 # :services:
-#  opentox-compound:      "http://webservices.in-silico.ch/test/compound/"
-#  opentox-dataset:       "http://webservices.in-silico.ch/test/dataset/"
-#  opentox-algorithm:     "http://webservices.in-silico.ch/test/algorithm/"
-#  opentox-model:         "http://webservices.in-silico.ch/test/model/"
-#  opentox-task:         "http://webservices.in-silico.ch/test/task/"
+#  opentox-compound:      "http://webservices.in-silico.ch/compound/"
+#  opentox-dataset:       "http://webservices.in-silico.ch/dataset/"
+#  opentox-algorithm:     "http://webservices.in-silico.ch/algorithm/"
+#  opentox-model:         "http://webservices.in-silico.ch/model/"
+#  opentox-task:          "http://webservices.in-silico.ch/task/"
+#  opentox-validation:    "http://opentox.informatik.uni-freiburg.de/validation/"
 #
 # Example 2: Using local services
 # :base_dir: /home/ch/webservices
@@ -18,3 +30,39 @@
 #   opentox-algorithm:     "http://localhost:4002/"
 #   opentox-model:         "http://localhost:4003/"
 #   opentox-task:          "http://localhost:4004/"
+#   opentox-validation:    "http://opentox.informatik.uni-freiburg.de/validation/"
+#
+# Accept headers:
+#
+# :accept_headers:
+#   opentox-compound:      
+#     - "chemical/x-daylight-smiles"
+#     - "chemical/x-inchi"
+#     - "chemical/x-mdl-sdfile"
+#     - "image/gif"
+#     - "text/plain"
+#   opentox-dataset:       
+#     - "application/x-yaml"
+#     - "text/x-yaml"
+#     - "application/rdf+xml"
+#   opentox-algorithm:     
+#     - "application/x-yaml"
+#     - "text/x-yaml"
+#     - "application/rdf+xml"
+#   opentox-model:         
+#     - "application/x-yaml"
+#     - "text/x-yaml"
+#     - "application/rdf+xml"
+#   opentox-task:          
+#     - "application/x-yaml"
+#     - "text/x-yaml"
+#     - "application/rdf+xml"
+#   opentox-validation:    
+#     - "application/x-yaml"
+#     - "text/x-yaml"
+#     - "application/rdf+xml"
+
+# Timeouts:
+# 
+# :default_task_max_duration: 3600
+# :external_task_max_duration: 3600
