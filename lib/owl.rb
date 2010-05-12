@@ -32,6 +32,7 @@ class Redland::Literal
   @@type_date = XML["date"].uri
   @@type_boolean = XML["boolean"].uri
   @@type_datetime = XML["dateTime"].uri
+  @@type_integer = XML["integer"].uri
   
   # parses value according to datatype uri
   def self.parse_value(string_value, datatype_uri)
@@ -54,6 +55,8 @@ class Redland::Literal
       return string_value #PENDING date as string?
     when @@type_datetime.to_s
       return string_value #PENDING date as string?
+    when @@type_integer.to_s
+      return string_value.to_i
     else
       raise "unknown literal datatype: '"+datatype_uri.to_s+"', value is "+string_value
     end
@@ -74,6 +77,10 @@ class Redland::Literal
       return @@type_float
     elsif value.is_a?(TrueClass) or value.is_a?(FalseClass)
       return @@type_boolean
+    elsif value.is_a?(Integer)
+      return @@type_integer
+    elsif value.is_a?(DateTime)
+      return @@type_datetime
     else
       raise "illegal datatype: "+value.class.to_s+" "+value.to_s
     end
