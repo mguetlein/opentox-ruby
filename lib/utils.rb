@@ -28,14 +28,33 @@ module OpenTox
         return false
       end
     end
-  end
   
+    def self.try_again(times=5)
+      count = 0
+      while (true)
+        begin
+          return yield
+        rescue => ex
+          count += 1
+          if count<times
+            LOGGER.warn "failed, try again in a second : "+ex.message
+            sleep 1
+          else
+            raise ex
+          end
+        end
+      end
+    end
+
+  end
+
 #  ['rubygems', 'rest_client'].each do |r|
 #    require r
 #  end
 #  ["bla", "google.de", "http://google.de"].each do |u|
 #    puts u+"? "+Utils.is_uri?(u).to_s
 #  end
+
 
 end
 
