@@ -362,7 +362,7 @@ module OpenTox
     "date" => DC["date"],
     "format" => DC["format"]}
   
-  # this method has to purposes:
+  # this method has two purposes:
   # * distinguishing ot-properties from dc- and rdf- properties
   # * caching nodes, as creating nodes is costly
   def node(name)
