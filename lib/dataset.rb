@@ -51,6 +51,7 @@ module OpenTox
     # returns uri of new dataset
     def create_new_dataset( new_compounds, new_features, new_title, new_creator )
       
+      LOGGER.debug "create new dataset with "+new_compounds.size.to_s+"/"+compounds.size.to_s+" compounds"
       raise "no new compounds selected" unless new_compounds and new_compounds.size>0
       
       # load require features 
@@ -68,6 +69,7 @@ module OpenTox
       # PENDING: why storing feature values in an array? 
       new_compounds.each do |c|
         data_c = []
+        raise "no data for compound '"+c.to_s+"'" if @data[c]==nil
         @data[c].each do |d|
           m = {}
           new_features.each do |f|
@@ -75,7 +77,6 @@ module OpenTox
           end
           data_c << m 
         end
-        
         dataset.data[c] = data_c
       end
       return dataset.save
