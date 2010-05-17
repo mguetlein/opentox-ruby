@@ -1,7 +1,7 @@
 LOGGER.progname = File.expand_path(__FILE__)
 
-DEFAULT_TASK_MAX_DURATION = 500
-EXTERNAL_TASK_MAX_DURATION = 480
+DEFAULT_TASK_MAX_DURATION = 36000 #10h
+EXTERNAL_TASK_MAX_DURATION = 36000 #10h
 
 $self_task=nil
 
@@ -40,7 +40,11 @@ module OpenTox
     end
     
     def reload
-      result = RestClientWrapper.get(uri, {:accept => 'application/rdf+xml'}, false)#'text/x-yaml'})
+      if uri=~ /188.40.32.88/ || uri=~/in-silico.ch/
+        result = RestClientWrapper.get(uri, {:accept => 'text/x-yaml'}, false)
+      else
+        result = RestClientWrapper.get(uri, {:accept => 'application/rdf+xml'}, false)
+      end
       @http_code = result.code
       reload_from_data(result, result.content_type, uri)
     end
