@@ -15,13 +15,12 @@ module OpenTox
 		def self.find(uri, accept_header=nil) 
     
       unless accept_header
-        if uri.match(@@config[:services]["opentox-dataset"]) || uri=~ /188.40.32.88/
+        if uri.match(@@config[:services]["opentox-dataset"]) || uri=~ /188.40.32.88/ || uri =~ /in-silico.ch/
           accept_header = 'text/x-yaml'
         else
           accept_header = "application/rdf+xml"
         end
       end
-      
       case accept_header
       when "text/x-yaml"
 				d = YAML.load RestClientWrapper.get(uri.to_s.strip, :accept => 'text/x-yaml').to_s 
