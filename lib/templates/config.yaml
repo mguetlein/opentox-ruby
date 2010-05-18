@@ -4,12 +4,12 @@
 #
 # Example MySql:
 #
-# :database: 
-#   :adapter:  mysql
-#   :database: production
-#   :username: production
-#   :password: your_password
-#   :host:     localhost
+ :database: 
+   :adapter:  mysql
+   :database: production
+   :username: root
+   :password: opentox
+   :host:     localhost
 #
 # Example 1: Using external test services
 #
@@ -22,47 +22,47 @@
 #  opentox-validation:    "http://opentox.informatik.uni-freiburg.de/validation/"
 #
 # Example 2: Using local services
-# :base_dir: /home/ch/webservices
-# :webserver: thin
-# :services:
-#   opentox-compound:      "http://localhost:4000/"
-#   opentox-dataset:       "http://localhost:4001/"
-#   opentox-algorithm:     "http://localhost:4002/"
-#   opentox-model:         "http://localhost:4003/"
-#   opentox-task:          "http://localhost:4004/"
-#   opentox-validation:    "http://opentox.informatik.uni-freiburg.de/validation/"
+ :base_dir: /home/ist/webservices
+ :webserver: passenger
+ :services:
+   opentox-compound:      "http://localhost/compound/"
+   opentox-dataset:       "http://localhost/dataset/"
+   opentox-algorithm:     "http://localhost/algorithm/"
+   opentox-model:         "http://localhost/model/"
+   opentox-task:          "http://localhost/task/"
+   opentox-validation:    "http://opentox.informatik.uni-freiburg.de/validation/"
 #
 # Accept headers:
 #
-# :accept_headers:
-#   opentox-compound:      
-#     - "chemical/x-daylight-smiles"
-#     - "chemical/x-inchi"
-#     - "chemical/x-mdl-sdfile"
-#     - "image/gif"
-#     - "text/plain"
-#   opentox-dataset:       
-#     - "application/x-yaml"
-#     - "text/x-yaml"
-#     - "application/rdf+xml"
-#   opentox-algorithm:     
-#     - "application/x-yaml"
-#     - "text/x-yaml"
-#     - "application/rdf+xml"
-#   opentox-model:         
-#     - "application/x-yaml"
-#     - "text/x-yaml"
-#     - "application/rdf+xml"
-#   opentox-task:          
-#     - "application/x-yaml"
-#     - "text/x-yaml"
-#     - "application/rdf+xml"
-#   opentox-validation:    
-#     - "application/x-yaml"
-#     - "text/x-yaml"
-#     - "application/rdf+xml"
+ :accept_headers:
+   opentox-compound:      
+     - "chemical/x-daylight-smiles"
+     - "chemical/x-inchi"
+     - "chemical/x-mdl-sdfile"
+     - "image/gif"
+     - "text/plain"
+   opentox-dataset:       
+     - "application/x-yaml"
+     - "text/x-yaml"
+     - "application/rdf+xml"
+   opentox-algorithm:     
+     - "application/x-yaml"
+     - "text/x-yaml"
+     - "application/rdf+xml"
+   opentox-model:         
+     - "application/x-yaml"
+     - "text/x-yaml"
+     - "application/rdf+xml"
+   opentox-task:          
+     - "application/x-yaml"
+     - "text/x-yaml"
+     - "application/rdf+xml"
+   opentox-validation:    
+     - "application/x-yaml"
+     - "text/x-yaml"
+     - "application/rdf+xml"
 
 # Timeouts:
 # 
-# :default_task_max_duration: 3600
-# :external_task_max_duration: 3600
+ :default_task_max_duration: 3600
+ :external_task_max_duration: 3600
