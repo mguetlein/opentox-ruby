@@ -10,7 +10,28 @@ begin
     gem.email = "helma@in-silico.ch"
     gem.homepage = "http://github.com/helma/opentox-ruby-api-wrapper"
     gem.authors = ["Christoph Helma"]
-		["sinatra", "rest-client", "rack", "rack-contrib", "rack-flash", "emk-sinatra-url-for", "sinatra-respond_to", "dm-more", "dm-core", "sinatra-static-assets","tmail","roo","spreadsheet", "google-spreadsheet-ruby"].each do |dep|
+		[ "sinatra",
+			"emk-sinatra-url-for",
+			"sinatra-respond_to",
+			"sinatra-static-assets",
+			"dm-more",
+			"dm-core",
+			"rest-client",
+			"rack",
+			"rack-contrib",
+			"rack-flash",
+			"nokogiri",
+			"rubyzip",
+			"builder",
+			"do_mysql",
+			"data_objects",
+			"roo",
+			"spreadsheet",
+			"google-spreadsheet-ruby",
+			"tmail",
+			"haml"
+
+		].each do |dep|
 			gem.add_dependency dep
 		end
 		['cucumber','jeweler'].each do |dep|
