@@ -41,10 +41,11 @@ if MAIL
 	end
 
 
+	require "socket"
 	use Rack::MailExceptions do |mail|
-			mail.to 'helma@in-silico.ch'
+			mail.to MAIL[:user_name]
 			mail.subject '[ERROR] %s'
-			mail.from "toxcreate@in-silico.ch"
+			mail.from "#{Socket.gethostname}@#{MAIL[:domain]}"
 			mail.smtp MAIL
 	end 
 end

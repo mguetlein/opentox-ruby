@@ -18,7 +18,9 @@ module OpenTox
 				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
 			elsif params[:name]
 				# paranoid URI encoding to keep SMILES charges and brackets
-				@inchi = RestClientWrapper.get("#{@@cactus_uri}#{URI.encode(params[:name], Regexp.new("[^#{URI::PATTERN::UNRESERVED}]"))}/stdinchi").chomp
+				@inchi = RestClient.get("#{@@cactus_uri}#{URI.encode(params[:name], Regexp.new("[^#{URI::PATTERN::UNRESERVED}]"))}/stdinchi").body.chomp
+				# this was too hard for me to debug and leads to additional errors (ch)
+				#@inchi = RestClientWrapper.get("#{@@cactus_uri}#{URI.encode(params[:name], Regexp.new("[^#{URI::PATTERN::UNRESERVED}]"))}/stdinchi").chomp
 				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
 			elsif params[:uri]
 				@uri = params[:uri]
