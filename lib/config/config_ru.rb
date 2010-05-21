@@ -18,7 +18,7 @@ set :raise_errors, true
 end
  
 use Rack::ShowExceptions
-if MAIL
+if defined?(MAIL)
 
 	# monkeypatch with the original method
 	# strangely enough my mailserver returns "Connection refused - connect(2)" errors without this patch
