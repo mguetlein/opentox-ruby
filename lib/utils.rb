@@ -29,7 +29,7 @@ module OpenTox
       end
     end
   
-    def self.try_again(times=5)
+    def self.try_again(times=25)
       count = 0
       while (true)
         begin
@@ -37,7 +37,7 @@ module OpenTox
         rescue => ex
           count += 1
           if count<times
-            LOGGER.warn "failed, try again in a second : "+ex.message
+            LOGGER.warn "failed ("+count.to_s+"), try again in a second : "+ex.message
             sleep 1
           else
             raise ex
