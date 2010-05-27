@@ -13,6 +13,7 @@ LOG_DIR = File.join(basedir, "log")
 
 if File.exist?(config_file)
 	@@config = YAML.load_file(config_file)
+  raise "could not load config, config file: "+config_file.to_s unless @@config
 else
 	FileUtils.mkdir_p TMP_DIR
 	FileUtils.mkdir_p LOG_DIR
