@@ -29,23 +29,6 @@ module OpenTox
       end
     end
   
-    def self.try_again(times=25)
-      count = 0
-      while (true)
-        begin
-          return yield
-        rescue => ex
-          count += 1
-          if count<times
-            LOGGER.warn "failed ("+count.to_s+"), try again in a second : "+ex.message
-            sleep 1
-          else
-            raise ex
-          end
-        end
-      end
-    end
-
   end
 
 #  ['rubygems', 'rest_client'].each do |r|
