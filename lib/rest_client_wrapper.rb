@@ -140,15 +140,15 @@ module OpenTox
         error = [Error.new(code, body, uri, payload, headers)]
       end
 
-#      #debug utility: write error to file       
-#      error_dir = "/tmp/ot_errors"
-#      FileUtils.mkdir(error_dir) unless File.exist?(error_dir)
-#      raise "could not create error dir" unless File.exist?(error_dir) and File.directory?(error_dir)
-#      file_name = "error"
-#      time=Time.now.strftime("%m.%d.%Y-%H:%M:%S")
-#      count = 1
-#      count+=1 while File.exist?(File.join(error_dir,file_name+"_"+time+"_"+count.to_s))
-#      File.new(File.join(error_dir,file_name+"_"+time+"_"+count.to_s),"w").puts(body)
+      #debug utility: write error to file       
+      error_dir = "/tmp/ot_errors"
+      FileUtils.mkdir(error_dir) unless File.exist?(error_dir)
+      raise "could not create error dir" unless File.exist?(error_dir) and File.directory?(error_dir)
+      file_name = "error"
+      time=Time.now.strftime("%m.%d.%Y-%H:%M:%S")
+      count = 1
+      count+=1 while File.exist?(File.join(error_dir,file_name+"_"+time+"_"+count.to_s))
+      File.new(File.join(error_dir,file_name+"_"+time+"_"+count.to_s),"w").puts(body)
       
       # handle error
       # we are either in a task, or in sinatra

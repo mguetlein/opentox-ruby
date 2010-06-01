@@ -78,6 +78,7 @@ module OpenTox
 		end
 
 		def error(description)
+      description = description[0..999] if description.to_s.size>1000
 			RestClientWrapper.put(File.join(@uri,'Error'),{:description => description})
       reload
 		end
