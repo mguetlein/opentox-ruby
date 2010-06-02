@@ -9,7 +9,7 @@ module OpenTox
     
     def initialize(code, body, uri, payload, headers)
       self.code = code
-      self.body = body
+      self.body = body.to_s[0..1000]
       self.uri = uri
       self.payload = payload
       self.headers = headers
