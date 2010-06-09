@@ -81,6 +81,8 @@ class Redland::Literal
       return @@type_integer
     elsif value.is_a?(DateTime)
       return @@type_datetime
+    elsif value.is_a?(Time)
+      return @@type_datetime
     else
       raise "illegal datatype: "+value.class.to_s+" "+value.to_s
     end
