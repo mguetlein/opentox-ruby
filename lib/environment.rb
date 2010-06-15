@@ -24,7 +24,7 @@ end
 
 # database
 if @@config[:database]
-	['dm-core', 'dm-serializer', 'dm-timestamps', 'dm-types'].each{|lib| require lib }
+	['dm-core', 'dm-serializer', 'dm-timestamps', 'dm-types', 'dm-migrations' ].each{|lib| require lib }
 	case @@config[:database][:adapter]
 	when /sqlite/i
 		db_dir = File.join(basedir, "db")
@@ -106,6 +106,7 @@ end
 
 logfile = "#{LOG_DIR}/#{ENV["RACK_ENV"]}.log"
 LOGGER = MyLogger.new(logfile,'daily') # daily rotation
+LOGGER.level = Logger::WARN if ENV["RACK_ENV"] == 'production'
 
 #LOGGER = MyLogger.new(STDOUT)
 #LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
