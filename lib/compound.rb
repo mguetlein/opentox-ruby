@@ -69,6 +69,12 @@ module OpenTox
 			smarts_array.collect{|s| s if match?(s)}.compact
 		end
 
+		# AM
+		# Match an array of smarts features, returns (0)1 for (non)matching features at each pos
+		def match_all(smarts_array)
+			smarts_array.collect{|s| match?(s) ? 1 : 0 }
+		end
+
 		def sdf2inchi(sdf)
 			obconversion(sdf,'sdf','inchi')
 		end
