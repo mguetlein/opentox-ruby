@@ -106,12 +106,16 @@ end
 
 logfile = "#{LOG_DIR}/#{ENV["RACK_ENV"]}.log"
 LOGGER = MyLogger.new(logfile,'daily') # daily rotation
-LOGGER.level = Logger::WARN if ENV["RACK_ENV"] == 'production'
+case `hostname`
+when /ot-dev/
+	LOGGER.level = Logger::DEBUG
+else
+	LOGGER.level = Logger::WARN 
+end
 
 #LOGGER = MyLogger.new(STDOUT)
 #LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 
-#LOGGER.level = Logger::DEBUG
 
 if File.exist?(user_file)
   @@users = YAML.load_file(user_file)
