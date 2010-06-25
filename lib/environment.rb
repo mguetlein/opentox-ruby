@@ -25,8 +25,7 @@ end
 
 # database
 if @@config[:database]
-	#['dm-core', 'dm-serializer', 'dm-timestamps', 'dm-types'].each{|lib| require lib }
-  ['rubygems', 'datamapper'].each{|lib| require lib }
+	['dm-core', 'dm-serializer', 'dm-timestamps', 'dm-types', 'dm-migrations' ].each{|lib| require lib }
 	case @@config[:database][:adapter]
 	when /sqlite/i
 		db_dir = File.join(basedir, "db")
@@ -42,13 +41,16 @@ if @@config[:database]
 	end
 end
 
+# mail for error messages
+load File.join config_dir,"mail.rb" if File.exists?(File.join config_dir,"mail.rb")
+
 # hack: store sinatra in global var to make url_for and halt methods accessible
 before{ $sinatra = self unless $sinatra }
 
 class Sinatra::Base
   # overwriting halt to log halts (!= 202)
   def halt(*response)
-    LOGGER.error "halt "+response.first.to_s+" "+(response.size>1 ? response[1].to_s : "") if response.first >= 300
+    LOGGER.error "halt "+response.first.to_s+" "+(response.size>1 ? response[1].to_s : "") if response and response.first and response.first >= 300
     # orig sinatra code:
     response = response.first if response.length == 1
     throw :halt, response
@@ -105,6 +107,7 @@ end
 
 logfile = "#{LOG_DIR}/#{ENV["RACK_ENV"]}.log"
 LOGGER = MyLogger.new(logfile,'daily') # daily rotation
+LOGGER.level = Logger::WARN if ENV["RACK_ENV"] == 'production'
 
 #LOGGER = MyLogger.new(STDOUT)
 #LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
@@ -136,3 +139,7 @@ XML = Redland::Namespace.new 'http://www.w3.org/2001/XMLSchema#'
 # Regular expressions for parsing classification data
 TRUE_REGEXP = /^(true|active|$1^)/
 FALSE_REGEXP = /^(false|inactive|$0^)/
+
+# Task durations
+DEFAULT_TASK_MAX_DURATION = @@config[:default_task_max_duration]
+EXTERNAL_TASK_MAX_DURATION = @@config[:external_task_max_duration]
