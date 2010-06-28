@@ -110,7 +110,7 @@ module OpenTox
                           
       task = nil
       case res.content_type
-      when /application\/rdf\+xml|text\/x-yaml/
+      when /application\/rdf\+xml|application\/x-yaml/
         task = OpenTox::Task.from_data(res, res.content_type, res.code, base_uri)
       when /text\//
         raise "uri list has more than one entry, should be a task" if res.content_type=~/text\/uri-list/ and
