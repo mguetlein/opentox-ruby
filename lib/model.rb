@@ -44,12 +44,6 @@ module OpenTox
      
      def self.build( algorithm_uri, algorithm_params )
         
-       if algorithm_uri =~ /ambit2/
-         LOGGER.warn "Ambit hack, replacing 'prediction_feature' with 'target'"
-         algorithm_params[:target] = algorithm_params[:prediction_feature]
-         algorithm_params.delete(:prediction_feature)
-       end
-       
        LOGGER.debug "Build model, algorithm_uri:"+algorithm_uri.to_s+", algorithm_parms: "+algorithm_params.inspect.to_s
        uri = OpenTox::RestClientWrapper.post(algorithm_uri,algorithm_params).to_s
        LOGGER.debug "Build model done: "+uri.to_s
@@ -60,7 +54,7 @@ module OpenTox
      def predict_dataset( dataset_uri )
 
        LOGGER.debug "Predict dataset: "+dataset_uri.to_s+" with model "+@uri.to_s
-       uri = RestClientWrapper.post(@uri, {:dataset_uri=>dataset_uri})
+       uri = RestClientWrapper.post(@uri, {:accept => "text/uri-list", :dataset_uri=>dataset_uri})
        RestClientWrapper.raise_uri_error("Prediciton result no dataset uri: "+uri.to_s, @uri, {:dataset_uri=>dataset_uri} ) unless Utils.dataset_uri?(uri)
        uri
      end
@@ -73,7 +67,7 @@ module OpenTox
          return false
        elsif @uri =~/tu-muenchen/ and @title =~ /regression|M5P|GaussP/
          return false
-       elsif @uri =~/ambit2/ and @title =~ /pKa/
+       elsif @uri =~/ambit2/ and @title =~ /pKa/ || @title =~ /Regression|Caco/
          return false
        elsif @uri =~/majority/
          return (@uri =~ /class/) != nil

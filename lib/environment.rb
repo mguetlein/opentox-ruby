@@ -13,6 +13,7 @@ LOG_DIR = File.join(basedir, "log")
 
 if File.exist?(config_file)
 	@@config = YAML.load_file(config_file)
+  raise "could not load config, config file: "+config_file.to_s unless @@config
 else
 	FileUtils.mkdir_p TMP_DIR
 	FileUtils.mkdir_p LOG_DIR
@@ -44,7 +45,7 @@ end
 load File.join config_dir,"mail.rb" if File.exists?(File.join config_dir,"mail.rb")
 
 # hack: store sinatra in global var to make url_for and halt methods accessible
-before {$sinatra = self unless $sinatra}
+before{ $sinatra = self unless $sinatra }
 
 class Sinatra::Base
   # overwriting halt to log halts (!= 202)
@@ -82,7 +83,7 @@ class MyLogger < Logger
   end
   
   def format(msg)
-    pwd.ljust(18)+" :: "+msg.to_s+"           :: "+trace+" :: "+ENV['REMOTE_ADDR'].to_s
+    pwd.ljust(18)+" :: "+msg.to_s+"           :: "+trace+" :: "+($sinatra ? $sinatra.request.env['REMOTE_ADDR'] : nil).to_s
   end
   
   def debug(msg)
@@ -136,6 +137,7 @@ RDF = Redland::Namespace.new 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
 OWL = Redland::Namespace.new 'http://www.w3.org/2002/07/owl#'
 DC = Redland::Namespace.new 'http://purl.org/dc/elements/1.1/'
 OT = Redland::Namespace.new 'http://www.opentox.org/api/1.1#'
+#OT = Redland::Namespace.new 'http://ortona.informatik.uni-freiburg.de/opentox.owl#'
 XML = Redland::Namespace.new 'http://www.w3.org/2001/XMLSchema#'
 
 # Regular expressions for parsing classification data

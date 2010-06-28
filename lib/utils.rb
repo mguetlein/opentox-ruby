@@ -28,14 +28,16 @@ module OpenTox
         return false
       end
     end
-  end
   
+  end
+
 #  ['rubygems', 'rest_client'].each do |r|
 #    require r
 #  end
 #  ["bla", "google.de", "http://google.de"].each do |u|
 #    puts u+"? "+Utils.is_uri?(u).to_s
 #  end
+
 
 end
 

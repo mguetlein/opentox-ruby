@@ -32,6 +32,7 @@ class Redland::Literal
   @@type_date = XML["date"].uri
   @@type_boolean = XML["boolean"].uri
   @@type_datetime = XML["dateTime"].uri
+  @@type_integer = XML["integer"].uri
   
   # parses value according to datatype uri
   def self.parse_value(string_value, datatype_uri)
@@ -54,6 +55,8 @@ class Redland::Literal
       return string_value #PENDING date as string?
     when @@type_datetime.to_s
       return string_value #PENDING date as string?
+    when @@type_integer.to_s
+      return string_value.to_i
     else
       raise "unknown literal datatype: '"+datatype_uri.to_s+"', value is "+string_value
     end
@@ -74,6 +77,12 @@ class Redland::Literal
       return @@type_float
     elsif value.is_a?(TrueClass) or value.is_a?(FalseClass)
       return @@type_boolean
+    elsif value.is_a?(Integer)
+      return @@type_integer
+    elsif value.is_a?(DateTime)
+      return @@type_datetime
+    elsif value.is_a?(Time)
+      return @@type_datetime
     else
       raise "illegal datatype: "+value.class.to_s+" "+value.to_s
     end
@@ -98,7 +107,7 @@ module OpenTox
 			owl = OpenTox::Owl.new
       owl.ot_class = ot_class
       owl.root_node = Redland::Resource.new(uri.to_s.strip)
-			owl.set("type",owl.node(owl.ot_class))
+			owl.set("type",owl.node(owl.ot_class)) #,true))
 			owl
 	  end
   
@@ -169,8 +178,9 @@ module OpenTox
     
     public
     def set(name, value, datatype=nil)
+      
       raise "uri is no prop, cannot set uri" if name=="uri"
-      property_node = node(name.to_s)
+      property_node = node(name.to_s) #, true)
       begin # delete existing entry
         t = @model.object(@root_node, property_node)
         @model.delete @root_node, property_node, t
@@ -355,16 +365,30 @@ module OpenTox
     "date" => DC["date"],
     "format" => DC["format"]}
   
-  # this method has to purposes:
+#  @object_prop = OWL["ObjectProperty"]
+#  @@type = { "Validation" => OWL["Class"],
+#             "Model" => OWL["Class"],
+#             "title" => OWL["AnnotationProperty"],
+#             "creator" => OWL["AnnotationProperty"],
+#             "date" => OWL["AnnotationProperty"],
+#             "format" => OWL["AnnotationProperty"],
+#             "predictedVariables" => @object_prop}
+  
+  # this method has two purposes:
   # * distinguishing ot-properties from dc- and rdf- properties
   # * caching nodes, as creating nodes is costly
-  def node(name)
+  def node(name) #, write_type_to_model=false)
     raise "dc[identifier] deprecated, use owl.uri" if name=="identifier"
     n = @@property_nodes[name]
     unless n
       n = OT[name]
       @@property_nodes[name] = n
     end
+    
+#    if write_type_to_model and name!="type"
+#      raise "no type defined for '"+name+"'" unless @@type[name] 
+#      @model.add n,RDF['type'],@@type[name]
+#    end
     return n
   end
 

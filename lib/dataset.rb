@@ -22,7 +22,6 @@ module OpenTox
           accept_header = "application/rdf+xml"
         end
       end
-      
       case accept_header
       when "application/x-yaml"
 				d = YAML.load RestClientWrapper.get(uri.to_s.strip, :accept => 'application/x-yaml').to_s 
@@ -52,6 +51,7 @@ module OpenTox
     # returns uri of new dataset
     def create_new_dataset( new_compounds, new_features, new_title, new_creator )
       
+      LOGGER.debug "create new dataset with "+new_compounds.size.to_s+"/"+compounds.size.to_s+" compounds"
       raise "no new compounds selected" unless new_compounds and new_compounds.size>0
       
       # load require features 
@@ -69,6 +69,7 @@ module OpenTox
       # PENDING: why storing feature values in an array? 
       new_compounds.each do |c|
         data_c = []
+        raise "no data for compound '"+c.to_s+"'" if @data[c]==nil
         @data[c].each do |d|
           m = {}
           new_features.each do |f|
@@ -76,7 +77,6 @@ module OpenTox
           end
           data_c << m 
         end
-        
         dataset.data[c] = data_c
       end
       return dataset.save
@@ -91,15 +91,16 @@ module OpenTox
         else
           return "no classification key"
         end
-      else
-        raise "predicted class value is not a hash\n"+
+      elsif v.is_a?(Array)
+        raise "predicted class value is an array\n"+
           "value "+v.to_s+"\n"+
           "value-class "+v.class.to_s+"\n"+
           "dataset "+@uri.to_s+"\n"+
           "compound "+compound.to_s+"\n"+
           "feature "+feature.to_s+"\n"
+      else
+        return v
       end
-      
     end
     
     # returns prediction confidence if available
@@ -113,12 +114,14 @@ module OpenTox
           raise "no confidence key"
         end
       else
-        raise "prediction confidence value is not a hash value\n"+
-          "value "+v.to_s+"\n"+
-          "value-class "+v.class.to_s+"\n"+
-          "dataset "+@uri.to_s+"\n"+
-          "compound "+compound.to_s+"\n"+
-          "feature "+feature.to_s+"\n"
+        LOGGER.warn "no confidence for compound: "+compound.to_s+", feature: "+feature.to_s
+        return 1
+#        raise "prediction confidence value is not a hash value\n"+
+#          "value "+v.to_s+"\n"+
+#          "value-class "+v.class.to_s+"\n"+
+#          "dataset "+@uri.to_s+"\n"+
+#          "compound "+compound.to_s+"\n"+
+#          "feature "+feature.to_s+"\n"
       end
     end
     
@@ -173,7 +176,7 @@ module OpenTox
     
 			@features.uniq!
 			@compounds.uniq!
-      OpenTox::RestClientWrapper.post(@@config[:services]["opentox-dataset"],{:content_type =>  "application/x-yaml"},self.to_yaml).strip 	
+        OpenTox::RestClientWrapper.post(@@config[:services]["opentox-dataset"],{:content_type =>  "application/x-yaml"},self.to_yaml).strip 	
 		end
 
     def init_dirty_features(owl)

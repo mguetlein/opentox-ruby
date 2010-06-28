@@ -5,14 +5,14 @@
 
 Gem::Specification.new do |s|
   s.name = %q{opentox-ruby-api-wrapper}
-  s.version = "1.5.6"
+  s.version = "1.5.7"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Christoph Helma, Martin Guetlein"]
-  s.date = %q{2010-06-15}
+  s.date = %q{2010-06-28}
   s.description = %q{Ruby wrapper for the OpenTox REST API (http://www.opentox.org)}
   s.email = %q{helma@in-silico.ch}
-  s.executables = ["opentox-install-ubuntu.sh", "yaml2owl.rb", "opentox-install-debian.sh"]
+  s.executables = ["yaml2owl.rb", "opentox-install-ubuntu.sh", "opentox-install-debian.sh"]
   s.extra_rdoc_files = [
     "LICENSE",
      "README.rdoc"

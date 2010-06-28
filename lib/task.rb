@@ -71,7 +71,7 @@ module OpenTox
 		end
 
 		def error(description)
-			RestClientWrapper.put(File.join(@uri,'Error'),{:description => description})
+      RestClientWrapper.put(File.join(@uri,'Error'),{:description => description.to_s[0..2000]})
       reload
 		end
     
@@ -113,7 +113,7 @@ module OpenTox
         end
 			end
       
-      LOGGER.debug "task no longer running: "+@uri.to_s+", result: "+@resultURI.to_s
+      LOGGER.debug "Task '"+@hasStatus+"': "+@uri.to_s+", Result: "+@resultURI.to_s
 	  end
   
     def check_state

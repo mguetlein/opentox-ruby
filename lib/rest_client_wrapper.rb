@@ -9,7 +9,7 @@ module OpenTox
     
     def initialize(code, body, uri, payload, headers)
       self.code = code
-      self.body = body
+      self.body = body.to_s[0..1000]
       self.uri = uri
       self.payload = payload
       self.headers = headers
@@ -90,8 +90,6 @@ module OpenTox
         raise "illegal status code: '"+res.code.to_s+"'" unless res.code==200
         return res
         
-      rescue RestClient::RequestFailed => ex
-        do_halt ex.http_code,ex.http_body,uri,headers,payload
       rescue RestClient::RequestTimeout => ex
         do_halt 408,ex.message,uri,headers,payload
       rescue => ex
@@ -112,7 +110,7 @@ module OpenTox
                           
       task = nil
       case res.content_type
-      when /application\/rdf\+xml|text\/x-yaml/
+      when /application\/rdf\+xml|application\/x-yaml/
         task = OpenTox::Task.from_data(res, res.content_type, res.code, base_uri)
       when /text\//
         raise "uri list has more than one entry, should be a task" if res.content_type=~/text\/uri-list/ and
@@ -142,15 +140,15 @@ module OpenTox
         error = [Error.new(code, body, uri, payload, headers)]
       end
 
-#      #debug utility: write error to file       
-#      error_dir = "/tmp/ot_errors"
-#      FileUtils.mkdir(error_dir) unless File.exist?(error_dir)
-#      raise "could not create error dir" unless File.exist?(error_dir) and File.directory?(error_dir)
-#      file_name = "error"
-#      time=Time.now.strftime("%m.%d.%Y-%H:%M:%S")
-#      count = 1
-#      count+=1 while File.exist?(File.join(error_dir,file_name+"_"+time+"_"+count.to_s))
-#      File.new(File.join(error_dir,file_name+"_"+time+"_"+count.to_s),"w").puts(body)
+      #debug utility: write error to file       
+      error_dir = "/tmp/ot_errors"
+      FileUtils.mkdir(error_dir) unless File.exist?(error_dir)
+      raise "could not create error dir" unless File.exist?(error_dir) and File.directory?(error_dir)
+      file_name = "error"
+      time=Time.now.strftime("%m.%d.%Y-%H:%M:%S")
+      count = 1
+      count+=1 while File.exist?(File.join(error_dir,file_name+"_"+time+"_"+count.to_s))
+      File.new(File.join(error_dir,file_name+"_"+time+"_"+count.to_s),"w").puts(body)
       
       # handle error
       # we are either in a task, or in sinatra
