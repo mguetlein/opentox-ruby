@@ -43,23 +43,18 @@
      - "text/plain"
    opentox-dataset:       
      - "application/x-yaml"
-     - "text/x-yaml"
      - "application/rdf+xml"
    opentox-algorithm:     
      - "application/x-yaml"
-     - "text/x-yaml"
      - "application/rdf+xml"
    opentox-model:         
      - "application/x-yaml"
-     - "text/x-yaml"
      - "application/rdf+xml"
    opentox-task:          
      - "application/x-yaml"
-     - "text/x-yaml"
      - "application/rdf+xml"
    opentox-validation:    
      - "application/x-yaml"
-     - "text/x-yaml"
      - "application/rdf+xml"
 
 # Timeouts:
