@@ -107,16 +107,11 @@ end
 
 logfile = "#{LOG_DIR}/#{ENV["RACK_ENV"]}.log"
 LOGGER = MyLogger.new(logfile,'daily') # daily rotation
-case `hostname`
-when /ot-dev/
+if @@config[:logger] and @@config[:logger] == "debug"
 	LOGGER.level = Logger::DEBUG
 else
 	LOGGER.level = Logger::WARN 
 end
-
-#LOGGER = MyLogger.new(STDOUT)
-#LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
-
 
 if File.exist?(user_file)
   @@users = YAML.load_file(user_file)
@@ -141,8 +136,8 @@ OT = Redland::Namespace.new 'http://www.opentox.org/api/1.1#'
 XML = Redland::Namespace.new 'http://www.w3.org/2001/XMLSchema#'
 
 # Regular expressions for parsing classification data
-TRUE_REGEXP = /^(true|active|$1^)/
-FALSE_REGEXP = /^(false|inactive|$0^)/
+TRUE_REGEXP = /^(true|active|1|1.0)$/i
+FALSE_REGEXP = /^(false|inactive|0|0.0)$/i
 
 # Task durations
 DEFAULT_TASK_MAX_DURATION = @@config[:default_task_max_duration]

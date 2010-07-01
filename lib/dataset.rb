@@ -86,8 +86,10 @@ module OpenTox
     def get_predicted_class(compound, feature)
       v = get_value(compound, feature)
       if v.is_a?(Hash)
-        if v.has_key?(:classification)
-          return v[:classification]
+				k = v.keys.grep("classification")
+				unless k.empty?
+        #if v.has_key?(:classification)
+          return v[k]
         else
           return "no classification key"
         end
@@ -107,7 +109,9 @@ module OpenTox
     def get_prediction_confidence(compound, feature)
       v = get_value(compound, feature)
       if v.is_a?(Hash)
-        if v.has_key?(:confidence)
+				k = v.keys.grep("confidence")
+				unless k.empty?
+        #if v.has_key?(:confidence)
           return v[:confidence].abs
         else
           # PENDING: return nil isntead of raising an exception

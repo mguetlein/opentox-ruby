@@ -61,7 +61,7 @@ module OpenTox
     
      def classification?
        #HACK replace with request to ontology server
-       if @title =~ /lazar classification/
+       if @title =~ /classification/
          return true
        elsif @uri =~/ntua/ and @title =~ /mlr/
          return false
