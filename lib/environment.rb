@@ -41,7 +41,7 @@ if @@config[:database]
 	end
 end
 
-# mail for error messages
+# load mail settings for error messages
 load File.join config_dir,"mail.rb" if File.exists?(File.join config_dir,"mail.rb")
 
 # hack: store sinatra in global var to make url_for and halt methods accessible

@@ -86,7 +86,7 @@ module OpenTox
     def get_predicted_class(compound, feature)
       v = get_value(compound, feature)
       if v.is_a?(Hash)
-				k = v.keys.grep("classification")
+				k = v.keys.grep(/classification/).first
 				unless k.empty?
         #if v.has_key?(:classification)
           return v[k]
@@ -105,14 +105,37 @@ module OpenTox
       end
     end
     
+    # returns regression value
+    def get_predicted_regression(compound, feature)
+      v = get_value(compound, feature)
+      if v.is_a?(Hash)
+				k = v.keys.grep(/regression/).first
+				unless k.empty?
+          return v[k]
+        else
+          return "no regression key"
+        end
+      elsif v.is_a?(Array)
+        raise "predicted regression value is an array\n"+
+          "value "+v.to_s+"\n"+
+          "value-class "+v.class.to_s+"\n"+
+          "dataset "+@uri.to_s+"\n"+
+          "compound "+compound.to_s+"\n"+
+          "feature "+feature.to_s+"\n"
+      else
+        return v
+      end
+    end
+    
     # returns prediction confidence if available
     def get_prediction_confidence(compound, feature)
       v = get_value(compound, feature)
       if v.is_a?(Hash)
-				k = v.keys.grep("confidence")
+				k = v.keys.grep(/confidence/).first
 				unless k.empty?
         #if v.has_key?(:confidence)
-          return v[:confidence].abs
+          return v[k].abs
+					#return v["http://ot-dev.in-silico.ch/model/lazar#confidence"].abs
         else
           # PENDING: return nil isntead of raising an exception
           raise "no confidence key"
