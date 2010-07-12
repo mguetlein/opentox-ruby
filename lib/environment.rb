@@ -107,6 +107,7 @@ end
 
 logfile = "#{LOG_DIR}/#{ENV["RACK_ENV"]}.log"
 LOGGER = MyLogger.new(logfile,'daily') # daily rotation
+LOGGER.formatter = Logger::Formatter.new #this is neccessary to restore the formating in case active-record is loaded
 if @@config[:logger] and @@config[:logger] == "debug"
 	LOGGER.level = Logger::DEBUG
 else
