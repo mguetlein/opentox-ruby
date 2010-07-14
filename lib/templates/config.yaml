@@ -30,7 +30,7 @@
    opentox-algorithm:     "http://localhost/algorithm/"
    opentox-model:         "http://localhost/model/"
    opentox-task:          "http://localhost/task/"
-   opentox-validation:    "http://opentox.informatik.uni-freiburg.de/validation/"
+   opentox-validation:    "http://localhost/validation/"
 #
 # Accept headers:
 #

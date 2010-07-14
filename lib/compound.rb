@@ -1,3 +1,6 @@
+@@cactus_uri="http://cactus.nci.nih.gov/chemical/structure/"
+@@ambit_uri="http://ambit.uni-plovdiv.bg:8080/ambit2/depict/cdk?search="
+
 module OpenTox
 
 	class Compound #< OpenTox
@@ -6,7 +9,6 @@ module OpenTox
 
 		# Initialize with <tt>:uri => uri</tt>, <tt>:smiles => smiles</tt> or <tt>:name => name</tt> (name can be also an InChI/InChiKey, CAS number, etc)
 		def initialize(params)
-			@@cactus_uri="http://cactus.nci.nih.gov/chemical/structure/"
 			if params[:smiles]
 				@inchi = smiles2inchi(params[:smiles])
 				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
@@ -45,12 +47,17 @@ module OpenTox
 			obconversion(@inchi,'inchi','sdf')
 		end
 
-		def image
+		def gif
 			RestClientWrapper.get("#{@@cactus_uri}#{@inchi}/image")
 		end
 
+		def png
+			RestClientWrapper.get("#{@@ambit_uri}#{smiles}")
+		end
+
 		def image_uri
-			"#{@@cactus_uri}#{@inchi}/image"
+			"#{@@ambit_uri}#{smiles}"
+			#"#{@@cactus_uri}#{@inchi}/image"
 		end
 
 		# Matchs a smarts string
