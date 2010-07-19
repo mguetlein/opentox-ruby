@@ -26,7 +26,8 @@ begin
 			"spreadsheet",
 			"google-spreadsheet-ruby",
 			"tmail",
-			"rinruby"
+			"rinruby",
+			"rjb"
 		].each { |dep| gem.add_dependency dep }
 		[ "dm-core",
 			'dm-serializer',
