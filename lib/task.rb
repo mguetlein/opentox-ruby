@@ -18,7 +18,7 @@ module OpenTox
     
     # create is private now, use OpenTox::Task.as_task
 		def self.create(max_duration)
-      task_uri = RestClientWrapper.post(CONFIG[:services]["opentox-task"], {:max_duration => max_duration}, nil, false).to_s
+      task_uri = RestClientWrapper.post(@@config[:services]["opentox-task"], {:max_duration => max_duration}, nil, false).to_s
 			Task.find(task_uri.chomp)
 		end
 
@@ -94,7 +94,7 @@ module OpenTox
     # waits for a task, unless time exceeds or state is no longer running
 		def wait_for_completion(dur=0.3)
       
-      if (@uri.match(CONFIG[:services]["opentox-task"]))
+      if (@uri.match(@@config[:services]["opentox-task"]))
         due_to_time = Time.parse(@due_to_time)
         running_time = due_to_time - Time.parse(@date)
       else

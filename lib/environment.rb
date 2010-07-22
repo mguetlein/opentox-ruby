@@ -1,4 +1,4 @@
-require 'logger'
+require "ot-logger"
 # set default environment
 ENV['RACK_ENV'] = 'production' unless ENV['RACK_ENV']
 
@@ -12,8 +12,8 @@ TMP_DIR = File.join(basedir, "tmp")
 LOG_DIR = File.join(basedir, "log")
 
 if File.exist?(config_file)
-	CONFIG = YAML.load_file(config_file)
-  raise "could not load config, config file: "+config_file.to_s unless CONFIG
+	@@config = YAML.load_file(config_file)
+  raise "could not load config, config file: "+config_file.to_s unless @@config
 else
 	FileUtils.mkdir_p TMP_DIR
 	FileUtils.mkdir_p LOG_DIR
@@ -24,20 +24,20 @@ else
 end
 
 # database
-if CONFIG[:database]
+if @@config[:database]
 	['dm-core', 'dm-serializer', 'dm-timestamps', 'dm-types', 'dm-migrations' ].each{|lib| require lib }
-	case CONFIG[:database][:adapter]
+	case @@config[:database][:adapter]
 	when /sqlite/i
 		db_dir = File.join(basedir, "db")
 		FileUtils.mkdir_p db_dir
 		DataMapper::setup(:default, "sqlite3://#{db_dir}/opentox.sqlite3")
 	else
 		DataMapper.setup(:default, { 
-				:adapter  => CONFIG[:database][:adapter],
-				:database => CONFIG[:database][:database],
-				:username => CONFIG[:database][:username],
-				:password => CONFIG[:database][:password],
-				:host     => CONFIG[:database][:host]})
+				:adapter  => @@config[:database][:adapter],
+				:database => @@config[:database][:database],
+				:username => @@config[:database][:username],
+				:password => @@config[:database][:password],
+				:host     => @@config[:database][:host]})
 	end
 end
 
@@ -47,7 +47,7 @@ load File.join config_dir,"mail.rb" if File.exists?(File.join config_dir,"mail.r
 logfile = "#{LOG_DIR}/#{ENV["RACK_ENV"]}.log"
 LOGGER = MyLogger.new(logfile,'daily') # daily rotation
 LOGGER.formatter = Logger::Formatter.new #this is neccessary to restore the formating in case active-record is loaded
-if CONFIG[:logger] and CONFIG[:logger] == "debug"
+if @@config[:logger] and @@config[:logger] == "debug"
 	LOGGER.level = Logger::DEBUG
 else
 	LOGGER.level = Logger::WARN 
@@ -72,5 +72,5 @@ TRUE_REGEXP = /^(true|active|1|1.0)$/i
 FALSE_REGEXP = /^(false|inactive|0|0.0)$/i
 
 # Task durations
-DEFAULT_TASK_MAX_DURATION = CONFIG[:default_task_max_duration]
-EXTERNAL_TASK_MAX_DURATION = CONFIG[:external_task_max_duration]
+DEFAULT_TASK_MAX_DURATION = @@config[:default_task_max_duration]
+EXTERNAL_TASK_MAX_DURATION = @@config[:external_task_max_duration]

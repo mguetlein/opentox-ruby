@@ -6,9 +6,9 @@ namespace :opentox do
 
 		desc "Run opentox services"
 		task :start do
-			CONFIG[:services].each do |service,uri|
-				dir = File.join(CONFIG[:base_dir], service)
-				server = CONFIG[:webserver]
+			@@config[:services].each do |service,uri|
+				dir = File.join(@@config[:base_dir], service)
+				server = @@config[:webserver]
 				case server
 				when /thin|mongrel|webrick/
 					port = uri.sub(/^.*:/,'').sub(/\/$/,'')
@@ -32,9 +32,9 @@ namespace :opentox do
 
 		desc "Stop opentox services"
 		task :stop do
-			server = CONFIG[:webserver]
+			server = @@config[:webserver]
 			if server =~ /thin|mongrel|webrick/
-				CONFIG[:services].each do |service,uri|
+				@@config[:services].each do |service,uri|
 					port = uri.sub(/^.*:/,'').sub(/\/$/,'')
 					pid_file = File.join(TMP_DIR,"#{service}.pid") 
 					begin
@@ -54,8 +54,8 @@ namespace :opentox do
 
 	desc "Run all OpenTox tests"
 	task :test do
-		CONFIG[:services].each do |service,uri|
-			dir = File.join(CONFIG[:base_dir], service)
+		@@config[:services].each do |service,uri|
+			dir = File.join(@@config[:base_dir], service)
 			Dir.chdir dir
 			puts "Running tests in #{dir}"
 			`rake test -t 1>&2`
@@ -67,10 +67,10 @@ end
 desc "Start service in current directory"
 task :start do
 	service = File.basename(Dir.pwd).intern
-	server = CONFIG[:webserver]
+	server = @@config[:webserver]
 	case server 
 		when /thin|mongrel|webrick/
-			port = CONFIG[:services][service].sub(/^.*:/,'').sub(/\/$/,'')
+			port = @@config[:services][service].sub(/^.*:/,'').sub(/\/$/,'')
 			pid_file = File.join(TMP_DIR,"#{service}.pid") 
 			begin
 				`#{server} --trace --rackup config.ru start -p #{port} -e #{ENV['RACK_ENV']} -P #{pid_file} -d &`
@@ -90,9 +90,9 @@ end
 desc "Stop service in current directory"
 task :stop do
 	service = File.basename(Dir.pwd).intern
-	server = CONFIG[:webserver]
+	server = @@config[:webserver]
 	if server =~ /thin|mongrel|webrick/
-		port = CONFIG[:services][service].sub(/^.*:/,'').sub(/\/$/,'')
+		port = @@config[:services][service].sub(/^.*:/,'').sub(/\/$/,'')
 		pid_file = File.join(TMP_DIR,"#{service}.pid") 
 		begin
 			puts `thin stop -P #{pid_file}` 

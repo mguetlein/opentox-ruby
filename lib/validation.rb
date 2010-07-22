@@ -17,7 +17,7 @@ module OpenTox
 		end
 		
 		def self.crossvalidation(params)
-			params[:uri] = File.join(CONFIG[:services]['opentox-validation'], "crossvalidation")
+			params[:uri] = File.join(@@config[:services]['opentox-validation'], "crossvalidation")
       params[:num_folds] = 10 unless params[:num_folds]
 		 	params[:random_seed] = 2 unless params[:random_seed]
 		 	params[:stratified] = false unless params[:stratified]
