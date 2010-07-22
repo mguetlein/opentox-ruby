@@ -15,8 +15,8 @@ module OpenTox
 		def self.find(uri, accept_header=nil) 
     
       unless accept_header
-        #if uri.match(@@config[:services]["opentox-dataset"]) || uri=~ /188.40.32.88/ || uri =~ /informatik/
-        if !@@config[:accept_headers]["opentox-dataset"].grep(/yaml/).empty?
+        #if uri.match(CONFIG[:services]["opentox-dataset"]) || uri=~ /188.40.32.88/ || uri =~ /informatik/
+        if !CONFIG[:accept_headers]["opentox-dataset"].grep(/yaml/).empty?
           accept_header = 'application/x-yaml'
         else
           accept_header = "application/rdf+xml"
@@ -203,7 +203,7 @@ module OpenTox
     
 			@features.uniq!
 			@compounds.uniq!
-        OpenTox::RestClientWrapper.post(@@config[:services]["opentox-dataset"],{:content_type =>  "application/x-yaml"},self.to_yaml).strip 	
+        OpenTox::RestClientWrapper.post(CONFIG[:services]["opentox-dataset"],{:content_type =>  "application/x-yaml"},self.to_yaml).strip 	
 		end
 
     def init_dirty_features(owl)

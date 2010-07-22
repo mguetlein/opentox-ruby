@@ -86,8 +86,8 @@ module OpenTox
       
 			def initialize
 				@source = "http://github.com/helma/opentox-model"
-				@algorithm = File.join(@@config[:services]["opentox-algorithm"],"lazar")
-				#@independent_variables = File.join(@@config[:services]["opentox-algorithm"],"fminer#BBRC_representative")
+				@algorithm = File.join(CONFIG[:services]["opentox-algorithm"],"lazar")
+				#@independent_variables = File.join(CONFIG[:services]["opentox-algorithm"],"fminer#BBRC_representative")
 				@features = []
 				@effects = {}
 				@activities = {}
@@ -97,12 +97,12 @@ module OpenTox
 
 			def save
 				@features.uniq!
-			  resource = RestClient::Resource.new(@@config[:services]["opentox-model"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+			  resource = RestClient::Resource.new(CONFIG[:services]["opentox-model"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
 			  resource.post(self.to_yaml, :content_type => "application/x-yaml").chomp.to_s
 			end
 
 			def self.find_all
-				RestClientWrapper.get(@@config[:services]["opentox-model"]).chomp.split("\n")
+				RestClientWrapper.get(CONFIG[:services]["opentox-model"]).chomp.split("\n")
 			end
 		end
 	end

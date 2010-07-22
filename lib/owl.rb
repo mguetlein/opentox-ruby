@@ -1,3 +1,11 @@
+# RDF namespaces
+RDF = Redland::Namespace.new 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+OWL = Redland::Namespace.new 'http://www.w3.org/2002/07/owl#'
+DC = Redland::Namespace.new 'http://purl.org/dc/elements/1.1/'
+OT = Redland::Namespace.new 'http://www.opentox.org/api/1.1#'
+#OT = Redland::Namespace.new 'http://ortona.informatik.uni-freiburg.de/opentox.owl#'
+XML = Redland::Namespace.new 'http://www.w3.org/2001/XMLSchema#'
+
 class Redland::Literal
   
   def self.create(value, datatype=nil)
