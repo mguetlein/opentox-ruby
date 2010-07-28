@@ -22,6 +22,7 @@ module OpenTox
           accept_header = "application/rdf+xml"
         end
       end
+      
       case accept_header
       when "application/x-yaml"
 				d = YAML.load RestClientWrapper.get(uri.to_s.strip, :accept => 'application/x-yaml').to_s 
@@ -207,7 +208,7 @@ module OpenTox
 		end
 
     def init_dirty_features(owl)
-      @dirty_features = @features
+      @dirty_features = @features.dclone
       @owl = owl
     end
   end
