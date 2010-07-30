@@ -16,7 +16,7 @@ module OpenTox
     
       unless accept_header
         #if uri.match(@@config[:services]["opentox-dataset"]) || uri=~ /188.40.32.88/ || uri =~ /informatik/
-        if !@@config[:accept_headers]["opentox-dataset"].grep(/yaml/).empty?
+        if uri.match(@@config[:services]["opentox-dataset"]) && !@@config[:accept_headers]["opentox-dataset"].grep(/yaml/).empty?
           accept_header = 'application/x-yaml'
         else
           accept_header = "application/rdf+xml"
