@@ -93,7 +93,7 @@ module OpenTox
     [ "crossvalidation" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "Crossvalidation"}
     
     # literals point to primitive values (not to other resources)
-    # the literal datatype is encoded is uri:
+    # the literal datatype is encoded via uri:
     LITERAL_DATATYPE_STRING = XML["string"].uri
     LITERAL_DATATYPE_URI = XML["anyURI"].uri
     LITERAL_DATATYPE_FLOAT = XML["float"].uri
@@ -104,7 +104,7 @@ module OpenTox
     LITERAL_DATATYPE_INTEGER = XML["integer"].uri
     
     # list all literals (to distinguish from objectProperties) as keys, datatype as values
-    # (do not add dc-identifier, deprecated, object are identified over via name=uri)
+    # (do not add dc-identifier, deprecated, object are identified via name=uri)
     LITERAL_TYPES = {}
     [ "title", "creator", "format", "description", "hasStatus", "paramScope", "paramValue", 
       "value", "classValue", "reportType", "confusionMatrixActual", 
@@ -150,6 +150,7 @@ module OpenTox
     # uri the uri of the object
 		attr_accessor :ot_class, :root_node, :uri, :model
 
+    private
 		def initialize
 			@model = Redland::Model.new Redland::MemoryStore.new
 		end
@@ -157,6 +158,7 @@ module OpenTox
     # build new owl object
     # ot_class is the class of this object, should be a string like "Model", "Task", ...
     # uri is name and identifier of this object
+    public 
 		def self.create( ot_class, uri )
     
       owl = OpenTox::Owl.new
@@ -255,7 +257,15 @@ module OpenTox
     end
     
     public
-    # sets values of current_node, by default root_node
+    # sets values of current_node (by default root_node)
+    #
+    # note: this does not delete existing triples
+    # * there can be several triples for the same subject and predicate
+    #   ( e.g. after set("description","bla1") and set("description","bla2")
+    #     both descriptions are in the model, 
+    #     but the get("description") will give you only one object (by chance) 
+    # * this does not matter in pratice (only dataset uses this -> load_dataset-methods)
+    # * identical values appear only once in rdf 
     def set(predicate, object, current_node=@root_node)
       
       pred = predicate.to_s
@@ -268,10 +278,10 @@ module OpenTox
       end
       
       if pred=="type"
-        # predicat is type, set class of current node
+        # predicate is type, set class of current node
         @model.add current_node, RDF_TYPE, node(object)
         @model.add node(object), RDF_TYPE, OWL_TYPE_CLASS
-        # example-triples:
+        # example-triples for setting rdf-type to model:
         # model_xy,rdf:type,ot:Model
         # ot:Model,rdf:type,owl:Class 
       elsif LITERAL_TYPES.has_key?(pred)
@@ -279,7 +289,7 @@ module OpenTox
         predicate_node = node(pred)
         @model.add current_node, predicate_node, Redland::Literal.create(object, LITERAL_TYPES[pred])
         @model.add predicate_node, RDF_TYPE, OWL_TYPE_LITERAL
-        # example-triples:
+        # example-triples for setting description of a model:
         # model_xy,ot:description,bla..bla^^xml:string
         # ot:description,rdf:type,owl:Literal
       elsif OBJECT_PROPERTY_CLASS.has_key?(pred)
@@ -291,7 +301,7 @@ module OpenTox
         object_class_node = node(OBJECT_PROPERTY_CLASS[pred])
         @model.add object_node, RDF_TYPE, object_class_node
         @model.add object_class_node, RDF_TYPE, OWL_TYPE_CLASS
-        # example-triples:
+        # example-triples for setting algorithm property of a model:
         # model_xy,ot:algorithm,algorihtm_xy
         # ot:algorithm,rdf:type,owl:ObjectProperty
         # algorihtm_xy,rdf:type,ot:Algorithm
@@ -301,7 +311,7 @@ module OpenTox
       end
     end
 
-    # this is (a recursiv method) to set not only simple properties but nested-data via hashes
+    # this is (a recursiv method) to set nested-data via hashes (not only simple properties)
     # example (for a dataset)
     # { :description => "bla", 
     #   :compound => { :uri => "compound_uri", 
@@ -406,7 +416,7 @@ module OpenTox
       @model.subjects(RDF_TYPE, node('Feature')).each do |feature|
         features << get_value(feature)
       end
-      LOGGER.debug "loaded "+compounds.size.to_s+" compounds and "+features.size.to_s+" features"
+      LOGGER.debug "loaded "+compounds.size.to_s+" compounds and "+features.size.to_s+" features from dataset "+uri.to_s
     end
   
     # loading feature values for the specified feature
@@ -460,10 +470,9 @@ module OpenTox
           raise "feature value type not yet implemented "+value_node_type.to_s
         end
         count += 1
-        LOGGER.debug "loaded "+count.to_s+" feature values" if (count%500 == 0)
+        LOGGER.debug "loading feature values ("+count.to_s+")" if (count%1000 == 0)
       end
       LOGGER.debug "loaded "+count.to_s+" feature values"
     end
   end
 end
-

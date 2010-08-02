@@ -25,7 +25,7 @@ module OpenTox
       
       case accept_header
       when "application/x-yaml"
-				d = YAML.load RestClientWrapper.get(uri.to_s.strip, :accept => 'application/x-yaml').to_s 
+        d = YAML.load RestClientWrapper.get(uri.to_s.strip, :accept => 'application/x-yaml').to_s 
         d.uri = uri unless d.uri
 			when "application/rdf+xml"
 				owl = OpenTox::Owl.from_uri(uri.to_s.strip, "Dataset")
@@ -172,7 +172,7 @@ module OpenTox
             raise "invalid internal value type"
           end
         end
-        raise "feature value no found: "+feature.to_s
+        return nil #missing value
       else
         raise "value is not an array\n"+
               "value "+v.to_s+"\n"+
