@@ -81,6 +81,7 @@ module OpenTox
       "predictedVariables", "predictionFeature" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "Feature"}
     [ "parameters" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "Parameter"}
     [ "compound" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "Compound"}
+    [ "complexValue" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "Tuple"}
     [ "dataEntry" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "DataEntry"}
     [ "values" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "FeatureValue"}
     [ "classificationStatistics" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "ClassificationStatistics"}
@@ -91,6 +92,7 @@ module OpenTox
     [ "validation" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "Validation"}
     [ "crossvalidationInfo" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "CrossvalidationInfo"}
     [ "crossvalidation" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "Crossvalidation"}
+    
     
     # literals point to primitive values (not to other resources)
     # the literal datatype is encoded via uri:
@@ -328,9 +330,9 @@ module OpenTox
           raise "hash key must be a object-property, please add '"+prop.to_s+
             "' to OpenTox::OWL.OBJECT_PROPERTY_CLASS" unless OBJECT_PROPERTY_CLASS[prop]
           # the new node is a class node
-          if v["uri"]
+          if v[:uri] 
             # identifier is either a specified uri
-            class_node = Redland::Resource.new(v.delete("uri"))
+            class_node = Redland::Resource.new(v.delete(:uri))
           else
             # or a new uri, make up internal uri with increment
             class_node = new_class_node(OBJECT_PROPERTY_CLASS[prop],current_node)
