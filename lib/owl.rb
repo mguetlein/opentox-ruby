@@ -3,12 +3,14 @@
 # and to access the stored value as correct ruby type
 class Redland::Literal
   
-  def self.create(value, datatype)
-    raise "literal datatype may not be nil" unless datatype
-    if datatype.is_a?(Redland::Uri)
-      Redland::Literal.new(value.to_s,nil,datatype)
+  def self.create(value, type)
+    raise "literal datatype may not be nil" unless type
+    type = parse_datatype_uri(value) if OpenTox::Owl::PARSE_LITERAL_TYPE==type
+    
+    if type.is_a?(Redland::Uri)
+      Redland::Literal.new(value.to_s,nil,type)
     else
-      Redland::Literal.new(value.to_s,nil,Redland::Uri.new(datatype.to_s))
+      Redland::Literal.new(value.to_s,nil,Redland::Uri.new(type.to_s))
     end
   end
   
@@ -54,6 +56,32 @@ class Redland::Literal
         "), please specify new OpenTox::Owl::LITERAL_DATATYPE"
     end
   end
+  
+  # parse datatype uri accoring to value class
+  def self.parse_datatype_uri(value)
+    if value==nil
+      raise "illegal datatype: value is nil"
+    elsif value.is_a?(String)
+      # PENDING: uri check too slow?
+      if OpenTox::Utils.is_uri?(value)
+        return OpenTox::Owl::LITERAL_DATATYPE_URI
+      else
+        return OpenTox::Owl::LITERAL_DATATYPE_STRING
+      end
+    elsif value.is_a?(Float)
+      return OpenTox::Owl::LITERAL_DATATYPE_FLOAT
+    elsif value.is_a?(TrueClass) or value.is_a?(FalseClass)
+      return OpenTox::Owl::LITERAL_DATATYPE_BOOLEAN
+    elsif value.is_a?(Integer)
+      return OpenTox::Owl::LITERAL_DATATYPE_INTEGER
+    elsif value.is_a?(DateTime)
+      return OpenTox::Owl::LITERAL_DATATYPE_DATETIME
+    elsif value.is_a?(Time)
+      return OpenTox::Owl::LITERAL_DATATYPE_DATETIME
+    else
+      raise "illegal datatype: "+value.class.to_s+" "+value.to_s
+    end
+  end
 end
 
 module OpenTox
@@ -63,15 +91,17 @@ module OpenTox
     # to get correct owl-dl, properties and objects have to be typed
     # i.e. the following triple is insufficient:  
     # ModelXY,ot:algorithm,AlgorithmXY 
-    # furhter needed:
+    # further needed:
     # ot:algorithm,rdf:type,owl:ObjectProperty
     # AlgorithmXY,rdf:type,ot:Algorithm
     # ot:Algorithm,rdf:type,owl:Class
     #
     # therefore OpentoxOwl needs info about the opentox-ontology
     # the info is stored in OBJECT_PROPERTY_CLASS and LITERAL_TYPES
-    
+
     # contains all owl:ObjectProperty as keys, and the respective classes as value 
+    # some object properties link to objects from different classes (e.g. "values can be "Tuple", or "FeatureValue")
+    # in this case, use set_object_property() (instead of set()) and specify class manually
     OBJECT_PROPERTY_CLASS = {}
     [ "model" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "Model"}
     [ "algorithm" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "Algorithm"}
@@ -81,9 +111,8 @@ module OpenTox
       "predictedVariables", "predictionFeature" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "Feature"}
     [ "parameters" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "Parameter"}
     [ "compound" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "Compound"}
-    [ "complexValue" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "Tuple"}
     [ "dataEntry" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "DataEntry"}
-    [ "values" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "FeatureValue"}
+    [ "complexValue" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "FeatureValue"}
     [ "classificationStatistics" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "ClassificationStatistics"}
     [ "classValueStatistics" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "ClassValueStatistics"}
     [ "confusionMatrix" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "ConfusionMatrix"}
@@ -92,7 +121,6 @@ module OpenTox
     [ "validation" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "Validation"}
     [ "crossvalidationInfo" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "CrossvalidationInfo"}
     [ "crossvalidation" ].each{ |c| OBJECT_PROPERTY_CLASS[c] = "Crossvalidation"}
-    
     
     # literals point to primitive values (not to other resources)
     # the literal datatype is encoded via uri:
@@ -109,7 +137,7 @@ module OpenTox
     # (do not add dc-identifier, deprecated, object are identified via name=uri)
     LITERAL_TYPES = {}
     [ "title", "creator", "format", "description", "hasStatus", "paramScope", "paramValue", 
-      "value", "classValue", "reportType", "confusionMatrixActual", 
+      "classValue", "reportType", "confusionMatrixActual", 
       "confusionMatrixPredicted" ].each{ |l| LITERAL_TYPES[l] = LITERAL_DATATYPE_STRING }
     [ "date", "due_to_time" ].each{ |l| LITERAL_TYPES[l] = LITERAL_DATATYPE_DATE }
     [ "percentageCompleted", "truePositiveRate", "fMeasure", "falseNegativeRate", 
@@ -125,6 +153,9 @@ module OpenTox
       "crossvalidationFold" ].each{ |l| LITERAL_TYPES[l] = LITERAL_DATATYPE_INTEGER }
     [ "resultURI" ].each{ |l| LITERAL_TYPES[l] = LITERAL_DATATYPE_URI }
     [ "stratified" ].each{ |l| LITERAL_TYPES[l] = LITERAL_DATATYPE_BOOLEAN }
+    # some literals can have different types, parse from ruby type
+    PARSE_LITERAL_TYPE = "PARSE_LITERAL_TYPE"
+    [ "value" ].each{ |l| LITERAL_TYPES[l] = PARSE_LITERAL_TYPE }
     
     # constants for often used redland-resources
     OWL_TYPE_LITERAL = OWL["AnnotationProperty"]
@@ -268,12 +299,12 @@ module OpenTox
     #     but the get("description") will give you only one object (by chance) 
     # * this does not matter in pratice (only dataset uses this -> load_dataset-methods)
     # * identical values appear only once in rdf 
-    def set(predicate, object, current_node=@root_node)
+    def set(predicate, object, current_node=@root_node )
       
       pred = predicate.to_s
       raise "uri is no prop, cannot set uri" if pred=="uri"
       raise "dc[identifier] deprecated, use owl.uri" if pred=="identifier"
-      unless object && object.to_s.size>0
+      if (object.is_a?(Redland::Node) and object.blank?) or nil==object or object.to_s.size==0
         # set only not-nil values
         LOGGER.warn "skipping (not setting) empty value in rdf for property: '"+pred+"'"
         return 
@@ -281,63 +312,78 @@ module OpenTox
       
       if pred=="type"
         # predicate is type, set class of current node
-        @model.add current_node, RDF_TYPE, node(object)
-        @model.add node(object), RDF_TYPE, OWL_TYPE_CLASS
-        # example-triples for setting rdf-type to model:
-        # model_xy,rdf:type,ot:Model
-        # ot:Model,rdf:type,owl:Class 
+        set_type(object, current_node)
       elsif LITERAL_TYPES.has_key?(pred)
         # predicate is literal
-        predicate_node = node(pred)
-        @model.add current_node, predicate_node, Redland::Literal.create(object, LITERAL_TYPES[pred])
-        @model.add predicate_node, RDF_TYPE, OWL_TYPE_LITERAL
-        # example-triples for setting description of a model:
-        # model_xy,ot:description,bla..bla^^xml:string
-        # ot:description,rdf:type,owl:Literal
+        set_literal(pred,object,LITERAL_TYPES[pred],current_node)
       elsif OBJECT_PROPERTY_CLASS.has_key?(pred)
         # predicte is objectProperty, object is another resource
-        predicate_node = node(pred)
-        object_node = Redland::Resource.new(object)
-        @model.add current_node, predicate_node, object_node
-        @model.add predicate_node, RDF_TYPE, OWL_TYPE_OBJECT_PROPERTY
-        object_class_node = node(OBJECT_PROPERTY_CLASS[pred])
-        @model.add object_node, RDF_TYPE, object_class_node
-        @model.add object_class_node, RDF_TYPE, OWL_TYPE_CLASS
-        # example-triples for setting algorithm property of a model:
-        # model_xy,ot:algorithm,algorihtm_xy
-        # ot:algorithm,rdf:type,owl:ObjectProperty
-        # algorihtm_xy,rdf:type,ot:Algorithm
-        # ot:Algorithm,rdf:type,owl:Class
+        set_object_property(pred,object,OBJECT_PROPERTY_CLASS[pred],current_node)
       else
         raise "unkonwn rdf-property, please add: '"+pred+"' to OpenTox::OWL.OBJECT_PROPERTY_CLASS or OpenTox::OWL.LITERAL_TYPES"
       end
+    end
+   
+    # example-triples for setting rdf-type to model:
+    # model_xy,rdf:type,ot:Model
+    # ot:Model,rdf:type,owl:Class 
+    def set_type(ot_class, current_node=@root_node)
+      @model.add current_node, RDF_TYPE, node(ot_class)
+      @model.add node(ot_class), RDF_TYPE, OWL_TYPE_CLASS
+    end
+    
+    # example-triples for setting description of a model:
+    # model_xy,ot:description,bla..bla^^xml:string
+    # ot:description,rdf:type,owl:Literal
+    def set_literal(literal_name, literal_value, literal_datatype, current_node=@root_node)
+      @model.add current_node, node(literal_name), Redland::Literal.create(literal_value, literal_datatype)
+      @model.add node(literal_name), RDF_TYPE, OWL_TYPE_LITERAL
+    end
+    
+    # example-triples for setting algorithm property of a model:
+    # model_xy,ot:algorithm,algorihtm_xy
+    # ot:algorithm,rdf:type,owl:ObjectProperty
+    # algorihtm_xy,rdf:type,ot:Algorithm
+    # ot:Algorithm,rdf:type,owl:Class
+    def set_object_property(property, object, object_class, current_node=@root_node)
+      object_node = Redland::Resource.new(object)
+      @model.add current_node, node(property), object_node
+      @model.add node(property), RDF_TYPE, OWL_TYPE_OBJECT_PROPERTY
+      @model.add object_node, RDF_TYPE, node(object_class)
+      @model.add node(object_class), RDF_TYPE, OWL_TYPE_CLASS
     end
 
     # this is (a recursiv method) to set nested-data via hashes (not only simple properties)
     # example (for a dataset)
     # { :description => "bla", 
-    #   :compound => { :uri => "compound_uri", 
-    #                  :dataEntry: => { :values => [ { :feature => "feat1", 
-    #                                                  :value => 42 },
-    #                                                { :feature => "feat2", 
-    #                                                  :value => 43 } ] } } }
+    #   :dataEntry => { :compound => "compound_uri", 
+    #                   :values => [ { :class => "FeatureValue"
+    #                                  :feature => "feat1", 
+    #                                  :value => 42 },
+    #                                { :class => "FeatureValue"
+    #                                  :feature => "feat2", 
+    #                                  :value => 123 } ] } }
     def set_data(hash, current_node=@root_node)
       
       hash.each do |k,v|
         if v.is_a?(Hash)
           # value is again a hash
           prop = k.to_s
+          
+          # :class is a special key to specify the class value, if not defined in OBJECT_PROPERTY_CLASS
+          object_class = v.has_key?(:class) ? v.delete(:class) : OBJECT_PROPERTY_CLASS[prop]
           raise "hash key must be a object-property, please add '"+prop.to_s+
-            "' to OpenTox::OWL.OBJECT_PROPERTY_CLASS" unless OBJECT_PROPERTY_CLASS[prop]
-          # the new node is a class node
+            "' to OpenTox::OWL.OBJECT_PROPERTY_CLASS or specify :class value" unless object_class
+            
+          # the new node is a class node, to specify the uri of the resource use key :uri
           if v[:uri] 
             # identifier is either a specified uri
             class_node = Redland::Resource.new(v.delete(:uri))
           else
             # or a new uri, make up internal uri with increment
-            class_node = new_class_node(OBJECT_PROPERTY_CLASS[prop],current_node)
+            class_node = new_class_node(object_class,current_node)
           end
-          set(prop,class_node,current_node)
+          set_object_property(prop,class_node,object_class,current_node)
           # recursivly call set_data method with new node
           set_data(v,class_node)
         elsif v.is_a?(Array)
@@ -386,28 +432,33 @@ module OpenTox
       set_data( :parameters => converted_params )
 		end
 
-
+    # PENDING move to dataset.rb
     # this is for dataset.to_owl
     # adds feautre value for a single compound
     def add_data_entries(compound_uri,features)
       
-      data_entry_values = []
-      features.each do |f|
-        f.each do |feature_uri,value|
-          if value.is_a?(Hash)
-            complex_values = []
-            value.each do |uri,v|
-              complex_values << { :feature => uri, :value => v }
+      data_entry = { :compound => compound_uri }
+      if features
+        feature_values = []
+        features.each do |f|
+          f.each do |feature_uri,value|
+            if value.is_a?(Hash)
+              complex_values = []
+              value.each do |uri,v|
+                complex_values << { :feature => uri, :value => v }
+              end
+              feature_values << { :class => "Tuple", :feature => feature_uri, :complexValue => complex_values }
+            else
+              feature_values << { :class => "FeatureValue", :feature => feature_uri, :value => value }
             end
-            data_entry_values << { :feature => feature_uri, :complexValue => complex_values }
-          else
-            data_entry_values << { :feature => feature_uri, :value => value }
           end
         end
+        data_entry[:values] = feature_values
       end
-      set_data( :compound => { :uri => compound_uri, :dataEntry => { :values => data_entry_values } } )
+      set_data( :dataEntry => data_entry )
     end
 
+    # PENDING move to dataset.rb
     # feature values are not loaded for performance reasons
     # loading compounds and features into arrays that are given as params
     def load_dataset( compounds, features )
@@ -415,66 +466,75 @@ module OpenTox
       @model.subjects(RDF_TYPE, node('Compound')).each do |compound|
         compounds << get_value(compound)
       end
+      
       @model.subjects(RDF_TYPE, node('Feature')).each do |feature|
-        features << get_value(feature)
+        feature_value_found=false
+        @model.find(nil, node("feature"), feature) do |potential_feature_value,p,o|
+          @model.find(nil, node("values"), potential_feature_value) do |s,p,o|
+            feature_value_found=true
+            break
+          end
+          break if feature_value_found
+        end
+        features << get_value(feature) if feature_value_found
       end
       LOGGER.debug "loaded "+compounds.size.to_s+" compounds and "+features.size.to_s+" features from dataset "+uri.to_s
     end
   
+    # PENDING move to dataset.rb
     # loading feature values for the specified feature
     # if feature is nil, all feature values are loaded
     #
     # general remark on the rdf loading (found out with some testing):
     # the search methods (subjects/find) are fast, the time consuming parts is creating resources,
     # which cannot be avoided in general 
-    def load_dataset_feature_values( compounds, data, feature_uri=nil )
+    def load_dataset_feature_values( compounds, data, feature_uris )
       
-      LOGGER.debug("load feature values"+ ( (feature_uri!=nil)?(" for feature: "+feature_uri):"") ) 
+      raise "no feature-uri array" unless feature_uris.is_a?(Array)
   
        # values are stored in the data-hash, hash has a key for each compound
       compounds.each{|c| data[c] = [] unless data[c]}
       
-      load_all_features = feature_uri==nil
-      feature_node = nil
+      count = 0
+
+      feature_uris.each do |feature_uri|
+        LOGGER.debug("load feature values for feature: "+feature_uri )
+        feature_node = Redland::Resource.new(feature_uri)
+        
+         # search for all feature_value_node with property 'ot_feature' and the feature we are looking for
+         @model.find(nil, node('feature'), feature_node) do |feature_value_node,p,o|
       
-      # create feature node for feature uri if specified
-      unless load_all_features
-        @model.subjects(RDF_TYPE, OT['Feature']).each do |feature|
-          if feature_uri==get_value(feature)
-            feature_node = feature
-            break
+          # get compound_uri by "backtracking" to values node (property is 'values'), then get compound_node via 'compound'
+          value_nodes = @model.subjects(node('values'),feature_value_node)
+          if value_nodes.size>0
+            raise "more than one value node "+value_nodes.size.to_s if value_nodes.size>1
+            value_node = value_nodes[0]
+            
+            compound_uri = get_value( @model.object(value_node, node('compound')) )
+            
+            value_node_type = @model.object(feature_value_node, RDF_TYPE)
+            if (value_node_type == node('FeatureValue'))
+              value_literal = @model.object( feature_value_node, node('value'))
+              raise "plain feature value no literal: "+value_literal.to_s unless value_literal.is_a?(Redland::Literal)
+              data[compound_uri] << {feature_uri => value_literal.get_value }
+            elsif (value_node_type == node('Tuple'))
+              complex_values = {}
+              @model.find(feature_value_node,node('complexValue'),nil) do |p,s,complex_value|
+                complex_value_type = @model.object(complex_value, RDF_TYPE)
+                raise "complex feature value no feature value: "+complex_value.to_s unless complex_value_type==node('FeatureValue')
+                complex_feature_uri = get_value(@model.object( complex_value, node('feature')))
+                complex_value = @model.object( complex_value, node('value'))
+                raise "complex value no literal: "+complex_value.to_s unless complex_value.is_a?(Redland::Literal)
+                complex_values[ complex_feature_uri ] = complex_value.get_value
+              end
+              data[compound_uri] << { feature_uri => complex_values } if complex_values.size>0
+            end
+            count += 1
+            LOGGER.debug "loading feature values ("+count.to_s+")" if (count%1000 == 0)
           end
         end
-        raise "feature node not found" unless feature_node
+        LOGGER.debug "loaded "+count.to_s+" feature values for feature "+feature_node.to_s
       end
-      
-      count = 0
-      
-      # search for all feature_value_node with property 'ot_feature'
-      # feature_node is either nil, i.e. a wildcard or specified      
-      @model.find(nil, node('feature'), feature_node) do |feature_value_node,p,o|
-    
-        # get compound_uri by "backtracking" to values node (property is 'values'), then get compound_node via 'compound'
-        value_nodes = @model.subjects(node('values'),feature_value_node)
-        raise "more than one value node "+value_nodes.size.to_s unless value_nodes.size==1
-        value_node = value_nodes[0]
-        
-        compound_uri = get_value( @model.object(value_node, node('compound')) )
-        # if load all features, feautre_uri is not specified, derieve from feature_node
-        feature_uri = get_value(o) if load_all_features
-        
-        value_node_type = @model.object(feature_value_node, RDF_TYPE)
-        if (value_node_type == node('FeatureValue'))
-           value_literal = @model.object( feature_value_node, node('value'))
-           raise "feature value no literal" unless value_literal.is_a?(Redland::Literal)
-           data[compound_uri] << {feature_uri => value_literal.get_value }
-        else
-          raise "feature value type not yet implemented "+value_node_type.to_s
-        end
-        count += 1
-        LOGGER.debug "loading feature values ("+count.to_s+")" if (count%1000 == 0)
-      end
-      LOGGER.debug "loaded "+count.to_s+" feature values"
     end
   end
 end
