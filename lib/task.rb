@@ -23,9 +23,9 @@ module OpenTox
 		end
 
     public
-		def self.find(uri)
+    def self.find( uri, accept_header='application/rdf+xml' )
       task = Task.new(uri)
-      task.reload
+      task.reload( accept_header )
       return task
     end
     
@@ -36,8 +36,8 @@ module OpenTox
       return task
     end
     
-    def reload
-      result = RestClientWrapper.get(uri, {:accept => 'application/rdf+xml'}, false)#'application/x-yaml'})
+    def reload( accept_header='application/rdf+xml' )
+      result = RestClientWrapper.get(uri, {:accept => accept_header}, false)#'application/x-yaml'})
       @http_code = result.code
       reload_from_data(result, result.content_type, uri)
     end
@@ -95,8 +95,8 @@ module OpenTox
 		def wait_for_completion(dur=0.3)
       
       if (@uri.match(@@config[:services]["opentox-task"]))
-        due_to_time = Time.parse(@due_to_time)
-        running_time = due_to_time - Time.parse(@date)
+        due_to_time = (@due_to_time.is_a?(Time) ? @due_to_time : Time.parse(@due_to_time))
+        running_time = due_to_time - (@date.is_a?(Time) ? @date : Time.parse(@date))
       else
         # the date of the external task cannot be trusted, offest to local time might be to big
         due_to_time = Time.new + EXTERNAL_TASK_MAX_DURATION

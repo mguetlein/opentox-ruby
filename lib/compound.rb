@@ -52,13 +52,30 @@ module OpenTox
 		end
 
 		def png
-			RestClientWrapper.get("#{@@ambit_uri}#{smiles}")
+      RestClientWrapper.get(File.join @uri, "image")
 		end
+
+		def names
+      begin
+        RestClientWrapper.get("#{@@cactus_uri}#{@inchi}/names")
+      rescue
+        "not available"
+      end
+		end
+
+    def display_smarts_uri(activating, deactivating, highlight = nil)
+      LOGGER.debug activating.to_yaml unless activating.nil?
+      activating_smarts = URI.encode "\"#{activating.join("\"/\"")}\""
+      deactivating_smarts = URI.encode "\"#{deactivating.join("\"/\"")}\""
+      if highlight.nil?
+        File.join @@config[:services]["opentox-compound"], "smiles", URI.encode(smiles), "smarts/activating", URI.encode(activating_smarts),"deactivating", URI.encode(deactivating_smarts)
+      else
+        File.join @@config[:services]["opentox-compound"], "smiles", URI.encode(smiles), "smarts/activating", URI.encode(activating_smarts),"deactivating", URI.encode(deactivating_smarts), "highlight", URI.encode(highlight)
+      end
+    end
 
 		def image_uri
       File.join @uri, "image"
-			#"#{@@ambit_uri}#{smiles}"
-			#"#{@@cactus_uri}#{@inchi}/image"
 		end
 
 		# Matchs a smarts string

@@ -16,15 +16,16 @@ module OpenTox
     
       unless accept_header
         #if uri.match(@@config[:services]["opentox-dataset"]) || uri=~ /188.40.32.88/ || uri =~ /informatik/
-        if !@@config[:accept_headers]["opentox-dataset"].grep(/yaml/).empty?
+        if (uri.match(@@config[:services]["opentox-dataset"]) || uri =~ /in-silico.ch/) && !@@config[:accept_headers]["opentox-dataset"].grep(/yaml/).empty?
           accept_header = 'application/x-yaml'
         else
           accept_header = "application/rdf+xml"
         end
       end
+      
       case accept_header
       when "application/x-yaml"
-				d = YAML.load RestClientWrapper.get(uri.to_s.strip, :accept => 'application/x-yaml').to_s 
+        d = YAML.load RestClientWrapper.get(uri.to_s.strip, :accept => 'application/x-yaml').to_s 
         d.uri = uri unless d.uri
 			when "application/rdf+xml"
 				owl = OpenTox::Owl.from_uri(uri.to_s.strip, "Dataset")
@@ -143,12 +144,6 @@ module OpenTox
       else
         LOGGER.warn "no confidence for compound: "+compound.to_s+", feature: "+feature.to_s
         return 1
-#        raise "prediction confidence value is not a hash value\n"+
-#          "value "+v.to_s+"\n"+
-#          "value-class "+v.class.to_s+"\n"+
-#          "dataset "+@uri.to_s+"\n"+
-#          "compound "+compound.to_s+"\n"+
-#          "feature "+feature.to_s+"\n"
       end
     end
     
@@ -159,7 +154,7 @@ module OpenTox
       end
       
       v = @data[compound]
-      raise "no values for compound "+compound.to_s if v==nil
+      return nil if v == nil # missing values for all features
       if v.is_a?(Array)
         # PENDING: why using an array here?
         v.each do |e|
@@ -171,7 +166,7 @@ module OpenTox
             raise "invalid internal value type"
           end
         end
-        raise "feature value no found: "+feature.to_s
+        return nil #missing value
       else
         raise "value is not an array\n"+
               "value "+v.to_s+"\n"+
@@ -186,11 +181,11 @@ module OpenTox
     def load_feature_values(feature=nil)
       if feature
         raise "feature already loaded" unless @dirty_features.include?(feature)
-        @owl.load_dataset_feature_values(@compounds, @data, feature)
+        @owl.load_dataset_feature_values(@compounds, @data, [feature])
         @dirty_features.delete(feature)
       else
-        @data = {}
-        @owl.load_dataset_feature_values(@compounds, @data)
+        @data = {} unless @data
+        @owl.load_dataset_feature_values(@compounds, @data, @dirty_features)
         @dirty_features.clear
       end
     end
@@ -207,7 +202,7 @@ module OpenTox
 		end
 
     def init_dirty_features(owl)
-      @dirty_features = @features
+      @dirty_features = @features.dclone
       @owl = owl
     end
   end
