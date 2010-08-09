@@ -73,5 +73,5 @@ TRUE_REGEXP = /^(true|active|1|1.0)$/i
 FALSE_REGEXP = /^(false|inactive|0|0.0)$/i
 
 # Task durations
-DEFAULT_TASK_MAX_DURATION = @@config[:default_task_max_duration]
-EXTERNAL_TASK_MAX_DURATION = @@config[:external_task_max_duration]
+DEFAULT_TASK_MAX_DURATION = 3600
+EXTERNAL_TASK_MAX_DURATION = 3600

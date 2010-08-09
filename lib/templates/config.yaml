@@ -32,34 +32,10 @@
   opentox-task:          "http://localhost/task/"
   opentox-validation:    "http://localhost/validation/"
 #
-# Accept headers:
+# Yaml capable hosts (faster than OWL-DL)
 #
-:accept_headers:
-  opentox-compound:      
-    - "chemical/x-daylight-smiles"
-    - "chemical/x-inchi"
-    - "chemical/x-mdl-sdfile"
-    - "image/gif"
-    - "text/plain"
-  opentox-dataset:       
-    - "application/x-yaml"
-    - "application/rdf+xml"
-  opentox-algorithm:     
-    - "application/x-yaml"
-    - "application/rdf+xml"
-  opentox-model:         
-    - "application/x-yaml"
-    - "application/rdf+xml"
-  opentox-task:          
-    - "application/x-yaml"
-    - "application/rdf+xml"
-  opentox-validation:    
-    - "application/x-yaml"
-    - "application/rdf+xml"
-
-# Timeouts:
-:default_task_max_duration: 3600
-:external_task_max_duration: 3600
+:yaml_hosts:
+  - "localhost"
 
 # Uncomment for verbose logging
 # :logger: debug
