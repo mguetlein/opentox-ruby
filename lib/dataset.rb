@@ -2,17 +2,33 @@ LOGGER.progname = File.expand_path(__FILE__)
 
 module OpenTox
   
-	class Dataset 
+  class Dataset 
 
-		attr_accessor :uri, :title, :creator, :data, :features, :compounds
+    attr_accessor :uri, :title, :creator, :data, :features, :compounds
 
-		def initialize 
-			@data = {}
-			@features = []
-			@compounds = []
-		end
-
-		def self.find(uri, accept_header=nil) 
+    def initialize( owl=nil )
+      @data = {}
+      @features = []
+      @compounds = []
+      
+      # creates dataset object from Opentox::Owl object
+      # use Dataset.find( <uri> ) to load dataset from rdf-supporting datasetservice
+      # note: does not load all feature values, as this is time consuming
+      if owl
+        raise "invalid param" unless owl.is_a?(OpenTox::Owl)
+        @title = owl.get("title")
+        @creator = owl.get("creator")
+        @uri = owl.uri
+        # when loading a dataset from owl, only compound- and feature-uris are loaded 
+        owl.load_dataset(@compounds, @features)
+        # all features are marked as dirty
+        # as soon as a feature-value is requested all values for this feature are loaded from the rdf
+        @dirty_features = @features.dclone
+        @owl = owl
+      end
+    end
+  
+    def self.find(uri, accept_header=nil) 
     
       unless accept_header
         #if uri.match(@@config[:services]["opentox-dataset"]) || uri=~ /188.40.32.88/ || uri =~ /informatik/
@@ -27,26 +43,23 @@ module OpenTox
       when "application/x-yaml"
         d = YAML.load RestClientWrapper.get(uri.to_s.strip, :accept => 'application/x-yaml').to_s 
         d.uri = uri unless d.uri
-			when "application/rdf+xml"
-				owl = OpenTox::Owl.from_uri(uri.to_s.strip, "Dataset")
-        
-        d = Dataset.new
-				d.title = owl.get("title")
-				d.creator = owl.get("creator")
-				d.uri = owl.uri
-        
-        # when loading a dataset from owl, only compound- and feature-uris are loaded 
-        owl.load_dataset(d.compounds, d.features)
-				# all features are marked as dirty, loaded dynamically later
-        d.init_dirty_features(owl)
-        
-        d.compounds.uniq!
-        d.features.uniq!
+      when "application/rdf+xml"
+        owl = OpenTox::Owl.from_uri(uri.to_s.strip, "Dataset")
+        d = Dataset.new(owl)
       else
         raise "cannot get datset with accept header: "+accept_header.to_s
-		  end
-      return d
-		end
+      end
+      d
+    end
+    
+    # converts a dataset represented in owl to yaml
+    # (uses a temporary dataset)
+    # note: to_yaml is overwritten, loads complete owl dataset values 
+    def self.owl_to_yaml( owl_data, uri)
+      owl = OpenTox::Owl.from_data(owl_data, uri, "Dataset")
+      d = Dataset.new(owl)
+      d.to_yaml
+    end
     
     # creates a new dataset, using only those compounsd specified in new_compounds
     # returns uri of new dataset
@@ -87,8 +100,8 @@ module OpenTox
     def get_predicted_class(compound, feature)
       v = get_value(compound, feature)
       if v.is_a?(Hash)
-				k = v.keys.grep(/classification/).first
-				unless k.empty?
+        k = v.keys.grep(/classification/).first
+        unless k.empty?
         #if v.has_key?(:classification)
           return v[k]
         else
@@ -110,8 +123,8 @@ module OpenTox
     def get_predicted_regression(compound, feature)
       v = get_value(compound, feature)
       if v.is_a?(Hash)
-				k = v.keys.grep(/regression/).first
-				unless k.empty?
+        k = v.keys.grep(/regression/).first
+        unless k.empty?
           return v[k]
         else
           return "no regression key"
@@ -132,11 +145,11 @@ module OpenTox
     def get_prediction_confidence(compound, feature)
       v = get_value(compound, feature)
       if v.is_a?(Hash)
-				k = v.keys.grep(/confidence/).first
-				unless k.empty?
+        k = v.keys.grep(/confidence/).first
+        unless k.empty?
         #if v.has_key?(:confidence)
           return v[k].abs
-					#return v["http://ot-dev.in-silico.ch/model/lazar#confidence"].abs
+          #return v["http://ot-dev.in-silico.ch/model/lazar#confidence"].abs
         else
           # PENDING: return nil isntead of raising an exception
           raise "no confidence key"
@@ -189,23 +202,25 @@ module OpenTox
         @dirty_features.clear
       end
     end
-
-		def save
-      # loads all features before loading  
-      if ((defined? @dirty_features) && @dirty_features.size > 0)
-        load_feature_values()
-      end
     
-			@features.uniq!
-			@compounds.uniq!
-        OpenTox::RestClientWrapper.post(@@config[:services]["opentox-dataset"],{:content_type =>  "application/x-yaml"},self.to_yaml).strip 	
-		end
+    # overwrite to yaml:
+    # in case dataset is loaded from owl:
+    # * load all values
+    # * set @owl to nil (not necessary in yaml) 
+    def to_yaml
+      # loads all features  
+      if ((defined? @dirty_features) && @dirty_features.size > 0)
+        load_feature_values
+      end
+      @owl = nil
+      super.to_yaml
+    end
 
-    def init_dirty_features(owl)
-      @dirty_features = @features.dclone
-      @owl = owl
+    # saves (changes) as new dataset in dataset service
+    # returns uri
+    # uses to yaml method (which is overwritten)
+    def save
+      OpenTox::RestClientWrapper.post(@@config[:services]["opentox-dataset"],{:content_type =>  "application/x-yaml"},self.to_yaml).strip   
     end
   end
-
-
 end
