@@ -212,7 +212,7 @@ module OpenTox
         load_feature_values
       end
       @owl = nil
-      super.to_yaml
+      super
     end
 
     # saves (changes) as new dataset in dataset service
