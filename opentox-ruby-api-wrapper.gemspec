@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{opentox-ruby-api-wrapper}
-  s.version = "1.6.0"
+  s.version = "1.6.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Christoph Helma, Martin Guetlein"]
-  s.date = %q{2010-07-19}
+  s.date = %q{2010-08-09}
   s.description = %q{Ruby wrapper for the OpenTox REST API (http://www.opentox.org)}
   s.email = %q{helma@in-silico.ch}
   s.executables = ["opentox-install-ubuntu.sh", "yaml2owl.rb", "opentox-install-debian.sh"]
@@ -36,11 +36,12 @@ Gem::Specification.new do |s|
      "lib/model.rb",
      "lib/opentox-ruby-api-wrapper.rb",
      "lib/opentox.owl",
+     "lib/ot-logger.rb",
+     "lib/overwrite.rb",
      "lib/owl.rb",
      "lib/rest_client_wrapper.rb",
      "lib/spork.rb",
      "lib/task.rb",
-     "lib/tasks/opentox.rb",
      "lib/templates/config.yaml",
      "lib/templates/users.yaml",
      "lib/utils.rb",
@@ -73,6 +74,7 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<google-spreadsheet-ruby>, [">= 0"])
       s.add_runtime_dependency(%q<tmail>, [">= 0"])
       s.add_runtime_dependency(%q<rinruby>, [">= 0"])
+      s.add_runtime_dependency(%q<rjb>, [">= 0"])
       s.add_runtime_dependency(%q<dm-core>, [">= 1"])
       s.add_runtime_dependency(%q<dm-serializer>, [">= 1"])
       s.add_runtime_dependency(%q<dm-timestamps>, [">= 1"])
@@ -99,6 +101,7 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<google-spreadsheet-ruby>, [">= 0"])
       s.add_dependency(%q<tmail>, [">= 0"])
       s.add_dependency(%q<rinruby>, [">= 0"])
+      s.add_dependency(%q<rjb>, [">= 0"])
       s.add_dependency(%q<dm-core>, [">= 1"])
       s.add_dependency(%q<dm-serializer>, [">= 1"])
       s.add_dependency(%q<dm-timestamps>, [">= 1"])
@@ -126,6 +129,7 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<google-spreadsheet-ruby>, [">= 0"])
     s.add_dependency(%q<tmail>, [">= 0"])
     s.add_dependency(%q<rinruby>, [">= 0"])
+    s.add_dependency(%q<rjb>, [">= 0"])
     s.add_dependency(%q<dm-core>, [">= 1"])
     s.add_dependency(%q<dm-serializer>, [">= 1"])
     s.add_dependency(%q<dm-timestamps>, [">= 1"])
