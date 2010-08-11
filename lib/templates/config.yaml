@@ -4,12 +4,12 @@
 #
 # Example MySql:
 #
- :database: 
-   :adapter:  mysql
-   :database: production
-   :username: root
-   :password: opentox
-   :host:     localhost
+:database: 
+  :adapter:  mysql
+  :database: production
+  :username: root
+  :password: opentox
+  :host:     localhost
 #
 # Example 1: Using external test services
 #
@@ -22,42 +22,20 @@
 #  opentox-validation:    "http://opentox.informatik.uni-freiburg.de/validation/"
 #
 # Example 2: Using local services
- :base_dir: /home/ist/webservices
- :webserver: passenger
- :services:
-   opentox-compound:      "http://localhost/compound/"
-   opentox-dataset:       "http://localhost/dataset/"
-   opentox-algorithm:     "http://localhost/algorithm/"
-   opentox-model:         "http://localhost/model/"
-   opentox-task:          "http://localhost/task/"
-   opentox-validation:    "http://opentox.informatik.uni-freiburg.de/validation/"
+:base_dir: /home/ist/webservices
+:webserver: passenger
+:services:
+  opentox-compound:      "http://localhost/compound/"
+  opentox-dataset:       "http://localhost/dataset/"
+  opentox-algorithm:     "http://localhost/algorithm/"
+  opentox-model:         "http://localhost/model/"
+  opentox-task:          "http://localhost/task/"
+  opentox-validation:    "http://localhost/validation/"
 #
-# Accept headers:
+# Yaml capable hosts (faster than OWL-DL)
 #
- :accept_headers:
-   opentox-compound:      
-     - "chemical/x-daylight-smiles"
-     - "chemical/x-inchi"
-     - "chemical/x-mdl-sdfile"
-     - "image/gif"
-     - "text/plain"
-   opentox-dataset:       
-     - "application/x-yaml"
-     - "application/rdf+xml"
-   opentox-algorithm:     
-     - "application/x-yaml"
-     - "application/rdf+xml"
-   opentox-model:         
-     - "application/x-yaml"
-     - "application/rdf+xml"
-   opentox-task:          
-     - "application/x-yaml"
-     - "application/rdf+xml"
-   opentox-validation:    
-     - "application/x-yaml"
-     - "application/rdf+xml"
+:yaml_hosts:
+  - "localhost"
 
-# Timeouts:
-# 
- :default_task_max_duration: 3600
- :external_task_max_duration: 3600
+# Uncomment for verbose logging
+# :logger: debug

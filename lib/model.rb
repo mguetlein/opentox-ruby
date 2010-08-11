@@ -103,6 +103,11 @@ module OpenTox
 			def self.find_all
 				RestClientWrapper.get(@@config[:services]["opentox-model"]).chomp.split("\n")
 			end
+
+      def self.predict(compound_uri,model_uri)
+        #RestClientWrapper.post(model_uri,{:compound_uri => compound_uri, :accept => 'application/x-yaml'})
+		`curl -X POST -d 'compound_uri=#{compound_uri}' -H 'Accept:application/x-yaml' #{model_uri}`
+      end
 		end
 	end
 end

@@ -1,3 +1,6 @@
+@@cactus_uri="http://cactus.nci.nih.gov/chemical/structure/"
+@@ambit_uri="http://ambit.uni-plovdiv.bg:8080/ambit2/depict/cdk?search="
+
 module OpenTox
 
 	class Compound #< OpenTox
@@ -6,7 +9,6 @@ module OpenTox
 
 		# Initialize with <tt>:uri => uri</tt>, <tt>:smiles => smiles</tt> or <tt>:name => name</tt> (name can be also an InChI/InChiKey, CAS number, etc)
 		def initialize(params)
-			@@cactus_uri="http://cactus.nci.nih.gov/chemical/structure/"
 			if params[:smiles]
 				@inchi = smiles2inchi(params[:smiles])
 				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
@@ -45,12 +47,35 @@ module OpenTox
 			obconversion(@inchi,'inchi','sdf')
 		end
 
-		def image
+		def gif
 			RestClientWrapper.get("#{@@cactus_uri}#{@inchi}/image")
 		end
 
+		def png
+      RestClientWrapper.get(File.join @uri, "image")
+		end
+
+		def names
+      begin
+        RestClientWrapper.get("#{@@cactus_uri}#{@inchi}/names")
+      rescue
+        "not available"
+      end
+		end
+
+    def display_smarts_uri(activating, deactivating, highlight = nil)
+      LOGGER.debug activating.to_yaml unless activating.nil?
+      activating_smarts = URI.encode "\"#{activating.join("\"/\"")}\""
+      deactivating_smarts = URI.encode "\"#{deactivating.join("\"/\"")}\""
+      if highlight.nil?
+        File.join @@config[:services]["opentox-compound"], "smiles", URI.encode(smiles), "smarts/activating", URI.encode(activating_smarts),"deactivating", URI.encode(deactivating_smarts)
+      else
+        File.join @@config[:services]["opentox-compound"], "smiles", URI.encode(smiles), "smarts/activating", URI.encode(activating_smarts),"deactivating", URI.encode(deactivating_smarts), "highlight", URI.encode(highlight)
+      end
+    end
+
 		def image_uri
-			"#{@@cactus_uri}#{@inchi}/image"
+      File.join @uri, "image"
 		end
 
 		# Matchs a smarts string

@@ -31,8 +31,7 @@ module OpenTox
     def self.find(uri, accept_header=nil) 
     
       unless accept_header
-        #if uri.match(@@config[:services]["opentox-dataset"]) || uri=~ /188.40.32.88/ || uri =~ /informatik/
-        if (uri.match(@@config[:services]["opentox-dataset"]) || uri =~ /in-silico.ch/) && !@@config[:accept_headers]["opentox-dataset"].grep(/yaml/).empty?
+        if (@@config[:yaml_hosts].include?(URI.parse(uri).host))
           accept_header = 'application/x-yaml'
         else
           accept_header = "application/rdf+xml"

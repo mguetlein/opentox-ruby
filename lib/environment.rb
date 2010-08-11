@@ -1,6 +1,6 @@
-require 'logger'
+require "ot-logger"
 # set default environment
-ENV['RACK_ENV'] = 'test' unless ENV['RACK_ENV']
+ENV['RACK_ENV'] = 'production' unless ENV['RACK_ENV']
 
 # load/setup configuration
 basedir = File.join(ENV['HOME'], ".opentox")
@@ -44,69 +44,9 @@ end
 # load mail settings for error messages
 load File.join config_dir,"mail.rb" if File.exists?(File.join config_dir,"mail.rb")
 
-# hack: store sinatra in global var to make url_for and halt methods accessible
-before{ $sinatra = self unless $sinatra }
-
-class Sinatra::Base
-  # overwriting halt to log halts (!= 202)
-  def halt(*response)
-    LOGGER.error "halt "+response.first.to_s+" "+(response.size>1 ? response[1].to_s : "") if response and response.first and response.first >= 300
-    # orig sinatra code:
-    response = response.first if response.length == 1
-    throw :halt, response
-  end
-end
-
-# logging
-class MyLogger < Logger
-  
-  def pwd
-    path = Dir.pwd.to_s
-    index = path.rindex(/\//)
-    return path if index==nil
-    path[(index+1)..-1]
-  end
-  
-  def trace()
-    lines = caller(0)
-    n = 2
-    line = lines[n]
-    
-    while (line =~ /spork.rb/ or line =~ /as_task/ or line =~ /environment.rb/)
-      n += 1
-      line = lines[n]
-    end
-  
-    index = line.rindex(/\/.*\.rb/)
-    return line if index==nil
-    line[index..-1]
-  end
-  
-  def format(msg)
-    pwd.ljust(18)+" :: "+msg.to_s+"           :: "+trace+" :: "+($sinatra ? $sinatra.request.env['REMOTE_ADDR'] : nil).to_s
-  end
-  
-  def debug(msg)
-    super format(msg)
-  end
-  
-  def info(msg)
-    super format(msg)
-  end
-  
-  def warn(msg)
-    super format(msg)
-  end
-
-  def error(msg)
-    super format(msg)
-  end
-
-end
-
-
 logfile = "#{LOG_DIR}/#{ENV["RACK_ENV"]}.log"
-LOGGER = MyLogger.new(logfile,'daily') # daily rotation
+#LOGGER = MyLogger.new(logfile,'daily') # daily rotation
+LOGGER = MyLogger.new(logfile) # no rotation
 LOGGER.formatter = Logger::Formatter.new #this is neccessary to restore the formating in case active-record is loaded
 if @@config[:logger] and @@config[:logger] == "debug"
 	LOGGER.level = Logger::DEBUG
@@ -128,18 +68,10 @@ rescue
   raise "Please edit #{user_file} and restart your application. Create at least one user with password."
 end
 
-# RDF namespaces
-RDF = Redland::Namespace.new 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
-OWL = Redland::Namespace.new 'http://www.w3.org/2002/07/owl#'
-DC = Redland::Namespace.new 'http://purl.org/dc/elements/1.1/'
-OT = Redland::Namespace.new 'http://www.opentox.org/api/1.1#'
-#OT = Redland::Namespace.new 'http://ortona.informatik.uni-freiburg.de/opentox.owl#'
-XML = Redland::Namespace.new 'http://www.w3.org/2001/XMLSchema#'
-
 # Regular expressions for parsing classification data
 TRUE_REGEXP = /^(true|active|1|1.0)$/i
 FALSE_REGEXP = /^(false|inactive|0|0.0)$/i
 
 # Task durations
-DEFAULT_TASK_MAX_DURATION = @@config[:default_task_max_duration]
-EXTERNAL_TASK_MAX_DURATION = @@config[:external_task_max_duration]
+DEFAULT_TASK_MAX_DURATION = 3600
+EXTERNAL_TASK_MAX_DURATION = 3600

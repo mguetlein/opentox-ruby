@@ -28,6 +28,13 @@ module OpenTox
         return false
       end
     end
+    
+    def self.median(array)
+      return nil if array.empty?
+      array.sort!
+      m_pos = array.size / 2
+      return array.size % 2 == 1 ? array[m_pos] : (array[m_pos-1] + array[m_pos])/2
+    end
   
   end
 
