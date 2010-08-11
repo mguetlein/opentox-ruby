@@ -14,7 +14,7 @@ class MyLogger < Logger
     n = 2
     line = lines[n]
     
-    while (line =~ /spork.rb/ or line =~ /as_task/ or line =~ /environment.rb/)
+    while (line =~ /spork.rb/ or line =~ /as_task/ or line =~ /ot-logger.rb/)
       n += 1
       line = lines[n]
     end

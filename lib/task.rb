@@ -1,5 +1,3 @@
-LOGGER.progname = File.expand_path(__FILE__)
-
 $self_task=nil
 
 module OpenTox
