@@ -21,9 +21,8 @@ module OpenTox
       
       protected
       def initialize(owl)
-        [:date, :creator, :title, :format, :algorithm, :dependentVariables, 
-         :independentVariables, :predictedVariables, :trainingDataset].each do |a|
-            self.send("#{a.to_s}=".to_sym, owl.get(a.to_s))
+        MODEL_ATTRIBS.each do |a|
+            self.send("#{a.to_s}=".to_sym, owl.get(a.to_s)) unless a==:uri
         end
         @uri = owl.uri 
         if ENV['RACK_ENV'] =~ /test|debug/

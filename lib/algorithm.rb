@@ -2,6 +2,25 @@ LOGGER.progname = File.expand_path(__FILE__)
 
 module OpenTox
   module Algorithm 
+    
+    
+    class Generic
+      
+      attr_accessor :uri, :title, :date
+      
+      def self.find(uri)
+        owl = OpenTox::Owl.from_uri(uri, "Algorithm")
+        return self.new(owl)
+      end
+      
+      protected
+      def initialize(owl)
+        @title = owl.get("title")
+        @date = owl.get("date")
+        @uri = owl.uri 
+      end
+      
+    end
 
     class Fminer 
 

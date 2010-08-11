@@ -233,7 +233,7 @@ module OpenTox
         unless owl.root_node
           types = []
           owl.model.find(nil, RDF_TYPE, nil){ |s,p,o| types << o.to_s }
-          raise "root node for class '"+ot_class+"' not found (available type nodes: "+types.inspect+")"
+          raise "root node for class '"+owl.node(ot_class).to_s+"' not found (available type nodes: "+types.inspect+")"
         end
         raise "no uri in rdf: '"+owl.uri+"'" unless owl.uri and Utils.is_uri?(owl.uri) 
         owl.ot_class = ot_class
@@ -244,7 +244,7 @@ module OpenTox
     end
   
 	  def self.from_uri(uri, ot_class)
-     return from_data(RestClientWrapper.get(uri,:accept => "application/rdf+xml").to_s, uri, ot_class) 
+      return from_data(RestClientWrapper.get(uri,:accept => "application/rdf+xml").to_s, uri, ot_class) 
 		end
 
 		def rdf
