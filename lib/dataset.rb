@@ -66,8 +66,8 @@ module OpenTox
       raise "no new compounds selected" unless new_compounds and new_compounds.size>0
       
       # load require features 
-      if ((defined? @dirty_features) && (@dirty_features - new_features).size > 0)
-        (@dirty_features - new_features).each{|f| load_feature_values(f)}
+      if ((defined? @dirty_features) && (@dirty_features & new_features).size > 0)
+        (@dirty_features & new_features).each{|f| load_feature_values(f)}
       end
       
       dataset = OpenTox::Dataset.new
