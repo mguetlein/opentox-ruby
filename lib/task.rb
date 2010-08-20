@@ -2,7 +2,7 @@ $self_task=nil
 
 module OpenTox
 
-	class Task
+  class Task
 
     # due_to_time is only set in local tasks 
     TASK_ATTRIBS = [ :uri, :date, :title, :creator, :description, :hasStatus, :percentageCompleted, :resultURI, :due_to_time ]
@@ -15,13 +15,13 @@ module OpenTox
     end
     
     # create is private now, use OpenTox::Task.as_task
-		def self.create(max_duration)
-      task_uri = RestClientWrapper.post(@@config[:services]["opentox-task"], {:max_duration => max_duration}, nil, false).to_s
-			Task.find(task_uri.chomp)
-		end
-
+    def self.create( params )
+      task_uri = RestClientWrapper.post(@@config[:services]["opentox-task"], params, nil, false).to_s
+      Task.find(task_uri.chomp)
+    end
+  
     public
-    def self.find( uri, accept_header='application/rdf+xml' )
+    def self.find( uri, accept_header=nil )
       task = Task.new(uri)
       task.reload( accept_header )
       return task
@@ -34,7 +34,14 @@ module OpenTox
       return task
     end
     
-    def reload( accept_header='application/rdf+xml' )
+    def reload( accept_header=nil )
+      unless accept_header 
+        if (@@config[:yaml_hosts].include?(URI.parse(uri).host))
+          accept_header = "application/x-yaml"
+        else
+          accept_header = 'application/rdf+xml'
+        end
+      end
       result = RestClientWrapper.get(uri, {:accept => accept_header}, false)#'application/x-yaml'})
       @http_code = result.code
       reload_from_data(result, result.content_type, uri)
@@ -58,20 +65,20 @@ module OpenTox
       raise "uri is null after loading" unless @uri and @uri.to_s.strip.size>0
     end
     
-		def cancel
+    def cancel
       RestClientWrapper.put(File.join(@uri,'Cancelled'))
       reload
-		end
+    end
 
-		def completed(uri)
-			RestClientWrapper.put(File.join(@uri,'Completed'),{:resultURI => uri})
+    def completed(uri)
+      RestClientWrapper.put(File.join(@uri,'Completed'),{:resultURI => uri})
       reload
-		end
+    end
 
-		def error(description)
+    def error(description)
       RestClientWrapper.put(File.join(@uri,'Error'),{:description => description.to_s[0..2000]})
       reload
-		end
+    end
     
     def pid=(pid)
       RestClientWrapper.put(File.join(@uri,'pid'), {:pid => pid})
@@ -81,16 +88,16 @@ module OpenTox
       @hasStatus.to_s == 'Running'
     end
 
-		def completed?
-			@hasStatus.to_s == 'Completed'
-		end
+    def completed?
+      @hasStatus.to_s == 'Completed'
+    end
 
-		def error?
-			@hasStatus.to_s == 'Error'
-		end
+    def error?
+      @hasStatus.to_s == 'Error'
+    end
 
     # waits for a task, unless time exceeds or state is no longer running
-		def wait_for_completion(dur=0.3)
+    def wait_for_completion(dur=0.3)
       
       if (@uri.match(@@config[:services]["opentox-task"]))
         due_to_time = (@due_to_time.is_a?(Time) ? @due_to_time : Time.parse(@due_to_time))
@@ -102,17 +109,17 @@ module OpenTox
       end
       LOGGER.debug "start waiting for task "+@uri.to_s+" at: "+Time.new.to_s+", waiting at least until "+due_to_time.to_s
       
-			while self.running?
-				sleep dur
+      while self.running?
+        sleep dur
         reload
         check_state
         if (Time.new > due_to_time)
           raise "max wait time exceeded ("+running_time.to_s+"sec), task: '"+@uri.to_s+"'"
         end
-			end
+      end
       
       LOGGER.debug "Task '"+@hasStatus+"': "+@uri.to_s+", Result: "+@resultURI.to_s
-	  end
+    end
   
     def check_state
       begin
@@ -133,10 +140,11 @@ module OpenTox
   
     # returns the task uri
     # catches halts and exceptions, task state is set to error then
-    def self.as_task(max_duration=DEFAULT_TASK_MAX_DURATION)
+    def self.as_task( title, creator, max_duration=DEFAULT_TASK_MAX_DURATION, description=nil )
       #return yield nil
       
-      task = OpenTox::Task.create(max_duration)
+      params = {:title=>title, :creator=>creator, :max_duration=>max_duration, :description=>description }
+      task = OpenTox::Task.create(params)
       task_pid = Spork.spork(:logger => LOGGER) do
         LOGGER.debug "Task #{task.uri} started #{Time.now}"
         $self_task = task
@@ -163,6 +171,6 @@ module OpenTox
       LOGGER.debug "Started task: "+task.uri.to_s
       task.uri
     end  
-	end
+  end
 
 end
