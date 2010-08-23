@@ -28,13 +28,13 @@ module OpenTox
         if ENV['RACK_ENV'] =~ /test|debug/
           begin
             raise "uri invalid" unless Utils.is_uri?(@uri)
-            raise "no algorithm" unless @algorithm and @algorithm.size>0
-            raise "no dependent variables" unless @dependentVariables and @dependentVariables.size>0 
-            raise "no indenpendent variables" unless @independentVariables
             raise "no predicted variables" unless @predictedVariables and @predictedVariables.size>0
           rescue => ex
             RestClientWrapper.raise_uri_error "invalid model: '"+ex.message+"'\n"+self.to_yaml+"\n",@uri.to_s    
           end
+          LOGGER.warn "model has no dependent variable" unless @dependentVariables and @dependentVariables.size>0
+          LOGGER.warn "model has no algorithm" unless @algorithm and @algorithm.size>0
+          LOGGER.warn "model has no indenpendent variables" unless @independentVariables
         end
 			end
 	 end
