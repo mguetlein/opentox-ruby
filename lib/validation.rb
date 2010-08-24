@@ -4,16 +4,7 @@ module OpenTox
 		attr_accessor :uri
 
 		def initialize(params)
-			#resource = RestClient::Resource.new(params[:uri], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
-			#@uri = resource.post(params).body
-			#LOGGER.debug "VALIDATION URI: " + @uri.to_s
-			call = "curl -X POST "
-			params.each do |k,v|
-				call += " -d "+k.to_s+"=\""+URI.encode(v.to_s)+"\"" unless k == :uri
-			end
-			call += " "+params[:uri]
-			LOGGER.debug call
-			@uri = `#{call}`
+      @uri = OpenTox::RestClientWrapper.post(File.join(@@config[:services]["opentox-validation"],"/crossvalidation"),params,nil,false)
 		end
 		
 		def self.crossvalidation(params)

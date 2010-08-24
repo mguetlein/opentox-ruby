@@ -64,6 +64,18 @@ module OpenTox
           0.0
         end
       end
+      def self.euclidean(prop_a,prop_b)
+        common_properties = prop_a.keys & prop_b.keys
+        if common_properties.size > 1
+          dist_sum = 0
+          common_properties.each do |p|
+            dist_sum += (prop_a[p] - prop_b[p])**2
+          end
+          1/(1+Math.sqrt(dist_sum))
+        else
+          nil
+        end
+      end
     end
 
   end
