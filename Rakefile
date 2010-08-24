@@ -34,7 +34,8 @@ begin
 			'dm-timestamps',
 			'dm-types',
 			'dm-migrations',
-			"dm-mysql-adapter"
+			"dm-mysql-adapter",
+      "dm-validations",
 		].each {|dep| gem.add_dependency dep, ">= 1" }
 		gem.add_dependency "haml", ">=3"
 		['cucumber','jeweler'].each { |dep| gem.add_development_dependency dep }

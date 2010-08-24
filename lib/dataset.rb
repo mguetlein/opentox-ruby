@@ -202,15 +202,18 @@ module OpenTox
     
     # overwrite to yaml:
     # in case dataset is loaded from owl:
-    # * load all values
-    # * set @owl to nil (not necessary in yaml) 
+    # * load all values 
     def to_yaml
       # loads all features  
       if ((defined? @dirty_features) && @dirty_features.size > 0)
         load_feature_values
       end
-      @owl = nil
       super
+    end
+    
+    # * remove @owl from yaml, not necessary
+    def to_yaml_properties
+      super - ["@owl"]
     end
 
     # saves (changes) as new dataset in dataset service
