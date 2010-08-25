@@ -25,7 +25,7 @@ end
 
 # database
 if @@config[:database]
-	['dm-core', 'dm-serializer', 'dm-timestamps', 'dm-types', 'dm-migrations' ].each{|lib| require lib }
+	['dm-core', 'dm-serializer', 'dm-timestamps', 'dm-types', 'dm-migrations', 'dm-validations' ].each{|lib| require lib }
 	case @@config[:database][:adapter]
 	when /sqlite/i
 		db_dir = File.join(basedir, "db")

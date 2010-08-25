@@ -518,6 +518,11 @@ module OpenTox
             value_node = value_nodes[0]
             
             compound_uri = get_value( @model.object(value_node, node('compound')) )
+            unless compound_uri
+               LOGGER.warn "'compound' missing for data-entry of feature "+feature_uri.to_s+
+                 ", value: "+@model.object(feature_value_node,node("value")).to_s
+               next
+            end
             
             value_node_type = @model.object(feature_value_node, RDF_TYPE)
             if (value_node_type == node('FeatureValue'))
