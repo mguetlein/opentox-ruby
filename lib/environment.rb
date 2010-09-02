@@ -54,20 +54,6 @@ else
 	LOGGER.level = Logger::WARN 
 end
 
-if File.exist?(user_file)
-  @@users = YAML.load_file(user_file)
-else
-  FileUtils.cp(File.join(File.dirname(__FILE__), 'templates/users.yaml'), user_file)
-  puts "Please edit #{user_file} and restart your application."
-  exit
-end
-
-begin
-  0 < @@users[:users].keys.length
-rescue
-  raise "Please edit #{user_file} and restart your application. Create at least one user with password."
-end
-
 # Regular expressions for parsing classification data
 TRUE_REGEXP = /^(true|active|1|1.0)$/i
 FALSE_REGEXP = /^(false|inactive|0|0.0)$/i

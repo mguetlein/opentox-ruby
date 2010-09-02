@@ -95,7 +95,7 @@ module OpenTox
 
       def save
         @features.uniq!
-        resource = RestClient::Resource.new(@@config[:services]["opentox-model"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+        resource = RestClient::Resource.new(@@config[:services]["opentox-model"])
         resource.post(self.to_yaml, :content_type => "application/x-yaml").chomp.to_s
       end
 
@@ -126,7 +126,7 @@ module OpenTox
 
       def save
         @features.uniq!
-        resource = RestClient::Resource.new(@@config[:services]["opentox-model"], :user => @@users[:users].keys[0], :password => @@users[:users].values[0])
+        resource = RestClient::Resource.new(@@config[:services]["opentox-model"])
         resource.post(self.to_yaml, :content_type => "application/x-yaml").chomp.to_s
       end
 
