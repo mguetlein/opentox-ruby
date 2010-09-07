@@ -19,9 +19,10 @@ else
 	FileUtils.mkdir_p LOG_DIR
 	FileUtils.mkdir_p config_dir
 	FileUtils.cp(File.join(File.dirname(__FILE__), 'templates/config.yaml'), config_file)
-	puts "Please edit #{config_file} and restart your application."
+	raise "Please edit #{config_file} and restart your application."
 	exit
 end
+CONFIG = @@config
 
 # database
 if @@config[:database]
