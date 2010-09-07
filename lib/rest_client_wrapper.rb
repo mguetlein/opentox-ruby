@@ -36,8 +36,8 @@ module OpenTox
   
   class RestClientWrapper
     
-    def self.get(uri, headers=nil, wait=true, return_http_code=false )
-      execute( "get", uri, headers, nil, wait, return_http_code )
+    def self.get(uri, headers=nil, wait=true, return_code_and_type=false ) 
+      execute( "get", uri, headers, nil, wait, return_code_and_type )
     end
     
     def self.post(uri, headers, payload=nil, wait=true)
@@ -57,7 +57,7 @@ module OpenTox
     end
     
     private
-    def self.execute( rest_call, uri, headers, payload=nil, wait=true, return_http_code=false )
+    def self.execute( rest_call, uri, headers, payload=nil, wait=true, return_code_and_type=false )
       
       do_halt 400,"uri is null",uri,headers,payload unless uri
       do_halt 400,"not a uri",uri,headers,payload unless Utils.is_uri?(uri)
@@ -89,7 +89,7 @@ module OpenTox
         end
         raise "illegal status code: '"+res.code.to_s+"'" unless res.code==200
         
-        if (return_http_code)
+        if (return_code_and_type)
           return res
         else
           return res.to_s

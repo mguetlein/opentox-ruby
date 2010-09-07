@@ -44,7 +44,7 @@ module OpenTox
       end
       result = RestClientWrapper.get(uri, {:accept => accept_header}, false, true) #'application/x-yaml'})
       @http_code = result.code
-      reload_from_data(result, result.content_type, uri)
+      reload_from_data(result.to_s, result.content_type, uri)
     end
     
     def reload_from_data( data, content_type, base_uri )
