@@ -188,11 +188,12 @@ module OpenTox
     # ot_class is the class of the object as string, e.g. "Model","Dataset", ...
     # root_node is the root-object node in the rdf
     # uri the uri of the object
-    attr_accessor :ot_class, :root_node, :uri, :model
+    attr_accessor :ot_class, :root_node, :uri, :model, :triples
 
     private
     def initialize
       @model = Redland::Model.new Redland::MemoryStore.new 
+      @triples = ""
     end
 
     # build new owl object
@@ -255,7 +256,8 @@ module OpenTox
     end
 
     def rdf
-      @model.to_string
+      #@model.to_string
+      @triples
     end
   
     # returns the first object for subject:root_node and property
@@ -335,16 +337,23 @@ module OpenTox
     # model_xy,rdf:type,ot:Model
     # ot:Model,rdf:type,owl:Class 
     def set_type(ot_class, current_node=@root_node)
-      @model.add current_node, RDF_TYPE, node(ot_class)
-      @model.add node(ot_class), RDF_TYPE, OWL_TYPE_CLASS
+      #@triples += "#{ot_class.to_s} #{RDF_TYPE.to_s} #{current_node.to_s}"
+      @triples += "#{current_node} #{RDF_TYPE} #{node(ot_class).to_s}.\n".gsub(/\[/,'<').gsub(/\]/,'>')
+      @triples += "#{node(ot_class).to_s} #{RDF_TYPE} #{OWL_TYPE_CLASS}.\n".gsub(/\[/,'<').gsub(/\]/,'>')
+      #@model.add current_node, RDF_TYPE, node(ot_class)
+      #@model.add node(ot_class), RDF_TYPE, OWL_TYPE_CLASS
     end
     
     # example-triples for setting description of a model:
     # model_xy,ot:description,bla..bla^^xml:string
     # ot:description,rdf:type,owl:Literal
     def set_literal(literal_name, literal_value, literal_datatype, current_node=@root_node)
-      @model.add current_node, node(literal_name), Redland::Literal.create(literal_value, literal_datatype)
-      @model.add node(literal_name), RDF_TYPE, OWL_TYPE_LITERAL
+      #@triples += "#{current_node} #{node(literal_name)} #{Redland::Literal.create(literal_value, literal_datatype)}.\n".gsub(/\[/,'<').gsub(/\]/,'>')
+      #TODO: add datatype
+      @triples += "#{current_node} #{node(literal_name)} \"#{literal_value}\".\n".gsub(/\[/,'<').gsub(/\]/,'>')
+      @triples += "#{node(literal_name)} #{RDF_TYPE} #{OWL_TYPE_LITERAL}.\n".gsub(/\[/,'<').gsub(/\]/,'>')
+      #@model.add current_node, node(literal_name), Redland::Literal.create(literal_value, literal_datatype)
+      #@model.add node(literal_name), RDF_TYPE, OWL_TYPE_LITERAL
     end
     
     # example-triples for setting algorithm property of a model:
@@ -353,11 +362,15 @@ module OpenTox
     # algorihtm_xy,rdf:type,ot:Algorithm
     # ot:Algorithm,rdf:type,owl:Class
     def set_object_property(property, object, object_class, current_node=@root_node)
-      object_node = Redland::Resource.new(object)
-      @model.add current_node, node(property), object_node
-      @model.add node(property), RDF_TYPE, OWL_TYPE_OBJECT_PROPERTY
-      @model.add object_node, RDF_TYPE, node(object_class)
-      @model.add node(object_class), RDF_TYPE, OWL_TYPE_CLASS
+#      object_node = Redland::Resource.new(object)
+#      @triples += "#{current_node} #{node(property)} #{object_node}.\n".gsub(/\[/,'<').gsub(/\]/,'>')
+#      @triples += "#{node(property)} #{RDF_TYPE} #{OWL_TYPE_OBJECT_PROPERTY}.\n".gsub(/\[/,'<').gsub(/\]/,'>')
+#      @triples += "#{object_node} #{RDF_TYPE} #{node(object_class)}.\n".gsub(/\[/,'<').gsub(/\]/,'>')
+#      @triples += "#{node(object_class)} #{RDF_TYPE} #{OWL_TYPE_CLASS}.\n".gsub(/\[/,'<').gsub(/\]/,'>')
+      #@model.add current_node, node(property), object_node
+      #@model.add node(property), RDF_TYPE, OWL_TYPE_OBJECT_PROPERTY
+      #@model.add object_node, RDF_TYPE, node(object_class)
+      #@model.add node(object_class), RDF_TYPE, OWL_TYPE_CLASS
     end
 
     # this is (a recursiv method) to set nested-data via hashes (not only simple properties)
