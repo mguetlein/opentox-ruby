@@ -93,7 +93,7 @@ end
 
 module OpenTox
 
-	class Owl
+  class Owl
     
     # to get correct owl-dl, properties and objects have to be typed
     # i.e. the following triple is insufficient:  
@@ -188,26 +188,26 @@ module OpenTox
     # ot_class is the class of the object as string, e.g. "Model","Dataset", ...
     # root_node is the root-object node in the rdf
     # uri the uri of the object
-		attr_accessor :ot_class, :root_node, :uri, :model
+    attr_accessor :ot_class, :root_node, :uri, :model
 
     private
-		def initialize
-			@model = Redland::Model.new Redland::MemoryStore.new
-		end
+    def initialize
+      @model = Redland::Model.new Redland::MemoryStore.new 
+    end
 
     # build new owl object
     # ot_class is the class of this object, should be a string like "Model", "Task", ...
     # uri is name and identifier of this object
     public 
-		def self.create( ot_class, uri )
+    def self.create( ot_class, uri )
     
       owl = OpenTox::Owl.new
       owl.ot_class = ot_class
       owl.root_node = Redland::Resource.new(uri.to_s.strip)
       owl.set("type",owl.ot_class)
       owl.uri = uri
-			owl
-	  end
+      owl
+    end
   
     # loads owl from data
     def self.from_data(data, base_uri, ot_class)
@@ -250,13 +250,13 @@ module OpenTox
       end
     end
   
-	  def self.from_uri(uri, ot_class)
+    def self.from_uri(uri, ot_class)
       return from_data(RestClientWrapper.get(uri,:accept => "application/rdf+xml").to_s, uri, ot_class) 
-		end
+    end
 
-		def rdf
-			@model.to_string
-	  end
+    def rdf
+      @model.to_string
+    end
   
     # returns the first object for subject:root_node and property
     # (sufficient for accessing simple, root-node properties)
@@ -430,14 +430,14 @@ module OpenTox
     # for "backwards-compatiblity"
     # better use directly: 
     # set_data( { "parameters" => [ { "title" => <t>, "paramScope" => <s>, "paramValue" => <v> } ] )
-		def parameters=(params)
+    def parameters=(params)
       
       converted_params = []
       params.each do |name, settings|
         converted_params << { :title => name, :paramScope => settings[:scope], :paramValue => settings[:value] }
       end
       set_data( :parameters => converted_params )
-		end
+    end
 
     # PENDING move to dataset.rb
     # this is for dataset.to_owl
