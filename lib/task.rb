@@ -42,7 +42,7 @@ module OpenTox
           accept_header = 'application/rdf+xml'
         end
       end
-      result = RestClientWrapper.get(uri, {:accept => accept_header}, false)#'application/x-yaml'})
+      result = RestClientWrapper.get(uri, {:accept => accept_header}, false, true) #'application/x-yaml'})
       @http_code = result.code
       reload_from_data(result, result.content_type, uri)
     end

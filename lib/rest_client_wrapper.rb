@@ -36,8 +36,8 @@ module OpenTox
   
   class RestClientWrapper
     
-    def self.get(uri, headers=nil, wait=true)
-      execute( "get", uri, headers, nil, wait)
+    def self.get(uri, headers=nil, wait=true, return_http_code=false )
+      execute( "get", uri, headers, nil, wait, return_http_code )
     end
     
     def self.post(uri, headers, payload=nil, wait=true)
@@ -52,12 +52,12 @@ module OpenTox
       execute( "delete", uri, headers, nil)
     end
 
-    def self.raise_uri_error(error_msg, uri, headers=nil, payload=nil)
+    def self.raise_uri_error(error_msg, uri, headers=nil, payload=nil )
       do_halt( "-", error_msg, uri, headers, payload )         
     end
     
     private
-    def self.execute( rest_call, uri, headers, payload=nil, wait=true )
+    def self.execute( rest_call, uri, headers, payload=nil, wait=true, return_http_code=false )
       
       do_halt 400,"uri is null",uri,headers,payload unless uri
       do_halt 400,"not a uri",uri,headers,payload unless Utils.is_uri?(uri)
@@ -88,13 +88,19 @@ module OpenTox
           res = wait_for_task(res, uri)
         end
         raise "illegal status code: '"+res.code.to_s+"'" unless res.code==200
-        return res
         
+        if (return_http_code)
+          return res
+        else
+          return res.to_s
+        end
       rescue RestClient::RequestTimeout => ex
         do_halt 408,ex.message,uri,headers,payload
       rescue => ex
+        
         #raise ex
         #raise "'"+ex.message+"' uri: "+uri.to_s
+        
         begin
           code = ex.http_code
           msg = ex.http_body
