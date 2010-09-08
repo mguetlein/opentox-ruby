@@ -1,4 +1,3 @@
-require 'open3'
 require 'rdf'
 require 'rdf/raptor'
 include RDF
@@ -268,10 +267,11 @@ module OpenTox
       #File.open("/tmp/d","w+") {|f| f.puts @triples}
       #`rapper -i ntriples -o rdfxml /tmp/d`
       #@triples
-      output = RDF::Writer.for(:rdfxml).buffer do |writer|
-        #@triples.each do |statement|
-          #writer << statement
-        #end
+      #output = RDF::Writer.for(:rdfxml).buffer do |writer|
+      RDF::Writer.for(:ntriples).buffer do |writer|
+        @triples.each do |statement|
+          writer << statement
+        end
       end
       #output
     end
