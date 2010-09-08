@@ -1,8 +1,9 @@
 require 'rdf'
+require 'rdf/ntriples'
 require 'rdf/raptor'
 include RDF
 # RDF namespaces
-RDF = Redland::Namespace.new 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+#RDF = Redland::Namespace.new 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
 OWL = Redland::Namespace.new 'http://www.w3.org/2002/07/owl#'
 DC = Redland::Namespace.new 'http://purl.org/dc/elements/1.1/'
 OT = Redland::Namespace.new 'http://www.opentox.org/api/1.1#'
@@ -268,7 +269,7 @@ module OpenTox
       #`rapper -i ntriples -o rdfxml /tmp/d`
       #@triples
       #output = RDF::Writer.for(:rdfxml).buffer do |writer|
-      RDF::Writer.for(:ntriples).buffer do |writer|
+      RDF::Writer.for(:rdfxml).buffer do |writer|
         @triples.each do |statement|
           writer << statement
         end
@@ -391,7 +392,7 @@ module OpenTox
 
     def add(s,p,o)
       #@triples << "#{s} #{p} #{o}.\n".gsub(/\[/,'<').gsub(/\]/,'>')
-      @triples << [s,p,o]
+      @triples << [s.to_s.sub(/\[/,'').sub(/\]/,''),p.to_s.sub(/\[/,'').sub(/\]/,''),o.to_s.sub(/\[/,'').sub(/\]/,'')]
       #@model.add s,p,o
     end
 
