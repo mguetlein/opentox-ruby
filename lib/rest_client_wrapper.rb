@@ -30,10 +30,6 @@ module OpenTox
     
   end
   
-  class WrapperResult < String
-    attr_accessor :content_type, :code
-  end
-  
   class RestClientWrapper
     
     def self.get(uri, headers=nil, wait=true, return_code_and_type=false ) 
@@ -76,31 +72,25 @@ module OpenTox
           result = resource.send(rest_call)
         end
         
-        # result is a string, with the additional fields content_type and code
-        res = WrapperResult.new(result.body)
-        res.content_type = result.headers[:content_type]
-        raise "content-type not set" unless res.content_type
-        res.code = result.code
+        res = {:body => result.body, :content_type => result.headers[:content_type], :code => result.code }
+        raise "content-type not set" unless res[:content_type]
         
-        return res if res.code==200 || !wait
-        
-        while (res.code==201 || res.code==202)
+        while ( wait && ( res[:code]==201 || res[:code]==202 ))
           res = wait_for_task(res, uri)
         end
-        raise "illegal status code: '"+res.code.to_s+"'" unless res.code==200
+        raise "illegal status code: '"+res[:code].to_s+"'" unless 
+          ( res[:code]==200 || ( !wait && ( res[:code]==201 || res[:code]==202 )))
         
         if (return_code_and_type)
           return res
         else
-          return res.to_s
+          return res[:body]
         end
       rescue RestClient::RequestTimeout => ex
         do_halt 408,ex.message,uri,headers,payload
       rescue => ex
-        
         #raise ex
         #raise "'"+ex.message+"' uri: "+uri.to_s
-        
         begin
           code = ex.http_code
           msg = ex.http_body
@@ -113,27 +103,23 @@ module OpenTox
     end
     
     def self.wait_for_task( res, base_uri )
-                          
-      task = nil
-      case res.content_type
-      when /application\/rdf\+xml|application\/x-yaml/
-        task = OpenTox::Task.from_data(res, res.content_type, res.code, base_uri)
-      when /text\//
-        raise "uri list has more than one entry, should be a task" if res.content_type=~/text\/uri-list/ and
-          res.split("\n").size > 1 #if uri list contains more then one uri, its not a task
-        task = OpenTox::Task.find(res.to_s) if Utils.task_uri?(res)
-      else
-        raise "unknown content-type for task: '"+res.content_type.to_s+"'" #+"' content: "+res[0..200].to_s
-      end
       
+      task = nil
+      case res[:content_type]
+      when /application\/rdf\+xml|application\/x-yaml/
+        task = OpenTox::Task.from_data(res[:body], res[:content_type], res[:code], base_uri)
+      when /text\//
+        raise "uri list has more than one entry, should be a task" if res[:content_type]=~/text\/uri-list/ and
+          res[:body].split("\n").size > 1 #if uri list contains more then one uri, its not a task
+        task = OpenTox::Task.find(res[:body]) if Utils.task_uri?(res[:body])
+      else
+        raise "unknown content-type for task: '"+res[:content_type].to_s+"'" #+"' content: "+res[0..200].to_s
+      end      
       LOGGER.debug "result is a task '"+task.uri.to_s+"', wait for completion"
       task.wait_for_completion
       raise task.description unless task.completed? # maybe task was cancelled / error
       
-      res = WrapperResult.new task.resultURI
-      res.code = task.http_code
-      res.content_type = "text/uri-list"
-      return res
+      return {:body => task.resultURI, :code => task.http_code, :content_type => "text/uri-list" }
     end
     
     def self.do_halt( code, body, uri, headers, payload=nil )
