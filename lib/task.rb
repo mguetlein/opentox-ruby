@@ -5,7 +5,7 @@ module OpenTox
   class Task
 
     # due_to_time is only set in local tasks 
-    TASK_ATTRIBS = [ :uri, :date, :title, :creator, :description, :hasStatus, :percentageCompleted, :resultURI, :due_to_time ]
+    TASK_ATTRIBS = [ :uri, :date, :title, :creator, :description, :hasStatus, :percentageCompleted, :resultURI, :due_to_time, :taskParameters ]
     TASK_ATTRIBS.each{ |a| attr_accessor(a) }
     attr_accessor :http_code
     
@@ -75,8 +75,8 @@ module OpenTox
       reload
     end
 
-    def error(description)
-      RestClientWrapper.put(File.join(@uri,'Error'),{:description => description.to_s[0..2000]})
+    def error(msg)
+      RestClientWrapper.put(File.join(@uri,'Error'),{:description => msg.to_s[0..2000]})
       reload
     end
     
@@ -140,10 +140,10 @@ module OpenTox
   
     # returns the task uri
     # catches halts and exceptions, task state is set to error then
-    def self.as_task( title, creator, max_duration=DEFAULT_TASK_MAX_DURATION, description=nil )
+    def self.as_task( title, creator, task_params={}, max_duration=DEFAULT_TASK_MAX_DURATION  )
       #return yield nil
-      
-      params = {:title=>title, :creator=>creator, :max_duration=>max_duration, :description=>description }
+      raise "task_params no hash" unless task_params.is_a?(Hash)
+      params = {:title=>title, :creator=>creator, :max_duration=>max_duration, :taskParameters=>task_params.inspect }
       task = OpenTox::Task.create(params)
       task_pid = Spork.spork(:logger => LOGGER) do
         LOGGER.debug "Task #{task.uri} started #{Time.now}"

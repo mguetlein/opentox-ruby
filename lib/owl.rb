@@ -145,7 +145,7 @@ module OpenTox
     LITERAL_TYPES = {}
     [ "title", "creator", "format", "description", "hasStatus", "paramScope", "paramValue", 
       "classValue", "reportType", "confusionMatrixActual", 
-      "confusionMatrixPredicted" ].each{ |l| LITERAL_TYPES[l] = LITERAL_DATATYPE_STRING }
+      "confusionMatrixPredicted", "taskParameters" ].each{ |l| LITERAL_TYPES[l] = LITERAL_DATATYPE_STRING }
     [ "date", "due_to_time" ].each{ |l| LITERAL_TYPES[l] = LITERAL_DATATYPE_DATE }
     [ "percentageCompleted", "truePositiveRate", "fMeasure", "falseNegativeRate", 
       "areaUnderRoc", "falsePositiveRate", "trueNegativeRate", "precision", "recall", 
