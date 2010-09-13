@@ -271,7 +271,12 @@ module OpenTox
       #output = RDF::Writer.for(:rdfxml).buffer do |writer|
       RDF::Writer.for(:rdfxml).buffer do |writer|
         @triples.each do |statement|
+          begin
           writer << statement
+          rescue => e
+          LOGGER.error e
+          LOGGER.info statement.inspect
+          end
         end
       end
       #output
@@ -392,7 +397,7 @@ module OpenTox
 
     def add(s,p,o)
       #@triples << "#{s} #{p} #{o}.\n".gsub(/\[/,'<').gsub(/\]/,'>')
-      @triples << [s.to_s.sub(/\[/,'').sub(/\]/,''),p.to_s.sub(/\[/,'').sub(/\]/,''),o.to_s.sub(/\[/,'').sub(/\]/,'')]
+      @triples << [RDF::URI.new(s.to_s.sub(/\[/,'').sub(/\]/,'')),RDF::URI.new(p.to_s.sub(/\[/,'').sub(/\]/,'')),o.to_s.sub(/\[/,'').sub(/\]/,'')]
       #@model.add s,p,o
     end
 
