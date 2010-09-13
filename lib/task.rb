@@ -5,7 +5,7 @@ module OpenTox
   class Task
 
     # due_to_time is only set in local tasks 
-    TASK_ATTRIBS = [ :uri, :date, :title, :creator, :description, :hasStatus, :percentageCompleted, :resultURI, :due_to_time, :taskParameters ]
+    TASK_ATTRIBS = [ :uri, :date, :title, :creator, :description, :hasStatus, :percentageCompleted, :resultURI, :due_to_time ]
     TASK_ATTRIBS.each{ |a| attr_accessor(a) }
     attr_accessor :http_code
     
