@@ -36,6 +36,8 @@ module OpenTox
         end
       end
       
+      LOGGER.debug "load dataset "+uri.to_s.strip+" "+accept_header.to_s
+      
       case accept_header
       when "application/x-yaml"
         d = YAML.load RestClientWrapper.get(uri.to_s.strip, :accept => 'application/x-yaml').to_s 
