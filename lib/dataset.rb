@@ -36,11 +36,16 @@ module OpenTox
         end
       end
       
-      LOGGER.debug "load dataset "+uri.to_s.strip+" "+accept_header.to_s
+      LOGGER.debug "Loading dataset '"+uri.to_s.strip+"' '"+accept_header.to_s+"'"
       
       case accept_header
       when "application/x-yaml"
-        d = YAML.load RestClientWrapper.get(uri.to_s.strip, :accept => 'application/x-yaml').to_s 
+        d = YAML.load RestClientWrapper.get(uri.to_s.strip, :accept => 'application/x-yaml').to_s
+        unless d
+          #PENDING add 'secure' option to find, true? => return nil, false? => raise exception
+          LOGGER.warn "could not load dataset '"+uri.to_s.strip+"' via yaml"
+          return nil          
+        end
         d.uri = uri unless d.uri
       when "application/rdf+xml"
         owl = OpenTox::Owl.from_uri(uri.to_s.strip, "Dataset")
