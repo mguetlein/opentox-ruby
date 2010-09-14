@@ -52,6 +52,50 @@ module OpenTox
       do_halt( "-", error_msg, uri, headers, payload )         
     end
     
+    # PENDING: RHODES Hack
+    def self.get_secure(uri, headers=nil, wait=true, return_code_and_type=false ) 
+      execute_secure( "get", uri, headers, nil, wait, return_code_and_type )
+    end
+    
+    def self.execute_secure( rest_call, uri, headers, payload=nil, wait=true, return_code_and_type=false )
+      
+      do_halt 400,"uri is null",uri,headers,payload unless uri
+      do_halt 400,"not a uri",uri,headers,payload unless Utils.is_uri?(uri)
+      do_halt 400,"headers are no hash",uri,headers,payload unless headers==nil or headers.is_a?(Hash)
+      do_halt 400,"nil headers for post not allowed, use {}",uri,headers,payload if rest_call=="post" and headers==nil
+      headers.each{ |k,v| headers.delete(k) if v==nil } if headers #remove keys with empty values, as this can cause problems
+      
+      begin
+        #LOGGER.debug "RestCall: "+rest_call.to_s+" "+uri.to_s+" "+headers.inspect
+        resource = RestClient::Resource.new(uri,{:timeout => 60}) #, :user => @@users[:users].keys[0], :password => @@users[:users].values[0]})
+        if payload
+          result = resource.send(rest_call, payload, headers)
+        elsif headers
+          result = resource.send(rest_call, headers)
+        else
+          result = resource.send(rest_call)
+        end
+        
+        res = {:body => result.body, :content_type => result.headers[:content_type], :code => result.code }
+        raise "content-type not set" unless res[:content_type]
+        
+        while ( wait && ( res[:code]==201 || res[:code]==202 ))
+          res = wait_for_task(res, uri)
+        end
+        raise "illegal status code: '"+res[:code].to_s+"'" unless 
+          ( res[:code]==200 || ( !wait && ( res[:code]==201 || res[:code]==202 )))
+        
+        if (return_code_and_type)
+          return res
+        else
+          return res[:body]
+        end
+      rescue 
+        LOGGER.warn "Error while rest-call "+uri.to_s
+        return nil
+      end
+    end
+    
     private
     def self.execute( rest_call, uri, headers, payload=nil, wait=true, return_code_and_type=false )
       
