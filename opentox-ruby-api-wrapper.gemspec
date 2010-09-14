@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Christoph Helma, Martin Guetlein"]
-  s.date = %q{2010-08-25}
+  s.date = %q{2010-09-14}
   s.description = %q{Ruby wrapper for the OpenTox REST API (http://www.opentox.org)}
   s.email = %q{helma@in-silico.ch}
   s.executables = ["opentox-install-ubuntu.sh", "yaml2owl.rb", "opentox-install-debian.sh"]
@@ -26,7 +26,6 @@ Gem::Specification.new do |s|
      "bin/opentox-install-ubuntu.sh",
      "bin/yaml2owl.rb",
      "lib/algorithm.rb",
-     "lib/authorization.rb",
      "lib/compound.rb",
      "lib/config/config_ru.rb",
      "lib/dataset.rb",
@@ -38,12 +37,16 @@ Gem::Specification.new do |s|
      "lib/opentox.owl",
      "lib/ot-logger.rb",
      "lib/overwrite.rb",
+     "lib/owl-serializer.rb",
      "lib/owl.rb",
+     "lib/owl.rb.RDF",
+     "lib/owl.rb.nt",
+     "lib/owl.rb.rdfxml.initial",
+     "lib/owl.rb.redland",
      "lib/rest_client_wrapper.rb",
      "lib/spork.rb",
      "lib/task.rb",
      "lib/templates/config.yaml",
-     "lib/templates/users.yaml",
      "lib/utils.rb",
      "lib/validation.rb"
   ]
