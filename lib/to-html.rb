@@ -10,6 +10,11 @@ end
 
 module OpenTox
   
+  # text, related_links, description should be String, format is preserved, urls are marked as links 
+  # post_params should be array of arrays, see example
+  # [ [ [:mandatory_param_1], [:mandatory_param_2], [:optional_param,"default_value"] ],
+  #   [ [:alteranative_mandatory_param_1], [:alteranative_mandatory_param_2] ]
+  # ] 
   def self.text_to_html( text, related_links=nil, description=nil, post_params=nil )
     
     html = <<EOF

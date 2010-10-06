@@ -143,7 +143,7 @@ module OpenTox
     def self.as_task( title, creator, task_params={}, max_duration=DEFAULT_TASK_MAX_DURATION  )
       #return yield nil
       raise "task_params no hash" unless task_params.is_a?(Hash)
-      params = {:title=>title, :creator=>creator, :max_duration=>max_duration, :taskParameters=>task_params.inspect }
+      params = {:title=>title, :creator=>creator, :max_duration=>max_duration, :taskParameters=>task_params.inspect.gsub('"',"'") }
       task = OpenTox::Task.create(params)
       task_pid = Spork.spork(:logger => LOGGER) do
         LOGGER.debug "Task #{task.uri} started #{Time.now}"
