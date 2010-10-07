@@ -32,8 +32,17 @@ module OpenTox
   
   class RestClientWrapper
     
-    def self.get(uri, headers=nil, wait=true, return_code_and_type=false ) 
-      execute( "get", uri, headers, nil, wait, return_code_and_type )
+    # works like RestClientWrapper.get apart from
+    # wait: true(default) -> waits for the task if a task is returned
+    #       false         -> does not wait for task
+    def self.get(uri, headers=nil, wait=true ) 
+      execute( "get", uri, headers, nil, wait, false )
+    end
+    
+    # works like get() apart from the result 
+    # result is a hash with keys body (return value of get()), code and content_type 
+    def self.get_meta_info(uri, headers=nil, wait=true ) 
+      execute( "get", uri, headers, nil, wait, true )
     end
     
     def self.post(uri, headers, payload=nil, wait=true)
@@ -49,60 +58,16 @@ module OpenTox
     end
 
     def self.raise_uri_error(error_msg, uri, headers=nil, payload=nil )
-      do_halt( "-", error_msg, uri, headers, payload )         
-    end
-    
-    # PENDING: RHODES Hack
-    def self.get_secure(uri, headers=nil, wait=true, return_code_and_type=false ) 
-      execute_secure( "get", uri, headers, nil, wait, return_code_and_type )
-    end
-    
-    def self.execute_secure( rest_call, uri, headers, payload=nil, wait=true, return_code_and_type=false )
-      
-      do_halt 400,"uri is null",uri,headers,payload unless uri
-      do_halt 400,"not a uri",uri,headers,payload unless Utils.is_uri?(uri)
-      do_halt 400,"headers are no hash",uri,headers,payload unless headers==nil or headers.is_a?(Hash)
-      do_halt 400,"nil headers for post not allowed, use {}",uri,headers,payload if rest_call=="post" and headers==nil
-      headers.each{ |k,v| headers.delete(k) if v==nil } if headers #remove keys with empty values, as this can cause problems
-      
-      begin
-        #LOGGER.debug "RestCall: "+rest_call.to_s+" "+uri.to_s+" "+headers.inspect
-        resource = RestClient::Resource.new(uri,{:timeout => 60}) #, :user => @@users[:users].keys[0], :password => @@users[:users].values[0]})
-        if payload
-          result = resource.send(rest_call, payload, headers)
-        elsif headers
-          result = resource.send(rest_call, headers)
-        else
-          result = resource.send(rest_call)
-        end
-        
-        res = {:body => result.body, :content_type => result.headers[:content_type], :code => result.code }
-        raise "content-type not set" unless res[:content_type]
-        
-        while ( wait && ( res[:code]==201 || res[:code]==202 ))
-          res = wait_for_task(res, uri)
-        end
-        raise "illegal status code: '"+res[:code].to_s+"'" unless 
-          ( res[:code]==200 || ( !wait && ( res[:code]==201 || res[:code]==202 )))
-        
-        if (return_code_and_type)
-          return res
-        else
-          return res[:body]
-        end
-      rescue 
-        LOGGER.warn "Error while rest-call "+uri.to_s
-        return nil
-      end
+      raise_ot_error( "-", error_msg, uri, headers, payload )         
     end
     
     private
     def self.execute( rest_call, uri, headers, payload=nil, wait=true, return_code_and_type=false )
       
-      do_halt 400,"uri is null",uri,headers,payload unless uri
-      do_halt 400,"not a uri",uri,headers,payload unless Utils.is_uri?(uri)
-      do_halt 400,"headers are no hash",uri,headers,payload unless headers==nil or headers.is_a?(Hash)
-      do_halt 400,"nil headers for post not allowed, use {}",uri,headers,payload if rest_call=="post" and headers==nil
+      raise_ot_error 400,"uri is null",uri,headers,payload unless uri
+      raise_ot_error 400,"not a uri",uri,headers,payload unless Utils.is_uri?(uri)
+      raise_ot_error 400,"headers are no hash",uri,headers,payload unless headers==nil or headers.is_a?(Hash)
+      raise_ot_error 400,"nil headers for post not allowed, use {}",uri,headers,payload if rest_call=="post" and headers==nil
       headers.each{ |k,v| headers.delete(k) if v==nil } if headers #remove keys with empty values, as this can cause problems
       
       begin
@@ -131,7 +96,7 @@ module OpenTox
           return res[:body]
         end
       rescue RestClient::RequestTimeout => ex
-        do_halt 408,ex.message,uri,headers,payload
+        raise_ot_error 408,ex.message,uri,headers,payload
       rescue => ex
         #raise ex
         #raise "'"+ex.message+"' uri: "+uri.to_s
@@ -142,7 +107,7 @@ module OpenTox
           code = 500
           msg = ex.to_s
         end
-        do_halt code,msg,uri,headers,payload
+        raise_ot_error code,msg,uri,headers,payload
       end
     end
     
@@ -166,7 +131,7 @@ module OpenTox
       return {:body => task.resultURI, :code => task.http_code, :content_type => "text/uri-list" }
     end
     
-    def self.do_halt( code, body, uri, headers, payload=nil )
+    def self.raise_ot_error( code, body, uri, headers, payload=nil )
       
       #build error
       causing_errors = Error.parse(body)
@@ -187,18 +152,17 @@ module OpenTox
       File.new(File.join(error_dir,file_name+"_"+time+"_"+count.to_s),"w").puts(body)
       
       # handle error
-      # we are either in a task, or in sinatra
       # PENDING: always return yaml for now
       
-      if $self_task #this global var in Task.as_task to mark that the current process is running in a task
-        raise error.to_yaml # the error is caught, logged, and task state is set to error in Task.as_task
-      #elsif $sinatra  #else halt sinatra
-         #$sinatra.halt(502,error.to_yaml)
-      elsif defined?(halt)         
-         halt(502,error.to_yaml)
-      else #for testing purposes (if classes used directly)
-        raise error.to_yaml
-      end
+      # raising OpenTox::Error
+      # to handle the error yourself, put rest-call in begin, rescue block
+      # if the error is not caught: 
+      #   if we are in a task, the error is caught, logged, and task state is set to error in Task.as_task 
+      #   if we are in a default call, the error is handled in overwrite.rb to return 502 (according to OT API) 
+      raise error.to_yaml 
     end
   end
 end
+
+
+

@@ -26,38 +26,7 @@ module OpenTox
       end
     end
     
-    #Pending: RHODOS HACK merge with find method
-     def self.find_secure(uri, accept_header=nil) 
-    
-      unless accept_header
-        if (@@config[:yaml_hosts].include?(URI.parse(uri).host))
-          accept_header = 'application/x-yaml'
-        else
-          accept_header = "application/rdf+xml"
-        end
-      end
-      
-      LOGGER.debug "Loading dataset '"+uri.to_s.strip+"' '"+accept_header.to_s+"'"
-      
-      case accept_header
-      when "application/x-yaml"
-        d = YAML.load RestClientWrapper.get_secure(uri.to_s.strip, :accept => 'application/x-yaml').to_s
-        unless d
-          #PENDING add 'secure' option to find, true? => return nil, false? => raise exception
-          LOGGER.warn "Could not load dataset '"+uri.to_s.strip+"' via yaml"
-          return nil          
-        end
-        d.uri = uri unless d.uri
-      when "application/rdf+xml"
-        owl = OpenTox::Owl.from_uri(uri.to_s.strip, "Dataset")
-        d = Dataset.new(owl)
-      else
-        raise "cannot get datset with accept header: "+accept_header.to_s
-      end
-      d
-    end
-  
-    def self.find(uri, accept_header=nil) 
+    def self.find(uri, accept_header=nil ) 
     
       unless accept_header
         if (@@config[:yaml_hosts].include?(URI.parse(uri).host))
@@ -72,11 +41,7 @@ module OpenTox
       case accept_header
       when "application/x-yaml"
         d = YAML.load RestClientWrapper.get(uri.to_s.strip, :accept => 'application/x-yaml').to_s
-        unless d
-          #PENDING add 'secure' option to find, true? => return nil, false? => raise exception
-          LOGGER.warn "Could not load dataset '"+uri.to_s.strip+"' via yaml"
-          return nil          
-        end
+        raise "Could not load dataset '"+uri.to_s.strip+"' via yaml" unless d
         d.uri = uri unless d.uri
       when "application/rdf+xml"
         owl = OpenTox::Owl.from_uri(uri.to_s.strip, "Dataset")

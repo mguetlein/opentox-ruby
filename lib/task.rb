@@ -1,4 +1,3 @@
-$self_task=nil
 
 module OpenTox
 
@@ -42,7 +41,7 @@ module OpenTox
           accept_header = 'application/rdf+xml'
         end
       end
-      result = RestClientWrapper.get(uri, {:accept => accept_header}, false, true) #'application/x-yaml'})
+      result = RestClientWrapper.get_meta_info(uri, {:accept => accept_header}, false) #'application/x-yaml'})
       @http_code = result[:code]
       reload_from_data(result[:body], result[:content_type], uri)
     end
@@ -147,7 +146,6 @@ module OpenTox
       task = OpenTox::Task.create(params)
       task_pid = Spork.spork(:logger => LOGGER) do
         LOGGER.debug "Task #{task.uri} started #{Time.now}"
-        $self_task = task
         
         begin
           result = catch(:halt) do
