@@ -1,27 +1,22 @@
-
 module OpenTox
+
   module Algorithm 
-    
-    
-    class Generic
-      
-      attr_accessor :uri, :title, :date
-      
-      def self.find(uri)
-        owl = OpenTox::Owl.from_uri(uri, "Algorithm")
-        return self.new(owl)
-      end
-      
+
+    include OtObject
+
+    class Generic 
+      include Algorithm
+      #include OtObject
       protected
-      def initialize(owl)
-        @title = owl.get("title")
-        @date = owl.get("date")
-        @uri = owl.uri 
-      end
+#      def initialize(owl)
+#        @title = owl.get("title")
+#        @date = owl.get("date")
+#        @uri = owl.uri 
+#      end
       
     end
 
-    class Fminer 
+    class Fminer < Generic
 
       def self.create_feature_dataset(params)
 				LOGGER.debug File.basename(__FILE__) + ": creating feature dataset"
@@ -30,7 +25,7 @@ module OpenTox
       end
 
 			def self.uri
-				File.join(@@config[:services]["opentox-algorithm"], "fminer")
+				File.join(CONFIG[:services]["opentox-algorithm"], "fminer")
 			end
     end
 
@@ -39,13 +34,13 @@ module OpenTox
 			def self.create_model(params)
 				LOGGER.debug params
 				LOGGER.debug File.basename(__FILE__) + ": creating model"
-				LOGGER.debug File.join(@@config[:services]["opentox-algorithm"], "lazar")
-        resource = RestClient::Resource.new(File.join(@@config[:services]["opentox-algorithm"], "lazar"), :content_type => "application/x-yaml")
-        @uri = resource.post(:dataset_uri => params[:dataset_uri], :prediction_feature => params[:prediction_feature], :feature_generation_uri => File.join(@@config[:services]["opentox-algorithm"], "fminer")).body.chomp
+				LOGGER.debug File.join(CONFIG[:services]["opentox-algorithm"], "lazar")
+        resource = RestClient::Resource.new(File.join(CONFIG[:services]["opentox-algorithm"], "lazar"), :content_type => "application/x-yaml")
+        @uri = resource.post(:dataset_uri => params[:dataset_uri], :prediction_feature => params[:prediction_feature], :feature_generation_uri => File.join(CONFIG[:services]["opentox-algorithm"], "fminer")).body.chomp
 			end
 
 			def self.uri
-				File.join(@@config[:services]["opentox-algorithm"], "lazar")
+				File.join(CONFIG[:services]["opentox-algorithm"], "lazar")
 			end
 
     end

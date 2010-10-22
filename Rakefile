@@ -27,6 +27,8 @@ begin
 			"google-spreadsheet-ruby",
 			"tmail",
 			"rinruby",
+			"rdf",
+			"rdf-raptor",
 			"rjb"
 		].each { |dep| gem.add_dependency dep }
 		[ "dm-core",

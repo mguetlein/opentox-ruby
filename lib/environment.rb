@@ -12,8 +12,8 @@ TMP_DIR = File.join(basedir, "tmp")
 LOG_DIR = File.join(basedir, "log")
 
 if File.exist?(config_file)
-	@@config = YAML.load_file(config_file)
-  raise "could not load config, config file: "+config_file.to_s unless @@config
+	CONFIG = YAML.load_file(config_file)
+  raise "could not load config, config file: "+config_file.to_s unless CONFIG
 else
 	FileUtils.mkdir_p TMP_DIR
 	FileUtils.mkdir_p LOG_DIR
@@ -24,20 +24,20 @@ else
 end
 
 # database
-if @@config[:database]
+if CONFIG[:database]
 	['dm-core', 'dm-serializer', 'dm-timestamps', 'dm-types', 'dm-migrations', 'dm-validations' ].each{|lib| require lib }
-	case @@config[:database][:adapter]
+	case CONFIG[:database][:adapter]
 	when /sqlite/i
 		db_dir = File.join(basedir, "db")
 		FileUtils.mkdir_p db_dir
 		DataMapper::setup(:default, "sqlite3://#{db_dir}/opentox.sqlite3")
 	else
 		DataMapper.setup(:default, { 
-				:adapter  => @@config[:database][:adapter],
-				:database => @@config[:database][:database],
-				:username => @@config[:database][:username],
-				:password => @@config[:database][:password],
-				:host     => @@config[:database][:host]})
+				:adapter  => CONFIG[:database][:adapter],
+				:database => CONFIG[:database][:database],
+				:username => CONFIG[:database][:username],
+				:password => CONFIG[:database][:password],
+				:host     => CONFIG[:database][:host]})
 	end
 end
 
@@ -48,7 +48,7 @@ logfile = "#{LOG_DIR}/#{ENV["RACK_ENV"]}.log"
 #LOGGER = MyLogger.new(logfile,'daily') # daily rotation
 LOGGER = MyLogger.new(logfile) # no rotation
 LOGGER.formatter = Logger::Formatter.new #this is neccessary to restore the formating in case active-record is loaded
-if @@config[:logger] and @@config[:logger] == "debug"
+if CONFIG[:logger] and CONFIG[:logger] == "debug"
 	LOGGER.level = Logger::DEBUG
 else
 	LOGGER.level = Logger::WARN 

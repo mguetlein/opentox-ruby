@@ -3,82 +3,120 @@
 
 module OpenTox
 
-	class Compound #< OpenTox
+  # Ruby wrapper for OpenTox Compound Webservices (http://opentox.org/dev/apis/api-1.2/structure).
+  # 
+  # Examples:
+  #   require "opentox-ruby-api-wrapper"
+  #
+  #   # Creating compounds
+  #
+  #   # from smiles string
+  #   compound = OpenTox::Compound.from_smiles("c1ccccc1")
+  #   # from name
+  #   compound = OpenTox::Compound.from_name("Benzene")
+  #   # from uri
+  #   compound = OpenTox::Compound.new("http://webservices.in-silico.ch/compound/InChI=1S/C6H6/c1-2-4-6-5-3-1/h1-6H"")
+  #
+  #   # Getting compound representations
+  #
+  #   # get InChI
+  #   inchi = compound.inchi
+  #   # get all compound names
+  #   names = compound.names
+  #   # get png image
+  #   image = compound.png
+  #   # get uri
+  #   uri = compound.uri
+  #
+  #   # SMARTS matching
+  #
+  #   # match a smarts string
+  #   compound.match?("cN") # returns false
+  #   # match an array of smarts strings
+  #   compound.match(['cc','cN']) # returns ['cc']
+	class Compound 
 
-		attr_reader :inchi, :uri
+		attr_accessor :inchi, :uri
 
-		# Initialize with <tt>:uri => uri</tt>, <tt>:smiles => smiles</tt> or <tt>:name => name</tt> (name can be also an InChI/InChiKey, CAS number, etc)
-		def initialize(params)
-			if params[:smiles]
-				@inchi = smiles2inchi(params[:smiles])
-				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
-			elsif params[:inchi]
-				@inchi = params[:inchi]
-				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
-			elsif params[:sdf]
-				@inchi = sdf2inchi(params[:sdf])
-				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
-			elsif params[:name]
-				# paranoid URI encoding to keep SMILES charges and brackets
-				@inchi = RestClient.get("#{@@cactus_uri}#{URI.encode(params[:name], Regexp.new("[^#{URI::PATTERN::UNRESERVED}]"))}/stdinchi").body.chomp
-				# this was too hard for me to debug and leads to additional errors (ch)
-				#@inchi = RestClientWrapper.get("#{@@cactus_uri}#{URI.encode(params[:name], Regexp.new("[^#{URI::PATTERN::UNRESERVED}]"))}/stdinchi").chomp
-				@uri = File.join(@@config[:services]["opentox-compound"],URI.escape(@inchi))
-			elsif params[:uri]
-				@uri = params[:uri]
-				case params[:uri]
-				when /ambit/ # Ambit does not deliver InChIs reliably
-					smiles = RestClientWrapper.get @uri, :accept => 'chemical/x-daylight-smiles'
-					@inchi = obconversion(smiles,'smi','inchi')
-				when /InChI/ # shortcut for IST services
-					@inchi = params[:uri].sub(/^.*InChI/, 'InChI')
-				else
-					@inchi = RestClientWrapper.get @uri, :accept => 'chemical/x-inchi'
-				end
-			end
-		end
+		# Create compound with optional uri
+		def initialize(uri=nil)
+      @uri = uri
+      case @uri
+      when /InChI/ # shortcut for IST services
+        @inchi = @uri.sub(/^.*InChI/, 'InChI')
+      else
+        @inchi = RestClientWrapper.get(@uri, :accept => 'chemical/x-inchi').to_s.chomp if @uri
+      end
+    end
 
-		# Get the (canonical) smiles
+    # Create a compound from smiles string
+    def self.from_smiles(smiles)
+      c = Compound.new
+      c.inchi = Compound.smiles2inchi(smiles)
+      c.uri = File.join(CONFIG[:services]["opentox-compound"],URI.escape(c.inchi))
+      c
+    end
+
+    # Create a compound from inchi string
+    def self.from_inchi(inchi)
+      c = Compound.new
+      c.inchi = inchi
+      c.uri = File.join(CONFIG[:services]["opentox-compound"],URI.escape(c.inchi))
+      c
+    end
+
+    # Create a compound from sdf string
+    def self.from_sdf(sdf)
+      c = Compound.new
+      c.inchi = Compound.sdf2inchi(sdf)
+      c.uri = File.join(CONFIG[:services]["opentox-compound"],URI.escape(c.inchi))
+      c
+    end
+
+    # Create a compound from name (name can be also an InChI/InChiKey, CAS number, etc)
+    def self.from_name(name)
+      c = Compound.new
+      # paranoid URI encoding to keep SMILES charges and brackets
+      c.inchi = RestClientWrapper.get("#{@@cactus_uri}#{URI.encode(name, Regexp.new("[^#{URI::PATTERN::UNRESERVED}]"))}/stdinchi").to_s.chomp
+      c.uri = File.join(CONFIG[:services]["opentox-compound"],URI.escape(c.inchi))
+      c
+    end
+
+		# Get (canonical) smiles
 		def smiles
-			obconversion(@inchi,'inchi','can')
+			Compound.obconversion(@inchi,'inchi','can')
 		end
 
+    # Get sdf
 		def sdf
-			obconversion(@inchi,'inchi','sdf')
+			Compound.obconversion(@inchi,'inchi','sdf')
 		end
 
+    # Get gif image
 		def gif
 			RestClientWrapper.get("#{@@cactus_uri}#{@inchi}/image")
 		end
 
+    # Get png image
 		def png
       RestClientWrapper.get(File.join @uri, "image")
 		end
 
+    # Get URI of compound image
+		def image_uri
+      File.join @uri, "image"
+		end
+
+    # Get all known compound names
 		def names
       begin
-        RestClientWrapper.get("#{@@cactus_uri}#{@inchi}/names")
+        RestClientWrapper.get("#{@@cactus_uri}#{@inchi}/names").split("\n")
       rescue
         "not available"
       end
 		end
 
-    def display_smarts_uri(activating, deactivating, highlight = nil)
-      LOGGER.debug activating.to_yaml unless activating.nil?
-      activating_smarts = URI.encode "\"#{activating.join("\"/\"")}\""
-      deactivating_smarts = URI.encode "\"#{deactivating.join("\"/\"")}\""
-      if highlight.nil?
-        File.join @@config[:services]["opentox-compound"], "smiles", URI.encode(smiles), "smarts/activating", URI.encode(activating_smarts),"deactivating", URI.encode(deactivating_smarts)
-      else
-        File.join @@config[:services]["opentox-compound"], "smiles", URI.encode(smiles), "smarts/activating", URI.encode(activating_smarts),"deactivating", URI.encode(deactivating_smarts), "highlight", URI.encode(highlight)
-      end
-    end
-
-		def image_uri
-      File.join @uri, "image"
-		end
-
-		# Matchs a smarts string
+		# Match a smarts string
 		def match?(smarts)
 			obconversion = OpenBabel::OBConversion.new
 			obmol = OpenBabel::OBMol.new
@@ -89,30 +127,42 @@ module OpenTox
 			smarts_pattern.match(obmol)
 		end
 
-		# Match an array of smarts features, returns matching features
+		# Match an array of smarts strings, returns array with matching smarts
 		def match(smarts_array)
 			smarts_array.collect{|s| s if match?(s)}.compact
 		end
 
-		# AM
-		# Match an array of smarts features, returns (0)1 for (non)matching features at each pos
-		def match_all(smarts_array)
-			smarts_array.collect{|s| match?(s) ? 1 : 0 }
+    # Get URI of compound image with highlighted fragments
+    def matching_smarts_image_uri(activating, deactivating, highlight = nil)
+      activating_smarts = URI.encode "\"#{activating.join("\"/\"")}\""
+      deactivating_smarts = URI.encode "\"#{deactivating.join("\"/\"")}\""
+      if highlight.nil?
+        File.join CONFIG[:services]["opentox-compound"], "smiles", URI.encode(smiles), "smarts/activating", URI.encode(activating_smarts),"deactivating", URI.encode(deactivating_smarts)
+      else
+        File.join CONFIG[:services]["opentox-compound"], "smiles", URI.encode(smiles), "smarts/activating", URI.encode(activating_smarts),"deactivating", URI.encode(deactivating_smarts), "highlight", URI.encode(highlight)
+      end
+    end
+
+
+    private
+
+    # Convert sdf to inchi
+		def self.sdf2inchi(sdf)
+			Compound.obconversion(sdf,'sdf','inchi')
 		end
 
-		def sdf2inchi(sdf)
-			obconversion(sdf,'sdf','inchi')
+    # Convert smiles to inchi
+		def self.smiles2inchi(smiles)
+			Compound.obconversion(smiles,'smi','inchi')
 		end
 
-		def smiles2inchi(smiles)
-			obconversion(smiles,'smi','inchi')
+    # Convert smiles to canonical smiles
+		def self.smiles2cansmi(smiles)
+			Compound.obconversion(smiles,'smi','can')
 		end
 
-		def smiles2cansmi(smiles)
-			obconversion(smiles,'smi','can')
-		end
-
-		def obconversion(identifier,input_format,output_format)
+    # Convert identifier from OpenBabel input_format to OpenBabel output_format
+		def self.obconversion(identifier,input_format,output_format)
 			obconversion = OpenBabel::OBConversion.new
 			obmol = OpenBabel::OBMol.new
 			obconversion.set_in_and_out_formats input_format, output_format

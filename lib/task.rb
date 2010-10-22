@@ -16,7 +16,7 @@ module OpenTox
     
     # create is private now, use OpenTox::Task.as_task
     def self.create( params )
-      task_uri = RestClientWrapper.post(@@config[:services]["opentox-task"], params, nil, false).to_s
+      task_uri = RestClientWrapper.post(CONFIG[:services]["opentox-task"], params, nil, false).to_s
       Task.find(task_uri.chomp)
     end
   
@@ -36,7 +36,7 @@ module OpenTox
     
     def reload( accept_header=nil )
       unless accept_header 
-        if (@@config[:yaml_hosts].include?(URI.parse(uri).host))
+        if (CONFIG[:yaml_hosts].include?(URI.parse(uri).host))
           accept_header = "application/x-yaml"
         else
           accept_header = 'application/rdf+xml'
@@ -99,7 +99,7 @@ module OpenTox
     # waits for a task, unless time exceeds or state is no longer running
     def wait_for_completion(dur=0.3)
       
-      if (@uri.match(@@config[:services]["opentox-task"]))
+      if (@uri.match(CONFIG[:services]["opentox-task"]))
         due_to_time = (@due_to_time.is_a?(Time) ? @due_to_time : Time.parse(@due_to_time))
         running_time = due_to_time - (@date.is_a?(Time) ? @date : Time.parse(@date))
       else
@@ -144,7 +144,7 @@ module OpenTox
       #return yield nil
       
       params = {:title=>title, :creator=>creator, :max_duration=>max_duration, :description=>description }
-      task = OpenTox::Task.create(params)
+      task = ::OpenTox::Task.create(params)
       task_pid = Spork.spork(:logger => LOGGER) do
         LOGGER.debug "Task #{task.uri} started #{Time.now}"
         $self_task = task
