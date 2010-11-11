@@ -61,3 +61,32 @@ FALSE_REGEXP = /^(false|inactive|0|0.0)$/i
 # Task durations
 DEFAULT_TASK_MAX_DURATION = 36000
 EXTERNAL_TASK_MAX_DURATION = 36000
+
+# OWL Namespaces
+class OwlNamespace
+
+  def initialize(uri)
+    @uri = uri
+  end
+
+  def [](property)
+    @uri+property.to_s
+  end
+
+  def type # for RDF.type
+    "#{@uri}type"
+  end
+
+  def method_missing(property)
+    @uri+property.to_s
+  end
+
+end
+
+RDF = OwlNamespace.new 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+OWL = OwlNamespace.new 'http://www.w3.org/2002/07/owl#'
+DC =  OwlNamespace.new 'http://purl.org/dc/elements/1.1/'
+OT =  OwlNamespace.new 'http://www.opentox.org/api/1.1#'
+OTA =  OwlNamespace.new 'http://www.opentox.org/algorithmTypes.owl#'
+XSD = OwlNamespace.new 'http://www.w3.org/2001/XMLSchema#'
+

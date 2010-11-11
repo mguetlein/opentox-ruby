@@ -1,76 +1,121 @@
 module OpenTox
 
+  # Wrapper for OpenTox Algorithms
   module Algorithm 
 
-    include OtObject
+    include OpenTox
 
+    # Execute algorithm with parameters, please consult the OpenTox API and the webservice documentation for acceptable parameters
+    def run(params=nil)
+      RestClientWrapper.post(@uri, params)
+    end
+    
+    # Get OWL-DL representation in RDF/XML format
+    # @return [application/rdf+xml] RDF/XML representation
+    def to_rdfxml
+      s = Serializer::Owl.new
+      s.add_algorithm(@uri,@metadata)
+      s.to_rdfxml
+    end
+
+    # Generic Algorithm class, should work with all OpenTox webservices
     class Generic 
       include Algorithm
-      #include OtObject
-      protected
-#      def initialize(owl)
-#        @title = owl.get("title")
-#        @date = owl.get("date")
-#        @uri = owl.uri 
-#      end
-      
     end
 
-    class Fminer < Generic
+    module Fminer
+      include Algorithm
 
-      def self.create_feature_dataset(params)
-				LOGGER.debug File.basename(__FILE__) + ": creating feature dataset"
-        resource = RestClient::Resource.new(params[:feature_generation_uri])
-        resource.post :dataset_uri => params[:dataset_uri], :feature_uri => params[:feature_uri]
+      class BBRC
+        include Fminer
+        # Initialize bbrc algorithm
+        def initialize
+          super File.join(CONFIG[:services]["opentox-algorithm"], "fminer/bbrc")
+          load_metadata
+        end
       end
 
-			def self.uri
-				File.join(CONFIG[:services]["opentox-algorithm"], "fminer")
-			end
-    end
-
-    class Lazar 
-			
-			def self.create_model(params)
-				LOGGER.debug params
-				LOGGER.debug File.basename(__FILE__) + ": creating model"
-				LOGGER.debug File.join(CONFIG[:services]["opentox-algorithm"], "lazar")
-        resource = RestClient::Resource.new(File.join(CONFIG[:services]["opentox-algorithm"], "lazar"), :content_type => "application/x-yaml")
-        @uri = resource.post(:dataset_uri => params[:dataset_uri], :prediction_feature => params[:prediction_feature], :feature_generation_uri => File.join(CONFIG[:services]["opentox-algorithm"], "fminer")).body.chomp
-			end
-
-			def self.uri
-				File.join(CONFIG[:services]["opentox-algorithm"], "lazar")
-			end
+      class LAST
+        include Fminer
+        # Initialize last algorithm
+        def initialize
+          super File.join(CONFIG[:services]["opentox-algorithm"], "fminer/last")
+          load_metadata
+        end
+      end
 
     end
 
-    class Similarity
-      def self.weighted_tanimoto(fp_a,fp_b,p)
-        common_features = fp_a & fp_b
-        all_features = (fp_a + fp_b).uniq
+    # Create lazar prediction model
+    class Lazar
+      include Algorithm
+      # Initialize lazar algorithm
+      def initialize
+        super File.join(CONFIG[:services]["opentox-algorithm"], "lazar")
+        load_metadata
+      end
+    end
+
+    # Utility methods without dedicated webservices
+
+    module Similarity
+      include Algorithm
+
+      # Tanimoto similarity
+      #
+      # @param [Array] features_a Features of first compound
+      # @param [Array] features_b Features of second compound
+      # @param [optional, Hash] weights Weights for all features
+      # @return [Float] (Wighted) tanimoto similarity
+      def self.tanimoto(features_a,features_b,weights=nil)
+        common_features = features_a & features_b
+        all_features = (features_a + features_b).uniq
         common_p_sum = 0.0
         if common_features.size > 0
-          common_features.each{|f| common_p_sum += OpenTox::Utils.gauss(p[f])}
-          all_p_sum = 0.0
-          all_features.each{|f| all_p_sum += OpenTox::Utils.gauss(p[f])}
-          common_p_sum/all_p_sum
+          if weights
+            common_features.each{|f| common_p_sum += Algorithm.gauss(weights[f])}
+            all_p_sum = 0.0
+            all_features.each{|f| all_p_sum += Algorithm.gauss(weights[f])}
+            common_p_sum/all_p_sum
+          else
+            common_features.to_f/all_features
+          end
         else
           0.0
         end
       end
-      def self.euclidean(prop_a,prop_b)
+
+      # Euclidean similarity
+      def self.euclidean(prop_a,prop_b,weights=nil)
         common_properties = prop_a.keys & prop_b.keys
         if common_properties.size > 1
           dist_sum = 0
           common_properties.each do |p|
-            dist_sum += (prop_a[p] - prop_b[p])**2
+            if weights
+              dist_sum += ( (prop_a[p] - prop_b[p]) * Algorithm.gauss(weights[p]) )**2
+            else
+              dist_sum += (prop_a[p] - prop_b[p])**2
+            end
           end
           1/(1+Math.sqrt(dist_sum))
         else
-          nil
+          0.0
         end
       end
+    end
+    
+		# Gauss kernel
+		def self.gauss(sim, sigma = 0.3) 
+			x = 1.0 - sim
+			Math.exp(-(x*x)/(2*sigma*sigma))
+	  end
+    
+    # Median of an array
+    def self.median(array)
+      return nil if array.empty?
+      array.sort!
+      m_pos = array.size / 2
+      return array.size % 2 == 1 ? array[m_pos] : (array[m_pos-1] + array[m_pos])/2
     end
 
   end

@@ -3,6 +3,7 @@ $self_task=nil
 module OpenTox
 
   class Task
+    attr_accessor :uri, :date, :title, :creator, :description, :hasStatus, :percentageCompleted, :resultURI, :due_to_time, :http_code
 
     # due_to_time is only set in local tasks 
     TASK_ATTRIBS = [ :uri, :date, :title, :creator, :description, :hasStatus, :percentageCompleted, :resultURI, :due_to_time ]
@@ -124,14 +125,14 @@ module OpenTox
     def check_state
       begin
         raise "illegal task state, task is completed, resultURI is no URI: '"+@resultURI.to_s+
-            "'" unless @resultURI and Utils.is_uri?(@resultURI) if completed?
+            "'" unless @resultURI and @resultURI.to_s.uri? if completed?
         
         if @http_code == 202
           raise "illegal task state, code is 202, but hasStatus is not Running: '"+@hasStatus+"'" unless running?
         elsif @http_code == 201
           raise "illegal task state, code is 201, but hasStatus is not Completed: '"+@hasStatus+"'" unless completed?
           raise "illegal task state, code is 201, resultURI is no task-URI: '"+@resultURI.to_s+
-              "'" unless @resultURI and Utils.task_uri?(@resultURI)
+              "'" unless @resultURI and @resultURI.to_s.uri?
         end
       rescue => ex
         RestClientWrapper.raise_uri_error(ex.message, @uri)
@@ -171,6 +172,7 @@ module OpenTox
       LOGGER.debug "Started task: "+task.uri.to_s
       task.uri
     end  
+
   end
 
 end

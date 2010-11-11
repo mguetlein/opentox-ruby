@@ -4,41 +4,15 @@
 module OpenTox
 
   # Ruby wrapper for OpenTox Compound Webservices (http://opentox.org/dev/apis/api-1.2/structure).
-  # 
-  # Examples:
-  #   require "opentox-ruby-api-wrapper"
-  #
-  #   # Creating compounds
-  #
-  #   # from smiles string
-  #   compound = OpenTox::Compound.from_smiles("c1ccccc1")
-  #   # from name
-  #   compound = OpenTox::Compound.from_name("Benzene")
-  #   # from uri
-  #   compound = OpenTox::Compound.new("http://webservices.in-silico.ch/compound/InChI=1S/C6H6/c1-2-4-6-5-3-1/h1-6H"")
-  #
-  #   # Getting compound representations
-  #
-  #   # get InChI
-  #   inchi = compound.inchi
-  #   # get all compound names
-  #   names = compound.names
-  #   # get png image
-  #   image = compound.png
-  #   # get uri
-  #   uri = compound.uri
-  #
-  #   # SMARTS matching
-  #
-  #   # match a smarts string
-  #   compound.match?("cN") # returns false
-  #   # match an array of smarts strings
-  #   compound.match(['cc','cN']) # returns ['cc']
 	class Compound 
 
 		attr_accessor :inchi, :uri
 
 		# Create compound with optional uri
+    # @example
+    #   compound = OpenTox::Compound.new("http://webservices.in-silico.ch/compound/InChI=1S/C6H6/c1-2-4-6-5-3-1/h1-6H"")
+    # @param [optional, String] uri Compound URI
+    # @return [OpenTox::Compound] Compound
 		def initialize(uri=nil)
       @uri = uri
       case @uri
@@ -50,6 +24,10 @@ module OpenTox
     end
 
     # Create a compound from smiles string
+    # @example
+    #   compound = OpenTox::Compound.from_smiles("c1ccccc1")
+    # @param [String] smiles Smiles string
+    # @return [OpenTox::Compound] Compound
     def self.from_smiles(smiles)
       c = Compound.new
       c.inchi = Compound.smiles2inchi(smiles)
@@ -58,6 +36,8 @@ module OpenTox
     end
 
     # Create a compound from inchi string
+    # @param [String] smiles InChI string
+    # @return [OpenTox::Compound] Compound
     def self.from_inchi(inchi)
       c = Compound.new
       c.inchi = inchi
@@ -66,6 +46,8 @@ module OpenTox
     end
 
     # Create a compound from sdf string
+    # @param [String] smiles SDF string
+    # @return [OpenTox::Compound] Compound
     def self.from_sdf(sdf)
       c = Compound.new
       c.inchi = Compound.sdf2inchi(sdf)
@@ -73,7 +55,11 @@ module OpenTox
       c
     end
 
-    # Create a compound from name (name can be also an InChI/InChiKey, CAS number, etc)
+    # Create a compound from name. Relies on an external service for name lookups.
+    # @example
+    #   compound = OpenTox::Compound.from_name("Benzene")
+    # @param [String] name name can be also an InChI/InChiKey, CAS number, etc
+    # @return [OpenTox::Compound] Compound
     def self.from_name(name)
       c = Compound.new
       # paranoid URI encoding to keep SMILES charges and brackets
@@ -83,32 +69,42 @@ module OpenTox
     end
 
 		# Get (canonical) smiles
-		def smiles
+    # @return [String] Smiles string
+		def to_smiles
 			Compound.obconversion(@inchi,'inchi','can')
 		end
 
     # Get sdf
-		def sdf
+    # @return [String] SDF string
+		def to_sdf
 			Compound.obconversion(@inchi,'inchi','sdf')
 		end
 
     # Get gif image
-		def gif
+    # @return [image/gif] Image data
+		def to_gif
 			RestClientWrapper.get("#{@@cactus_uri}#{@inchi}/image")
 		end
 
     # Get png image
-		def png
+    # @example
+    #   image = compound.to_png
+    # @return [image/png] Image data
+		def to_png
       RestClientWrapper.get(File.join @uri, "image")
 		end
 
     # Get URI of compound image
-		def image_uri
+    # @return [String] Compound image URI
+		def to_image_uri
       File.join @uri, "image"
 		end
 
-    # Get all known compound names
-		def names
+    # Get all known compound names. Relies on an external service for name lookups.
+    # @example
+    #   names = compound.to_names
+    # @return [String] Compound names
+		def to_names
       begin
         RestClientWrapper.get("#{@@cactus_uri}#{@inchi}/names").split("\n")
       rescue
@@ -117,6 +113,10 @@ module OpenTox
 		end
 
 		# Match a smarts string
+    # @example
+    #   compound = OpenTox::Compound.from_name("Benzene")
+    #   compound.match?("cN") # returns false
+    # @param [String] smarts Smarts string
 		def match?(smarts)
 			obconversion = OpenBabel::OBConversion.new
 			obmol = OpenBabel::OBMol.new
@@ -128,19 +128,34 @@ module OpenTox
 		end
 
 		# Match an array of smarts strings, returns array with matching smarts
+    # @example
+    #   compound = OpenTox::Compound.from_name("Benzene")
+    #   compound.match(['cc','cN']) # returns ['cc']
+    # @param [Array] smarts_array Array with Smarts strings
+    # @return [Array] Array with matching Smarts strings
 		def match(smarts_array)
-			smarts_array.collect{|s| s if match?(s)}.compact
+      # avoid recreation of OpenBabel objects
+			obconversion = OpenBabel::OBConversion.new
+			obmol = OpenBabel::OBMol.new
+			obconversion.set_in_format('inchi')
+			obconversion.read_string(obmol,@inchi) 
+			smarts_pattern = OpenBabel::OBSmartsPattern.new
+			smarts_array.collect do |smarts|
+        smarts_pattern.init(smarts)
+        smarts if smarts_pattern.match(obmol)
+      end.compact
+      #smarts_array.collect { |s| s if match?(s)}.compact
 		end
 
     # Get URI of compound image with highlighted fragments
-    def matching_smarts_image_uri(activating, deactivating, highlight = nil)
+    #
+    # @param [Array] activating Array with activating Smarts strings
+    # @param [Array] deactivating Array with deactivating Smarts strings
+    # @return [String] URI for compound image with highlighted fragments
+    def matching_smarts_image_uri(activating, deactivating)
       activating_smarts = URI.encode "\"#{activating.join("\"/\"")}\""
       deactivating_smarts = URI.encode "\"#{deactivating.join("\"/\"")}\""
-      if highlight.nil?
-        File.join CONFIG[:services]["opentox-compound"], "smiles", URI.encode(smiles), "smarts/activating", URI.encode(activating_smarts),"deactivating", URI.encode(deactivating_smarts)
-      else
-        File.join CONFIG[:services]["opentox-compound"], "smiles", URI.encode(smiles), "smarts/activating", URI.encode(activating_smarts),"deactivating", URI.encode(deactivating_smarts), "highlight", URI.encode(highlight)
-      end
+      File.join @uri, "smarts/activating", URI.encode(activating_smarts),"deactivating", URI.encode(deactivating_smarts)
     end
 
 

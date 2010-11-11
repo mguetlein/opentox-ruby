@@ -30,7 +30,6 @@ module OpenTox
           OT.dataEntry => { RDF["type"] => [{ "type" => "uri", "value" => OWL.ObjectProperty }] } ,
           OT.acceptValue => { RDF["type"] => [{ "type" => "uri", "value" => OWL.ObjectProperty }] } ,
           OT.values => { RDF["type"] => [{ "type" => "uri", "value" => OWL.ObjectProperty }] } ,
-          #XSD.anyUri => { RDF["type"] => [{ "type" => "uri", "value" => OWL.ObjectProperty }] } ,
           OT.algorithm => { RDF["type"] => [{ "type" => "uri", "value" => OWL.ObjectProperty }] } ,
           OT.parameters => { RDF["type"] => [{ "type" => "uri", "value" => OWL.ObjectProperty }] } ,
 
@@ -38,14 +37,15 @@ module OpenTox
           DC.identifier => { RDF["type"] => [{ "type" => "uri", "value" => OWL.AnnotationProperty }] } ,
           DC.contributor => { RDF["type"] => [{ "type" => "uri", "value" => OWL.AnnotationProperty }] } ,
           DC.creator => { RDF["type"] => [{ "type" => "uri", "value" => OWL.AnnotationProperty }] } ,
+          DC.description => { RDF["type"] => [{ "type" => "uri", "value" => OWL.AnnotationProperty }] } ,
           OT.isA => { RDF["type"] => [{ "type" => "uri", "value" => OWL.AnnotationProperty }] } ,
+          OT.Warnings => { RDF["type"] => [{ "type" => "uri", "value" => OWL.AnnotationProperty }] } ,
+          XSD.anyURI => { RDF["type"] => [{ "type" => "uri", "value" => OWL.AnnotationProperty }] } ,
 
           OT.hasSource => { RDF["type"] => [{ "type" => "uri", "value" => OWL.DatatypeProperty }] } ,
           OT.value => { RDF["type"] => [{ "type" => "uri", "value" => OWL.DatatypeProperty }] } ,
           OT.paramScope => { RDF["type"] => [{ "type" => "uri", "value" => OWL.DatatypeProperty }] } ,
           OT.paramValue => { RDF["type"] => [{ "type" => "uri", "value" => OWL.DatatypeProperty }] } ,
-
-          #Untyped Individual: http://localhost/algorithm
         }
 
         @data_entries = {}
@@ -61,15 +61,10 @@ module OpenTox
       end
 
       def add_compound(uri)
-        #@classes << OT.Compound unless @classes.include? OT.Compound
         @object[uri] = { RDF["type"] => [{ "type" => "uri", "value" => OT.Compound }] }
       end
 
       def add_feature(uri,metadata)
-        #@classes << OT.Feature unless @classes.include? OT.Feature
-        #@classes << OT.NominalFeature unless @classes.include? OT.NominalFeature
-        #@classes << OT.NumericFeature unless @classes.include? OT.NumericFeature
-        #@classes << OT.StringFeature unless @classes.include? OT.StringFeature
         @object[uri] = { RDF["type"] => [{ "type" => "uri", "value" => OT.Feature }] }
         add_metadata uri, metadata
       end
@@ -94,32 +89,37 @@ module OpenTox
 
       end
 
-      def add_algorithm(uri,metadata,parameters)
+      def add_algorithm(uri,metadata)
         @object[uri] = { RDF["type"] => [{ "type" => "uri", "value" => OT.Algorithm }] }
+        LOGGER.debug @object[uri]
         add_metadata uri, metadata
-        add_parameters uri, parameters
-        #metadata.each { |u,v| @object[uri][u] = [{"type" => type(v), "value" => v }] }
+        LOGGER.debug @object[uri]
       end
 
-      def add_model(uri,metadata)
+      def add_model(uri,metadata,parameters)
+        @object[uri] = { RDF["type"] => [{ "type" => "uri", "value" => OT.Model }] }
+        add_metadata uri, metadata
+        add_parameters uri, parameters
       end
 
       def add_metadata(uri,metadata)
-        #@object[uri] = { RDF["type"] => [{ "type" => "uri", "value" => OT[type] }] }
+        id = 0
         metadata.each do |u,v|
-          @object[uri][u] = [{"type" => type(v), "value" => v }]
-        end
-      end
-
-      def add_parameters(uri,parameters)
-        #@object[uri] = { RDF["type"] => [{ "type" => "uri", "value" => OT[type] }] }
-        @object[uri][OT.parameters] = [] unless @object[uri][OT.parameters]
-        parameters.each do |p|
-          parameter = "_:parameter#{@parameter_id}"
-          @parameter_id += 1
-          @object[uri][OT.parameters] << {"type" => "bnode", "value" => parameter}
-          @object[parameter] = { RDF["type"] => [{ "type" => "uri", "value" => OT.Parameter }] }
-          add_metadata parameter, p
+          if v.is_a? String
+            @object[uri] = {} unless @object[uri]
+            @object[uri][u] = [{"type" => type(v), "value" => v }]
+          elsif v.is_a? Array and u == OT.parameters
+            @object[uri][u] = [] unless @object[uri][u]
+            v.each do |value|
+              id+=1
+              genid = "_:genid#{id}"
+              @object[uri][u] << {"type" => "bnode", "value" => genid}
+              @object[genid] = { RDF["type"] => [{ "type" => "uri", "value" => OT.Parameter}] }
+              value.each do |name,entry|
+                @object[genid][name] = [{"type" => type(entry), "value" => entry }]
+              end
+            end
+          end
         end
       end
 
@@ -158,10 +158,11 @@ module OpenTox
 
       # Serializers
       
-      def ntriples
+      def to_ntriples
 
         #rdf_types
         @triples = Set.new
+        #LOGGER.debug @object.to_yaml
         @object.each do |s,entry|
           s = url(s) if type(s) == "uri"
           entry.each do |p,objects|
@@ -182,12 +183,12 @@ module OpenTox
         @triples.sort.collect{ |s| s.join(' ').concat(" .") }.join("\n")+"\n"
       end
 
-      def rdfxml
-        Tempfile.open("owl-serializer"){|f| f.write(ntriples); @path = f.path}
-        `rapper -i ntriples -o rdfxml #{@path}`
+      def to_rdfxml
+        Tempfile.open("owl-serializer"){|f| f.write(self.to_ntriples); @path = f.path}
+        `rapper -i ntriples -o rdfxml #{@path} 2>/dev/null`
       end
 
-      def json
+      def to_json
         #rdf_types
         Yajl::Encoder.encode(@object)
       end
@@ -258,7 +259,7 @@ module OpenTox
         @rows.first << features
         @rows.first.flatten!
         dataset.data_entries.each do |compound,entries|
-          smiles = Compound.new(compound).smiles
+          smiles = Compound.new(compound).to_smiles
           row = Array.new(@rows.first.size)
           row[0] = smiles
           entries.each do |feature, values|
@@ -271,11 +272,11 @@ module OpenTox
         end
       end
 
-      def csv
+      def to_csv
         @rows.collect{|r| r.join(", ")}.join("\n")
       end
 
-      def excel
+      def to_xls
         Spreadsheet.client_encoding = 'UTF-8'
         book = Spreadsheet::Workbook.new
         sheet = book.create_worksheet(:name => '')

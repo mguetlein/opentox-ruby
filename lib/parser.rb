@@ -1,5 +1,14 @@
 require 'spreadsheet'
 require 'roo'
+
+class String
+
+  def to_triple
+    self.chomp.split(' ',3).collect{|i| i.sub(/\s+.$/,'').gsub(/[<>"]/,'')}
+  end
+
+end
+
 module OpenTox
 
   module Parser
@@ -12,19 +21,28 @@ module OpenTox
       end
 
       def metadata
-        # TODO: load parameters
+
         if @dataset
           uri = File.join(@uri,"metadata")
         else
           uri = @uri
         end
+
         statements = []
-        `rapper -i rdfxml -o ntriples #{uri}`.each_line do |line|
-          triple = line.chomp.split('> ')
-          statements << triple.collect{|i| i.sub(/\s+.$/,'').gsub(/[<>"]/,'')}
-        end
-        statements.each do |triple|
+        parameter_ids = []
+        `rapper -i rdfxml -o ntriples #{uri} 2>/dev/null`.each_line do |line|
+          triple = line.to_triple
           @metadata[triple[1]] = triple[2].split('^^').first if triple[0] == @uri and triple[1] != RDF['type']
+          statements << triple 
+          parameter_ids << triple[2] if triple[1] == OT.parameters
+        end
+        unless parameter_ids.empty?
+          @metadata[OT.parameters] = []
+          parameter_ids.each do |p|
+            parameter = {}
+            statements.each{ |t| parameter[t[1]] = t[2] if t[0] == p and t[1] != RDF['type']}
+            @metadata[OT.parameters] << parameter
+          end
         end
         @metadata
       end
@@ -37,6 +55,8 @@ module OpenTox
 
         include Owl
 
+        attr_writer :uri
+
         def initialize(uri)
           super uri
           @dataset = ::OpenTox::Dataset.new(@uri)
@@ -47,11 +67,10 @@ module OpenTox
           feature_values = {}
           feature = {}
           other_statements = {}
-          ntriples = `rapper -i rdfxml -o ntriples #{@uri}`
-          ntriples.each_line do |line|
+          `rapper -i rdfxml -o ntriples #{@uri} 2>/dev/null`.each_line do |line|
             triple = line.chomp.split(' ',3)
             triple = triple[0..2].collect{|i| i.sub(/\s+.$/,'').gsub(/[<>"]/,'')}
-            case triple[1] # Ambit namespaces are case insensitive
+            case triple[1] 
             when /#{OT.values}/i
               data[triple[0]] = {:compound => "", :values => []} unless data[triple[0]]
               data[triple[0]][:values] << triple[2]  
@@ -77,75 +96,83 @@ module OpenTox
         end
 
         def load_features
-          @dataset.features.keys.each do |feature|
-            @dataset.features[feature] = Parser::Owl::Generic.new(feature).metadata
+          uri = File.join(@uri,"features")
+          statements = []
+          features = Set.new
+          `rapper -i rdfxml -o ntriples #{uri} 2>/dev/null`.each_line do |line|
+            triple = line.chomp.split('> ').collect{|i| i.sub(/\s+.$/,'').gsub(/[<>"]/,'')}[0..2]
+            statements << triple
+            features << triple[0] if triple[1] == RDF['type'] and triple[2] == OT.Feature
           end
+          statements.each do |triple|
+            if features.include? triple[0]
+              @dataset.features[triple[0]] = {} unless @dataset.features[triple[0]] 
+              @dataset.features[triple[0]][triple[1]] = triple[2].split('^^').first
+            end
+          end
+          @dataset.features
         end
+
       end
 
     end
 
-    class Spreadsheet
+    class Spreadsheets
+      # TODO: expand for multiple columns
 
-      def initialize(dataset)
-        @dataset = dataset
+      attr_accessor :dataset
+      def initialize
+
+        # TODO: fix 2 datasets created
+        #@dataset = Dataset.create
+        #@dataset.save # get uri
+
+        @data = []
+        @features = []
+        @feature_types = {}
+
         @format_errors = ""
         @smiles_errors = []
         @activity_errors = []
         @duplicates = {}
-        @nr_compounds = 0
-        @data = []
-        @activities = []
-        @type = "classification"
       end
 
       def load_excel(book)
         book.default_sheet = 0
-        1.upto(book.last_row) do |row|
-          if row == 1
-            @feature = File.join(@dataset.uri,"feature",book.cell(row,2))
-          else
-            add( book.cell(row,1), book.cell(row,2), row ) # smiles, activity
-          end
-        end
-        parse
+        add_features book.row(1)
+        2.upto(book.last_row) { |i| add_values book.row(i) }
+        warnings
+        @dataset
       end
 
       def load_csv(csv)
         row = 0
-        csv.each_line do |line|
-          row += 1
-          raise "Invalid CSV format at line #{row}: #{line.chomp}" unless line.chomp.match(/^.+[,;].*$/) # check CSV format 
-          items = line.chomp.gsub(/["']/,'').split(/\s*[,;]\s*/) # remove quotes
-          if row == 1
-            @feature = File.join(@dataset.uri,"feature",items[1])
-          else
-            add(items[0], items[1], row) 
-          end
-        end
-        parse
+        input = csv.split("\n")
+        add_features split_row(input.shift)
+        input.each { |row| add_values split_row(row) }
+        warnings
+        @dataset
       end
 
-      def parse
+      private
 
-        # create dataset
-        @data.each do |items|
-          case @type
-          when "classification"
-            case items[1].to_s
-            when TRUE_REGEXP
-              @dataset.add(items[0], @feature, true )
-            when FALSE_REGEXP
-              @dataset.add(items[0], @feature, false)
-            end
-          when "regression"
-            if items[1].to_f == 0
-              @activity_errors << "Row #{items[2]}: Zero values not allowed for regression datasets - entry ignored."
-            else
-              @dataset.add items[0], @feature, items[1].to_f
-            end
+      def warnings
+
+        info = ''
+        @feature_types.each do |feature,types|
+          if types.uniq.size > 1
+            type = OT.NumericFeature
+          else
+            type = types.first
           end
+          @dataset.add_feature_metadata(feature,{OT.isA => type})
+          info += "\"#{@dataset.feature_name(feature)}\" detected as #{type.split('#').last}."
+
+          # TODO: rewrite feature values
+          # TODO if value.to_f == 0 @activity_errors << "#{smiles} Zero values not allowed for regression datasets - entry ignored."
         end
+
+        @dataset.metadata[OT.Info] = info 
 
         warnings = ''
         warnings += "<p>Incorrect Smiles structures (ignored):</p>" + @smiles_errors.join("<br/>") unless @smiles_errors.empty?
@@ -156,34 +183,75 @@ module OpenTox
 
         @dataset.metadata[OT.Warnings] = warnings 
 
-        @dataset
-
       end
 
-      def add(smiles, act, row)
+      def add_features(row)
+        row.shift  # get rid of smiles entry
+        row.each do |feature_name|
+          feature_uri = File.join(@dataset.uri,"feature",URI.encode(feature_name))
+          @feature_types[feature_uri] = []
+          @features << feature_uri
+          @dataset.add_feature(feature_uri,{DC.title => feature_name})
+        end
+      end
+
+      def add_values(row)
+
+        smiles = row.shift
         compound = Compound.from_smiles(smiles)
         if compound.nil? or compound.inchi.nil? or compound.inchi == ""
-          @smiles_errors << "Row #{row}: " + [smiles,act].join(", ") 
-          return false
-        end
-        unless numeric?(act) or classification?(act)
-          @activity_errors << "Row #{row}: " + [smiles,act].join(", ")
+          @smiles_errors << smiles+", "+row.join(", ") 
           return false
         end
         @duplicates[compound.inchi] = [] unless @duplicates[compound.inchi]
-        @duplicates[compound.inchi] << "Row #{row}: " + [smiles, act].join(", ")
-        @type = "regression" unless classification?(act)
-        # TODO: set OT.NumericalFeature, ...
-        @nr_compounds += 1
-        @data << [ compound.uri, act , row ]
+        @duplicates[compound.inchi] << smiles+", "+row.join(", ")
+
+        row.each_index do |i|
+          value = row[i]
+          feature = @features[i]
+          type = feature_type(value)
+
+          @feature_types[feature] << type 
+
+          case type
+          when OT.NominalFeature
+            case value.to_s
+            when TRUE_REGEXP
+              @dataset.add(compound.uri, feature, true )
+            when FALSE_REGEXP
+              @dataset.add(compound.uri, feature, false )
+            end
+          when OT.NumericFeature
+            @dataset.add compound.uri, feature, value.to_f
+          when OT.StringFeature
+            # TODO: insert ??
+            @dataset.add compound.uri, feature, value.to_s
+            @activity_errors << smiles+", "+row.join(", ")
+            #return false
+          end
+        end
       end
 
-      def numeric?(object)
-        true if Float(object) rescue false
+      def numeric?(value)
+        true if Float(value) rescue false
       end
 
-      def classification?(object)
-        !object.to_s.strip.match(TRUE_REGEXP).nil? or !object.to_s.strip.match(FALSE_REGEXP).nil?
+      def classification?(value)
+        !value.to_s.strip.match(TRUE_REGEXP).nil? or !value.to_s.strip.match(FALSE_REGEXP).nil?
+      end
+
+      def feature_type(value)
+        if classification? value
+          return OT.NominalFeature
+        elsif numeric? value
+          return OT.NumericFeature
+        else
+          return OT.StringFeature
+        end
+      end
+
+      def split_row(row)
+        row.chomp.gsub(/["']/,'').split(/\s*[,;]\s*/) # remove quotes
       end
 
     end

@@ -1,5 +1,3 @@
-
-
 module OpenTox
 
   #PENDING: implement ot error api, move to own file
@@ -60,7 +58,7 @@ module OpenTox
     def self.execute( rest_call, uri, headers, payload=nil, wait=true )
       
       do_halt 400,"uri is null",uri,headers,payload unless uri
-      do_halt 400,"not a uri",uri,headers,payload unless Utils.is_uri?(uri)
+      do_halt 400,"not a uri",uri,headers,payload unless uri.to_s.uri?
       do_halt 400,"headers are no hash",uri,headers,payload unless headers==nil or headers.is_a?(Hash)
       do_halt 400,"nil headers for post not allowed, use {}",uri,headers,payload if rest_call=="post" and headers==nil
       headers.each{ |k,v| headers.delete(k) if v==nil } if headers #remove keys with empty values, as this can cause problems
@@ -115,7 +113,7 @@ module OpenTox
       when /text\//
         raise "uri list has more than one entry, should be a task" if res.content_type=~/text\/uri-list/ and
           res.split("\n").size > 1 #if uri list contains more then one uri, its not a task
-        task = OpenTox::Task.find(res.to_s) if Utils.task_uri?(res)
+        task = OpenTox::Task.find(res.to_s) if res.to_s.uri?
       else
         raise "unknown content-type for task: '"+res.content_type.to_s+"'" #+"' content: "+res[0..200].to_s
       end

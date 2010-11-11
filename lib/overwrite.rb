@@ -12,3 +12,25 @@ class Sinatra::Base
   end
 end
 
+class String
+    def task_uri?
+      self.uri? && !self.match(/task/).nil?
+    end
+    
+    def dataset_uri?
+     self.uri? && !self.match(/dataset/).nil?
+    end
+   
+    def self.model_uri?
+     self.uri? && !self.match(/model/).nil?
+    end
+
+    def uri?
+      begin
+        u = URI::parse(self)
+        return (u.scheme!=nil and u.host!=nil)
+      rescue URI::InvalidURIError
+        return false
+      end
+    end
+end

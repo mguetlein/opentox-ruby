@@ -21,14 +21,14 @@ begin
 			"rack-flash",
 			"nokogiri",
 			"rubyzip",
-			"builder",
+			#"builder",
 			"roo",
 			"spreadsheet",
 			"google-spreadsheet-ruby",
 			"tmail",
 			"rinruby",
-			"rdf",
-			"rdf-raptor",
+			#"rdf",
+			#"rdf-raptor",
 			"rjb"
 		].each { |dep| gem.add_dependency dep }
 		[ "dm-core",
@@ -42,7 +42,7 @@ begin
 		gem.add_dependency "haml", ">=3"
 		['cucumber','jeweler'].each { |dep| gem.add_development_dependency dep }
 		gem.files =  FileList["[A-Z]*", "{bin,generators,lib,test}/**/*", 'lib/jeweler/templates/.gitignore']
-		gem.files.include %w(lib/tasks/owl.rb, lib/environment.rb, lib/algorithm.rb, lib/compound.rb, lib/dataset.rb, lib/model.rb, lib/utils.rb, lib/validation.rb, lib/templates/*)
+		gem.files.include %w(lib/tasks/owl.rb, lib/environment.rb, lib/algorithm.rb, lib/compound.rb, lib/dataset.rb, lib/model.rb, lib/validation.rb, lib/templates/*)
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end
 	Jeweler::GemcutterTasks.new

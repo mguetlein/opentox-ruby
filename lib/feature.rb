@@ -1,7 +1,5 @@
 module OpenTox
-  
   class Feature
-    include OtObject
+    include OpenTox
   end
-
 end
