@@ -3,6 +3,8 @@ require 'roo'
 
 class String
 
+  # Split RDF statement into triples
+  # @return [Array] Array with [subject,predicate,object]
   def to_triple
     self.chomp.split(' ',3).collect{|i| i.sub(/\s+.$/,'').gsub(/[<>"]/,'')}
   end
@@ -11,16 +13,23 @@ end
 
 module OpenTox
 
+  # Parser for various input formats
   module Parser
 
+    # OWL-DL parser 
     module Owl
 
+      # Create a new OWL-DL parser
+      # @param uri URI of OpenTox object
+      # @return [OpenTox::Parser::Owl] OWL-DL parser
       def initialize(uri)
         @uri = uri
         @metadata = {}
       end
 
-      def metadata
+      # Read metadata from opentox service
+      # @return [Hash] Object metadata
+      def load_metadata
 
         if @dataset
           uri = File.join(@uri,"metadata")
@@ -47,21 +56,37 @@ module OpenTox
         @metadata
       end
 
+      # Generic parser for all OpenTox classes
       class Generic
         include Owl
       end
 
+      # OWL-DL parser for datasets
       class Dataset
 
         include Owl
 
         attr_writer :uri
 
+        # Create a new OWL-DL dataset parser
+        # @param uri Dataset URI 
+        # @return [OpenTox::Parser::Owl::Dataset] OWL-DL parser
         def initialize(uri)
           super uri
           @dataset = ::OpenTox::Dataset.new(@uri)
         end
 
+        # Read data from dataset service. Files can be parsed by setting #uri to a filename (after initialization with a real URI)
+        # @example Read data from an external service
+        #   parser = OpenTox::Parser::Owl::Dataaset.new "http://wwbservices.in-silico.ch/dataset/1"
+        #   dataset = parser.load_uri
+        # @example Create dataset from RDF/XML file
+        #   dataset = OpenTox::Dataset.create
+        #   parser = OpenTox::Parser::Owl::Dataaset.new dataset.uri
+        #   parser.uri = "dataset.rdfxml" # insert your input file
+        #   dataset = parser.load_uri
+        #   dataset.save
+        # @return [Hash] Internal dataset representation
         def load_uri
           data = {}
           feature_values = {}
@@ -95,6 +120,8 @@ module OpenTox
           @dataset
         end
 
+        # Read only features from a dataset service. 
+        # @return [Hash] Internal features representation
         def load_features
           uri = File.join(@uri,"features")
           statements = []
@@ -117,16 +144,12 @@ module OpenTox
 
     end
 
+    # Parser for getting spreadsheet data into a dataset
     class Spreadsheets
-      # TODO: expand for multiple columns
 
       attr_accessor :dataset
+
       def initialize
-
-        # TODO: fix 2 datasets created
-        #@dataset = Dataset.create
-        #@dataset.save # get uri
-
         @data = []
         @features = []
         @feature_types = {}
@@ -137,7 +160,10 @@ module OpenTox
         @duplicates = {}
       end
 
-      def load_excel(book)
+      # Load Spreadsheet book (created with roo gem http://roo.rubyforge.org/, excel format specification: http://toxcreate.org/help)
+      # @param [Excel] book Excel workbook object (created with roo gem)
+      # @return [OpenTox::Dataset] Dataset object with Excel data
+      def load_spreadsheet(book)
         book.default_sheet = 0
         add_features book.row(1)
         2.upto(book.last_row) { |i| add_values book.row(i) }
@@ -145,6 +171,9 @@ module OpenTox
         @dataset
       end
 
+      # Load CSV string (format specification: http://toxcreate.org/help)
+      # @param [String] csv CSV representation of the dataset
+      # @return [OpenTox::Dataset] Dataset object with CSV data
       def load_csv(csv)
         row = 0
         input = csv.split("\n")

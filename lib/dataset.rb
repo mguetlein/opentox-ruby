@@ -77,7 +77,7 @@ module OpenTox
       parser.load_csv(csv)
     end
 
-    # Load Spreadsheet book (created with roo gem http://roo.rubyforge.org/, excel format specification: http://toxcreate.org/help))
+    # Load Spreadsheet book (created with roo gem http://roo.rubyforge.org/, excel format specification: http://toxcreate.org/help)
     # - loads data_entries, compounds, features
     # - sets metadata (warnings) for parser errors
     # - you will have to set remaining metadata manually
@@ -87,13 +87,13 @@ module OpenTox
       save unless @uri # get a uri for creating features
       parser = Parser::Spreadsheets.new
       parser.dataset = self
-      parser.load_excel(book)
+      parser.load_spreadsheet(book)
     end
     
     # Load and return only metadata of a Dataset object
     # @return [Hash] Metadata of the dataset
     def load_metadata
-      add_metadata Parser::Owl::Dataset.new(@uri).metadata
+      add_metadata Parser::Owl::Dataset.new(@uri).load_metadata
       self.uri = @uri if @uri # keep uri
       @metadata
     end
@@ -147,8 +147,8 @@ module OpenTox
 
     # Get Excel representation
     # @return [Spreadsheet::Workbook] Workbook which can be written with the spreadsheet gem (data_entries only, metadata will will be discarded))
-    def to_xls
-      Serializer::Spreadsheets.new(self).to_xls
+    def to_spreadsheet
+      Serializer::Spreadsheets.new(self).to_spreadsheet
     end
 
     # Get CSV string representation (data_entries only, metadata will be discarded)

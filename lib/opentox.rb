@@ -26,7 +26,7 @@ module OpenTox
   # Load (and return) metadata from object URI
   # @return [Hash] Metadata
   def load_metadata
-    @metadata = Parser::Owl::Generic.new(@uri).metadata
+    @metadata = Parser::Owl::Generic.new(@uri).load_metadata
     @metadata
   end
 

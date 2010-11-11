@@ -3,9 +3,10 @@ require 'yajl'
 
 module OpenTox
 
+  # Serialzer for various oputput formats
   module Serializer
 
-    # modelled according to to http://n2.talis.com/wiki/RDF_JSON_Specification
+    # OWL-DL Serializer, modelled according to to http://n2.talis.com/wiki/RDF_JSON_Specification
     class Owl
 
       attr_accessor :object
@@ -60,15 +61,21 @@ module OpenTox
         @objects = Set.new
       end
 
+      # Add a compound
+      # @param [String] uri Compound URI
       def add_compound(uri)
         @object[uri] = { RDF["type"] => [{ "type" => "uri", "value" => OT.Compound }] }
       end
 
+      # Add a feature
+      # @param [String] uri Feature URI
       def add_feature(uri,metadata)
         @object[uri] = { RDF["type"] => [{ "type" => "uri", "value" => OT.Feature }] }
         add_metadata uri, metadata
       end
 
+      # Add a dataset
+      # @param [String] uri Dataset URI
       def add_dataset(dataset)
 
         @dataset = dataset.uri
@@ -89,6 +96,8 @@ module OpenTox
 
       end
 
+      # Add a algorithm
+      # @param [String] uri Algorithm URI
       def add_algorithm(uri,metadata)
         @object[uri] = { RDF["type"] => [{ "type" => "uri", "value" => OT.Algorithm }] }
         LOGGER.debug @object[uri]
@@ -96,12 +105,16 @@ module OpenTox
         LOGGER.debug @object[uri]
       end
 
+      # Add a model
+      # @param [String] uri Model URI
       def add_model(uri,metadata,parameters)
         @object[uri] = { RDF["type"] => [{ "type" => "uri", "value" => OT.Model }] }
         add_metadata uri, metadata
         add_parameters uri, parameters
       end
 
+      # Add metadata
+      # @param [Hash] metadata
       def add_metadata(uri,metadata)
         id = 0
         metadata.each do |u,v|
@@ -123,6 +136,10 @@ module OpenTox
         end
       end
 
+      # Add a data entry
+      # @param [String] compound Compound URI
+      # @param [String] feature Feature URI
+      # @param [Boolead,Float] value Feature value
       def add_data_entry(compound,feature,value)
         add_compound(compound) unless @object[compound]
         add_feature(feature,{}) unless @object[feature]
@@ -158,11 +175,11 @@ module OpenTox
 
       # Serializers
       
+      # Convert to N-Triples
+      # @return [text/plain] Object OWL-DL in N-Triples format
       def to_ntriples
 
-        #rdf_types
         @triples = Set.new
-        #LOGGER.debug @object.to_yaml
         @object.each do |s,entry|
           s = url(s) if type(s) == "uri"
           entry.each do |p,objects|
@@ -183,11 +200,16 @@ module OpenTox
         @triples.sort.collect{ |s| s.join(' ').concat(" .") }.join("\n")+"\n"
       end
 
+      # Convert to RDF/XML
+      # @return [text/plain] Object OWL-DL in RDF/XML format
       def to_rdfxml
         Tempfile.open("owl-serializer"){|f| f.write(self.to_ntriples); @path = f.path}
         `rapper -i ntriples -o rdfxml #{@path} 2>/dev/null`
       end
 
+      # Convert to JSON as specified in http://n2.talis.com/wiki/RDF_JSON_Specification
+      # (Ambit services use a different JSON representation)
+      # @return [text/plain] Object OWL-DL in JSON format
       def to_json
         #rdf_types
         Yajl::Encoder.encode(@object)
@@ -250,8 +272,11 @@ module OpenTox
 
     end
 
+    # Serializer for spreadsheet formats
     class Spreadsheets # to avoid nameclash with Spreadsheet gem
 
+      # Create a new spreadsheet serializer
+      # @param [OpenTox::Dataset] dataset Dataset object
       def initialize(dataset)
         @rows = []
         @rows << ["SMILES"]
@@ -272,11 +297,15 @@ module OpenTox
         end
       end
 
+      # Convert to CSV string
+      # @return [String] CSV string
       def to_csv
         @rows.collect{|r| r.join(", ")}.join("\n")
       end
 
-      def to_xls
+      # Convert to spreadsheet workbook
+      # @return [Spreadsheet::Workbook] Workbook object (use the spreadsheet gemc to write a file)
+      def to_spreadsheet
         Spreadsheet.client_encoding = 'UTF-8'
         book = Spreadsheet::Workbook.new
         sheet = book.create_worksheet(:name => '')
