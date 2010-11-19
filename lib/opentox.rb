@@ -1,7 +1,7 @@
 module OpenTox
 
   attr_reader :uri
-  attr_accessor :metadata, :parameters
+  attr_accessor :metadata
 
   # Initialize OpenTox object with optional uri
   # @param [optional, String] URI
@@ -30,11 +30,9 @@ module OpenTox
     @metadata
   end
 
-  # Load parameters from URI
-  #def load_parameters
-    #@parameters = Parser::Owl::Generic.new(@uri).parameters
-    #@parameters
-  #end
+  def add_metadata(metadata)
+    metadata.each { |k,v| @metadata[k] = v }
+  end
 
   # Get OWL-DL representation in RDF/XML format
   # @return [application/rdf+xml] RDF/XML representation

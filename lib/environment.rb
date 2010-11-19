@@ -1,4 +1,3 @@
-require "ot-logger"
 # set default environment
 ENV['RACK_ENV'] = 'production' unless ENV['RACK_ENV']
 
@@ -45,8 +44,8 @@ end
 load File.join config_dir,"mail.rb" if File.exists?(File.join config_dir,"mail.rb")
 
 logfile = "#{LOG_DIR}/#{ENV["RACK_ENV"]}.log"
-#LOGGER = MyLogger.new(logfile,'daily') # daily rotation
-LOGGER = MyLogger.new(logfile) # no rotation
+#LOGGER = OTLogger.new(logfile,'daily') # daily rotation
+LOGGER = OTLogger.new(logfile) # no rotation
 LOGGER.formatter = Logger::Formatter.new #this is neccessary to restore the formating in case active-record is loaded
 if CONFIG[:logger] and CONFIG[:logger] == "debug"
 	LOGGER.level = Logger::DEBUG
@@ -60,11 +59,12 @@ FALSE_REGEXP = /^(false|inactive|0|0.0)$/i
 
 # Task durations
 DEFAULT_TASK_MAX_DURATION = 36000
-EXTERNAL_TASK_MAX_DURATION = 36000
+#EXTERNAL_TASK_MAX_DURATION = 36000
 
 # OWL Namespaces
 class OwlNamespace
 
+  attr_accessor :uri
   def initialize(uri)
     @uri = uri
   end

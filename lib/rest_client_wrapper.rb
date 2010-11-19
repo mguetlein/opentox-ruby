@@ -80,6 +80,7 @@ module OpenTox
         raise "content-type not set" unless res.content_type
         res.code = result.code
         
+        # TODO: Ambit returns task representation with 200 instead of result URI
         return res if res.code==200 || !wait
         
         while (res.code==201 || res.code==202)
@@ -108,11 +109,12 @@ module OpenTox
                           
       task = nil
       case res.content_type
-      when /application\/rdf\+xml|application\/x-yaml/
-        task = OpenTox::Task.from_data(res, res.content_type, res.code, base_uri)
+      when /application\/rdf\+xml/
+        task = OpenTox::Task.from_rdfxml(res)
+      when /yaml/
+        task = OpenTox::Task.from_yaml(res)
       when /text\//
-        raise "uri list has more than one entry, should be a task" if res.content_type=~/text\/uri-list/ and
-          res.split("\n").size > 1 #if uri list contains more then one uri, its not a task
+        raise "uri list has more than one entry, should be a task" if res.content_type=~/text\/uri-list/ and res.split("\n").size > 1 #if uri list contains more then one uri, its not a task
         task = OpenTox::Task.find(res.to_s) if res.to_s.uri?
       else
         raise "unknown content-type for task: '"+res.content_type.to_s+"'" #+"' content: "+res[0..200].to_s
@@ -122,7 +124,7 @@ module OpenTox
       task.wait_for_completion
       raise task.description unless task.completed? # maybe task was cancelled / error
       
-      res = WrapperResult.new task.resultURI
+      res = WrapperResult.new task.result_uri
       res.code = task.http_code
       res.content_type = "text/uri-list"
       return res
@@ -152,8 +154,8 @@ module OpenTox
       # we are either in a task, or in sinatra
       # PENDING: always return yaml for now
       
-      if $self_task #this global var in Task.as_task to mark that the current process is running in a task
-        raise error.to_yaml # the error is caught, logged, and task state is set to error in Task.as_task
+      if $self_task #this global var in Task.create to mark that the current process is running in a task
+        raise error.to_yaml # the error is caught, logged, and task state is set to error in Task.create
       #elsif $sinatra  #else halt sinatra
          #$sinatra.halt(502,error.to_yaml)
       elsif defined?(halt)         

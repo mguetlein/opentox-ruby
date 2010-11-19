@@ -116,7 +116,7 @@ module OpenTox
             end
           end
           load_features
-          @dataset.metadata = metadata
+          @dataset.metadata = load_metadata
           @dataset
         end
 
@@ -253,10 +253,8 @@ module OpenTox
           when OT.NumericFeature
             @dataset.add compound.uri, feature, value.to_f
           when OT.StringFeature
-            # TODO: insert ??
             @dataset.add compound.uri, feature, value.to_s
             @activity_errors << smiles+", "+row.join(", ")
-            #return false
           end
         end
       end

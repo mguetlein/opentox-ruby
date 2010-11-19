@@ -25,6 +25,7 @@ module OpenTox
           OT.FeatureValue => { RDF["type"] => [{ "type" => "uri", "value" => OWL['Class'] }] } ,
           OT.Algorithm => { RDF["type"] => [{ "type" => "uri", "value" => OWL['Class'] }] } ,
           OT.Parameter => { RDF["type"] => [{ "type" => "uri", "value" => OWL['Class'] }] } ,
+          OT.Task => { RDF["type"] => [{ "type" => "uri", "value" => OWL['Class'] }] } ,
 
           OT.compound => { RDF["type"] => [{ "type" => "uri", "value" => OWL.ObjectProperty }] } ,
           OT.feature => { RDF["type"] => [{ "type" => "uri", "value" => OWL.ObjectProperty }] } ,
@@ -42,6 +43,8 @@ module OpenTox
           OT.isA => { RDF["type"] => [{ "type" => "uri", "value" => OWL.AnnotationProperty }] } ,
           OT.Warnings => { RDF["type"] => [{ "type" => "uri", "value" => OWL.AnnotationProperty }] } ,
           XSD.anyURI => { RDF["type"] => [{ "type" => "uri", "value" => OWL.AnnotationProperty }] } ,
+          OT.hasStatus => { RDF["type"] => [{ "type" => "uri", "value" => OWL.AnnotationProperty }] } ,
+          OT.resultURI => { RDF["type"] => [{ "type" => "uri", "value" => OWL.AnnotationProperty }] } ,
 
           OT.hasSource => { RDF["type"] => [{ "type" => "uri", "value" => OWL.DatatypeProperty }] } ,
           OT.value => { RDF["type"] => [{ "type" => "uri", "value" => OWL.DatatypeProperty }] } ,
@@ -100,17 +103,21 @@ module OpenTox
       # @param [String] uri Algorithm URI
       def add_algorithm(uri,metadata)
         @object[uri] = { RDF["type"] => [{ "type" => "uri", "value" => OT.Algorithm }] }
-        LOGGER.debug @object[uri]
         add_metadata uri, metadata
-        LOGGER.debug @object[uri]
       end
 
       # Add a model
       # @param [String] uri Model URI
-      def add_model(uri,metadata,parameters)
+      def add_model(uri,metadata)
         @object[uri] = { RDF["type"] => [{ "type" => "uri", "value" => OT.Model }] }
         add_metadata uri, metadata
-        add_parameters uri, parameters
+      end
+
+      # Add a task
+      # @param [String] uri Model URI
+      def add_task(uri,metadata)
+        @object[uri] = { RDF["type"] => [{ "type" => "uri", "value" => OT.Task }] }
+        add_metadata uri, metadata
       end
 
       # Add metadata
@@ -204,7 +211,7 @@ module OpenTox
       # @return [text/plain] Object OWL-DL in RDF/XML format
       def to_rdfxml
         Tempfile.open("owl-serializer"){|f| f.write(self.to_ntriples); @path = f.path}
-        `rapper -i ntriples -o rdfxml #{@path} 2>/dev/null`
+        `rapper -i ntriples -f 'xmlns:ot="#{OT.uri}"' -f 'xmlns:dc="#{DC.uri}"' -f 'xmlns:rdf="#{RDF.uri}"' -f 'xmlns:owl="#{OWL.uri}"' -o rdfxml #{@path} 2>/dev/null`
       end
 
       # Convert to JSON as specified in http://n2.talis.com/wiki/RDF_JSON_Specification
@@ -290,7 +297,11 @@ module OpenTox
           entries.each do |feature, values|
             i = features.index(feature)+1
             values.each do |value|
-              row[i] = value #TODO overwrites duplicated values
+              if row[i] 
+                row[i] = "#{row[i]} #{value}" # multiple values
+              else
+                row[i] = value 
+              end
             end
           end
           @rows << row

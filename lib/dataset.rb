@@ -43,7 +43,7 @@ module OpenTox
 
     # Get all datasets from a service
     # @param [optional,String] uri URI of the dataset service, defaults to service specified in configuration
-    # @return [Array] Array of dataset object with all data
+    # @return [Array] Array of dataset object without data (use one of the load_* methods to pull data from the server)
     def self.all(uri=CONFIG[:services]["opentox-dataset"])
       RestClientWrapper.get(uri,:accept => "text/uri-list").to_s.each_line.collect{|u| Dataset.new(u)}
     end
@@ -53,6 +53,10 @@ module OpenTox
     # @return [OpenTox::Dataset] Dataset object with YAML data
     def load_yaml(yaml)
       copy YAML.load(yaml)
+    end
+
+    def load_rdfxml(rdfxml)
+      load_rdfxml_file Tempfile.open("ot-rdfxml"){|f| f.write(rdfxml)}.path
     end
 
     # Load RDF/XML representation from a file
@@ -129,8 +133,6 @@ module OpenTox
     # @return [String] `classification", "regression", "mixed" or unknown`
     def feature_type
       feature_types = @features.collect{|f,metadata| metadata[OT.isA]}.uniq
-      LOGGER.debug "FEATURES"
-      LOGGER.debug feature_types.inspect
       if feature_types.size > 1
         "mixed"
       else
@@ -145,10 +147,16 @@ module OpenTox
       end
     end
 
-    # Get Excel representation
+    # Get Spreadsheet representation
     # @return [Spreadsheet::Workbook] Workbook which can be written with the spreadsheet gem (data_entries only, metadata will will be discarded))
     def to_spreadsheet
       Serializer::Spreadsheets.new(self).to_spreadsheet
+    end
+
+    # Get Excel representation (alias for to_spreadsheet)
+    # @return [Spreadsheet::Workbook] Workbook which can be written with the spreadsheet gem (data_entries only, metadata will will be discarded))
+    def to_xls
+      to_spreadsheet
     end
 
     # Get CSV string representation (data_entries only, metadata will be discarded)
@@ -178,6 +186,10 @@ module OpenTox
     # @return [String] Feture title
     def feature_name(feature)
       @features[feature][DC.title]
+    end
+
+    def title
+      @metadata[DC.title]
     end
 
     # Insert a statement (compound_uri,feature_uri,value)
@@ -224,11 +236,18 @@ module OpenTox
       # TODO: rewrite feature URI's ??
       @compounds.uniq!
       if @uri
-        RestClientWrapper.post(@uri,{:content_type =>  "application/x-yaml"},self.to_yaml)
+        if (CONFIG[:yaml_hosts].include?(URI.parse(@uri).host))
+          RestClientWrapper.post(@uri,{:content_type =>  "application/x-yaml"},self.to_yaml)
+        else
+          File.open("ot-post-file.rdf","w+") { |f| f.write(self.to_rdfxml); @path = f.path }
+          task_uri = RestClient.post(@uri, {:file => File.new(@path)},{:accept => "text/uri-list"}).to_s.chomp
+          #task_uri = `curl -X POST -H "Accept:text/uri-list" -F "file=@#{@path};type=application/rdf+xml" http://apps.ideaconsult.net:8080/ambit2/dataset`
+          Task.find(task_uri).wait_for_completion
+          self.uri = RestClientWrapper.get(task_uri,:accept => 'text/uri-list')
+        end
       else
         # create dataset if uri is empty
         self.uri = RestClientWrapper.post(CONFIG[:services]["opentox-dataset"],{}).to_s.chomp
-        RestClientWrapper.post(@uri,{:content_type =>  "application/x-yaml"},self.to_yaml)
       end
       @uri
     end
@@ -251,5 +270,46 @@ module OpenTox
         @uri = dataset.metadata[XSD.anyURI]
       end
     end
+  end
+
+  # Class with special methods for lazar prediction datasets
+  class LazarPrediction < Dataset
+
+    # Find a prediction dataset and load all data. 
+    # @param [String] uri Prediction dataset URI
+    # @return [OpenTox::Dataset] Prediction dataset object with all data
+    def self.find(uri)
+      prediction = LazarPrediction.new(uri)
+      prediction.load_all
+      prediction
+    end
+
+    def value(compound)
+      @data_entries[compound.uri].collect{|f,v| v.first if f.match(/prediction/)}.compact.first
+    end
+
+    def confidence(compound)
+      feature_uri = @data_entries[compound.uri].collect{|f,v| f if f.match(/prediction/)}.compact.first
+      @features[feature_uri][OT.confidence]
+    end
+
+    def descriptors(compound)
+      @data_entries[compound.uri].collect{|f,v| @features[f] if f.match(/descriptor/)}.compact if @data_entries[compound.uri]
+    end
+
+    def measured_activities(compound)
+      source = @metadata[OT.hasSource]
+      @data_entries[compound.uri].collect{|f,v| v if f.match(/#{source}/)}.compact
+    end
+
+    def neighbors(compound)
+      @data_entries[compound.uri].collect{|f,v| @features[f] if f.match(/neighbor/)}.compact
+    end
+
+#    def errors(compound)
+#      features = @data_entries[compound.uri].keys
+#      features.collect{|f| @features[f][OT.error]}.join(" ") if features
+#    end
+
   end
 end
