@@ -8,7 +8,7 @@ begin
     gem.summary = %Q{Ruby wrapper for the OpenTox REST API}
     gem.description = %Q{Ruby wrapper for the OpenTox REST API (http://www.opentox.org)}
     gem.email = "helma@in-silico.ch"
-    gem.homepage = "http://github.com/helma/opentox-ruby-api-wrapper"
+    gem.homepage = "http://github.com/helma/opentox-ruby"
     gem.authors = ["Christoph Helma, Martin Guetlein, Andreas Maunz, Micha Rautenberg, David Vorgrimmler"]
     # dependencies
     [ "sinatra",
@@ -24,6 +24,7 @@ begin
       "roo",
       "spreadsheet",
       "google-spreadsheet-ruby",
+      "yajl-ruby",
       "tmail",
       "rinruby",
       "rjb"
@@ -80,7 +81,7 @@ Rake::RDocTask.new do |rdoc|
   end
 
   rdoc.rdoc_dir = 'rdoc'
-  rdoc.title = "opentox-ruby-api-wrapper #{version}"
+  rdoc.title = "opentox-ruby #{version}"
   rdoc.rdoc_files.include('README*')
   rdoc.rdoc_files.include('lib/**/*.rb')
 end

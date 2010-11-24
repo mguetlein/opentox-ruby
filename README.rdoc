@@ -1,4 +1,4 @@
-= opentox-ruby-api-wrapper
+= opentox-ruby
 
 Ruby wrapper for the OpenTox REST API (http://www.opentox.org)
 
@@ -10,14 +10,14 @@ Run the following if you haven't already:
 
 Install the gem:
 
-	sudo gem install helma-opentox-ruby-api-wrapper 
+	sudo gem install helma-opentox-ruby 
 
 == Usage
 
 - adjust the settings in $HOME/.opentox/config
-- require 'opentox-ruby-api-wrapper' in your ruby application
+- require 'opentox-ruby' in your ruby application
 - consult the rdoc API documentation for details 
 
 == Copyright
 
-Copyright (c) 2009 Christoph Helma. See LICENSE for details.
+Copyright (c) 2009-2010 Christoph Helma. See LICENSE for details.
