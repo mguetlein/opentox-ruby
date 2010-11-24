@@ -32,6 +32,21 @@ module OpenTox
       dataset
     end
 
+    # Create dataset from CSV file (format specification: http://toxcreate.org/help)
+    # - loads data_entries, compounds, features
+    # - sets metadata (warnings) for parser errors
+    # - you will have to set remaining metadata manually
+    # @param [String] file CSV file path
+    # @return [OpenTox::Dataset] Dataset object with CSV data
+    def self.create_from_csv_file(file) 
+      dataset = Dataset.create
+      parser = Parser::Spreadsheets.new
+      parser.dataset = dataset
+      parser.load_csv(File.open(file).read)
+      dataset.save
+      dataset
+    end
+
     # Find a dataset and load all data. This can be time consuming, use Dataset.new together with one of the load_* methods for a fine grained control over data loading.
     # @param [String] uri Dataset URI
     # @return [OpenTox::Dataset] Dataset object with all data
@@ -299,7 +314,7 @@ module OpenTox
 
     def measured_activities(compound)
       source = @metadata[OT.hasSource]
-      @data_entries[compound.uri].collect{|f,v| v if f.match(/#{source}/)}.compact
+      @data_entries[compound.uri].collect{|f,v| v if f.match(/#{source}/)}.compact.flatten
     end
 
     def neighbors(compound)

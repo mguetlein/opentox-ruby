@@ -33,24 +33,29 @@ module OpenTox
     # @return [OPenTox::Task] Task 
     def self.create( title=nil, creator=nil, max_duration=DEFAULT_TASK_MAX_DURATION, description=nil )
       
+      params = {:title=>title, :creator=>creator, :max_duration=>max_duration, :description=>description }
+      task_uri = RestClientWrapper.post(CONFIG[:services]["opentox-task"], params, nil, false).to_s
+      task = Task.new(task_uri.chomp)
+
       # measure current memory consumption
       memory = `free -m|sed -n '2p'`.split
       free_memory = memory[3].to_i + memory[6].to_i # include cache
       if free_memory < 20 # require at least 200 M free memory
         LOGGER.warn "Cannot start task  - not enough memory left (#{free_memory} M free)"
-        raise "Insufficient memory to start a new task"
+        task.cancel
+        return task
+        #raise "Insufficient memory to start a new task"
       end
 
       cpu_load = `cat /proc/loadavg`.split(/\s+/)[0..2].collect{|c| c.to_f}
       nr_cpu_cores = `cat /proc/cpuinfo |grep "cpu cores"|cut -d ":" -f2|tr -d " "`.split("\n").collect{|c| c.to_i}.inject{|sum,n| sum+n}
       if cpu_load[0] > nr_cpu_cores and cpu_load[0] > cpu_load[1] and cpu_load[1] > cpu_load[2] # average CPU load of the last minute is high and CPU load is increasing
         LOGGER.warn "Cannot start task  - CPU load too high (#{cpu_load.join(", ")})"
-        raise "Server too busy to start a new task"
+        task.cancel
+        return task
+        #raise "Server too busy to start a new task"
       end
 
-      params = {:title=>title, :creator=>creator, :max_duration=>max_duration, :description=>description }
-      task_uri = RestClientWrapper.post(CONFIG[:services]["opentox-task"], params, nil, false).to_s
-      task = Task.new(task_uri.chomp)
 
       task_pid = Spork.spork(:logger => LOGGER) do
         LOGGER.debug "Task #{task.uri} started #{Time.now}"

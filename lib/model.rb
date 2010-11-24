@@ -80,21 +80,16 @@ module OpenTox
         OpenTox::Model::Lazar.find(model_uri)
       end
 
-=begin
-      # Create a new lazar model and return task
-      # @param [optional,Hash] params Parameters for the lazar algorithm (OpenTox::Algorithm::Lazar)
-      # @return [OpenTox::Task] Task for lazar model creation
-      def self.create_task(params)
-        task_uri = RestClientWrapper.post(File.join(CONFIG[:services]["opentox-algorithm"],"lazar"), {}, params, false)
-        Task.find(task_uri)
-        #model_uri = lazar_algorithm.run(params)
-        #OpenTox::Model::Lazar.new(model_uri)
-      end
-=end
+      # Get a parameter value
+      # @param [String] param Parameter name
+      # @return [String] Parameter value
       def parameter(param)
         @metadata[OT.parameters].collect{|p| p[OT.paramValue] if p[DC.title] == param}.compact.first
       end
 
+      # Predict a dataset
+      # @param [String] dataset_uri Dataset URI
+      # @return [OpenTox::Dataset] Dataset with predictions
       def predict_dataset(dataset_uri)
         @prediction_dataset = Dataset.create
         @prediction_dataset.add_metadata({
@@ -145,6 +140,7 @@ module OpenTox
 
         if @neighbors.size == 0
           @prediction_dataset.add_feature(prediction_feature_uri, {
+            OT.isA => OT.MeasuredFeature,
             OT.hasSource => @uri,
             DC.creator => @uri,
             DC.title => URI.decode(File.basename( @metadata[OT.dependentVariables] )),
@@ -155,6 +151,7 @@ module OpenTox
 
         else
           @prediction_dataset.add_feature(prediction_feature_uri, {
+            OT.isA => OT.ModelPrediction,
             OT.hasSource => @uri,
             DC.creator => @uri,
             DC.title => URI.decode(File.basename( @metadata[OT.dependentVariables] )),
@@ -171,8 +168,9 @@ module OpenTox
                 feature_uri = File.join( @prediction_dataset.uri, "feature", "descriptor", f.to_s)
                 features[feature] = feature_uri
                 @prediction_dataset.add_feature(feature_uri, {
+                  OT.isA => OT.Substructure,
                   OT.smarts => feature,
-                  OT.p_value => @p_values[feature],
+                  OT.pValue => @p_values[feature],
                   OT.effect => @effects[feature]
                 })
                 @prediction_dataset.add @compound.uri, feature_uri, true
@@ -190,7 +188,8 @@ module OpenTox
               @prediction_dataset.add_feature(neighbor_uri, {
                 OT.compound => neighbor[:compound],
                 OT.similarity => neighbor[:similarity],
-                OT.activity => neighbor[:activity]
+                OT.measuredActivity => neighbor[:activity],
+                OT.isA => OT.Neighbor
               })
               @prediction_dataset.add @compound.uri, neighbor_uri, true
               f = 0 unless f
@@ -204,8 +203,9 @@ module OpenTox
                 unless features.has_key? feature
                   features[feature] = feature_uri
                   @prediction_dataset.add_feature(feature_uri, {
+                    OT.isA => OT.Substructure,
                     OT.smarts => feature,
-                    OT.p_value => @p_values[feature],
+                    OT.pValue => @p_values[feature],
                     OT.effect => @effects[feature]
                   })
                   f+=1
@@ -228,7 +228,6 @@ module OpenTox
 
         @neighbors = []
         @fingerprints.each do |training_compound,training_features|
-        #@activities.each do |training_compound,activities|
           sim = eval("#{@similarity_algorithm}(@compound_features,training_features,@p_values)")
           if sim > @min_sim
             @activities[training_compound].each do |act|
@@ -243,17 +242,6 @@ module OpenTox
         end
 
       end
-
-=begin
-      def cached_prediction
-        dataset_uri = PredictionCache.find(:model_uri => @uri, :compound_uri => @compound.uri).dataset_uri)
-        return false unless dataset_uri
-        @prediction_dataset = Dataset.find(dataset_uri)
-        return false unless @prediction_dataset
-        LOGGER.debug "Serving cached prediction"
-        true
-      end
-=end
 
       # Find database activities and store them in @prediction_dataset
       # @return [Boolean] true if compound has databasse activities, false if not
@@ -277,29 +265,6 @@ module OpenTox
       def delete
         RestClientWrapper.delete @uri unless @uri == CONFIG[:services]["opentox-model"]
       end
-
-=begin
-=end
-
-=begin
-      def self.create_from_dataset(dataset_uri,feature_dataset_uri,prediction_feature=nil)
-        training_activities = OpenTox::Dataset.find(dataset_uri)
-        training_features = OpenTox::Dataset.find(feature_dataset_uri)
-        unless prediction_feature # try to read prediction_feature from dataset
-          raise "#{training_activities.features.size} features in dataset #{dataset_uri}. Please provide a  prediction_feature parameter." unless training_activities.features.size == 1
-          prediction_feature = training_activities.features.keys.first
-          params[:prediction_feature] = prediction_feature
-        end
-        lazar = Lazar.new
-        training_features = OpenTox::Dataset.new(feature_dataset_uri)
-        case training_features.feature_type
-        when "classification"
-          lazar.similarity_algorithm = "weighted_tanimoto"
-        when "regression"
-          lazar.similarity_algorithm = "weighted_euclid"
-        end
-      end
-=end
 
     end
   end
