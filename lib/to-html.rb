@@ -17,8 +17,14 @@ module OpenTox
   # ] 
   def self.text_to_html( text, related_links=nil, description=nil, post_params=nil )
     
+    title = $sinatra.url_for($sinatra.request.env['PATH_INFO'], :full) if $sinatra
+    
     html = <<EOF
 <html>
+EOF
+    html.chomp!
+    html += "<title>"+title+"</title>" if title
+    html += <<EOF 
 <img src="
 EOF
     html.chomp!

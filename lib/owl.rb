@@ -144,7 +144,7 @@ module OpenTox
     # (do not add dc-identifier, deprecated, object are identified via name=uri)
     LITERAL_TYPES = {}
     [ "title", "creator", "format", "description", "hasStatus", "paramScope", "paramValue", 
-      "classValue", "reportType", "confusionMatrixActual", 
+      "classValue", "reportType", "confusionMatrixActual", "validationType",
       "confusionMatrixPredicted", "taskParameters" ].each{ |l| LITERAL_TYPES[l] = LITERAL_DATATYPE_STRING }
     [ "date", "due_to_time" ].each{ |l| LITERAL_TYPES[l] = LITERAL_DATATYPE_DATE }
     [ "percentageCompleted", "truePositiveRate", "fMeasure", "falseNegativeRate", 
@@ -153,7 +153,7 @@ module OpenTox
       "percentIncorrect", "percentUnpredicted", "realRuntime",
       "percentWithoutClass", "rootMeanSquaredError", "meanAbsoluteError", "rSquare", 
       "targetVarianceActual", "targetVariancePredicted", "sumSquaredError",
-      "sampleCorrelationCoefficient" ].each{ |l| LITERAL_TYPES[l] = LITERAL_DATATYPE_DOUBLE }
+      "sampleCorrelationCoefficient", "accuracy" ].each{ |l| LITERAL_TYPES[l] = LITERAL_DATATYPE_DOUBLE }
     [ "numTrueNegatives", "numWithoutClass", "numFalseNegatives", "numTruePositives",
       "numFalsePositives", "numIncorrect", "numInstances", "numUnpredicted", 
        "randomSeed", "numFolds", "confusionMatrixValue",

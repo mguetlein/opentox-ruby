@@ -35,18 +35,18 @@ module OpenTox
     # works like RestClientWrapper.get apart from
     # wait: true(default) -> waits for the task if a task is returned
     #       false         -> does not wait for task
-    def self.get(uri, headers=nil, wait=true ) 
-      execute( "get", uri, headers, nil, wait, false )
+    def self.get(uri, headers=nil, task=nil, wait=true ) 
+      execute( "get", uri, headers, nil, task, wait, false )
     end
     
     # works like get() apart from the result 
     # result is a hash with keys body (return value of get()), code and content_type 
-    def self.get_meta_info(uri, headers=nil, wait=true ) 
-      execute( "get", uri, headers, nil, wait, true )
+    def self.get_meta_info(uri, headers=nil, task=nil, wait=true ) 
+      execute( "get", uri, headers, nil, task, wait, true )
     end
     
-    def self.post(uri, headers, payload=nil, wait=true)
-      execute( "post", uri, headers, payload, wait )
+    def self.post(uri, headers, payload=nil, task=nil, wait=true)
+      execute( "post", uri, headers, payload, task, wait )
     end
     
     def self.put(uri, headers, payload=nil )
@@ -62,10 +62,10 @@ module OpenTox
     end
     
     private
-    def self.execute( rest_call, uri, headers, payload=nil, wait=true, return_code_and_type=false )
+    def self.execute( rest_call, uri, headers, payload=nil, task=nil, wait=true, return_code_and_type=false )
       
       raise_ot_error 400,"uri is null",uri,headers,payload unless uri
-      raise_ot_error 400,"not a uri",uri,headers,payload unless Utils.is_uri?(uri)
+      raise_ot_error 400,"not a uri: '"+uri.to_s+"'",uri,headers,payload unless Utils.is_uri?(uri)
       raise_ot_error 400,"headers are no hash",uri,headers,payload unless headers==nil or headers.is_a?(Hash)
       raise_ot_error 400,"nil headers for post not allowed, use {}",uri,headers,payload if rest_call=="post" and headers==nil
       headers.each{ |k,v| headers.delete(k) if v==nil } if headers #remove keys with empty values, as this can cause problems
@@ -81,11 +81,13 @@ module OpenTox
           result = resource.send(rest_call)
         end
         
-        res = {:body => result.body, :content_type => result.headers[:content_type], :code => result.code }
+        res = {:body => result.body.chomp, 
+          :content_type => result.headers[:content_type], 
+          :code => result.code }
         raise "content-type not set" unless res[:content_type]
         
         while ( wait && ( res[:code]==201 || res[:code]==202 ))
-          res = wait_for_task(res, uri)
+          res = wait_for_task(res, uri, task)
         end
         raise "illegal status code: '"+res[:code].to_s+"'" unless 
           ( res[:code]==200 || ( !wait && ( res[:code]==201 || res[:code]==202 )))
@@ -98,7 +100,6 @@ module OpenTox
       rescue RestClient::RequestTimeout => ex
         raise_ot_error 408,ex.message,uri,headers,payload
       rescue => ex
-        #raise ex
         #raise "'"+ex.message+"' uri: "+uri.to_s
         begin
           code = ex.http_code
@@ -111,7 +112,7 @@ module OpenTox
       end
     end
     
-    def self.wait_for_task( res, base_uri )
+    def self.wait_for_task( res, base_uri, waiting_task=nil )
       
       task = nil
       case res[:content_type]
@@ -125,10 +126,10 @@ module OpenTox
         raise "unknown content-type for task: '"+res[:content_type].to_s+"'" #+"' content: "+res[0..200].to_s
       end      
       LOGGER.debug "result is a task '"+task.uri.to_s+"', wait for completion"
-      task.wait_for_completion
+      task.wait_for_completion(waiting_task)
       raise task.description unless task.completed? # maybe task was cancelled / error
       
-      return {:body => task.resultURI, :code => task.http_code, :content_type => "text/uri-list" }
+      return {:body => task.resultURI.chomp, :code => task.http_code, :content_type => "text/uri-list" }
     end
     
     def self.raise_ot_error( code, body, uri, headers, payload=nil )
@@ -158,7 +159,7 @@ module OpenTox
       # to handle the error yourself, put rest-call in begin, rescue block
       # if the error is not caught: 
       #   if we are in a task, the error is caught, logged, and task state is set to error in Task.as_task 
-      #   if we are in a default call, the error is handled in overwrite.rb to return 502 (according to OT API) 
+      #   if we are in a default call, the error is handled in overwrite.rb to return 502 (according to OT API)
       raise error.to_yaml 
     end
   end
