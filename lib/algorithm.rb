@@ -15,7 +15,7 @@ module OpenTox
     # @param [optional,Hash] params Algorithm parameters
     # @return [String] URI of new resource (dataset, model, ...)
     def run(params=nil)
-      RestClientWrapper.post(@uri, params).to_s
+      RestClientWrapper.post(@uri, {:accept => 'text/uri-list'}, params).to_s
     end
     
     # Get OWL-DL representation in RDF/XML format

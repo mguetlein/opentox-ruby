@@ -243,10 +243,10 @@ module OpenTox
             "'" unless @metadata[OT.resultURI] and @metadata[OT.resultURI].to_s.uri? if completed?
         
         if @http_code == 202
-          raise "illegal task state, code is 202, but hasStatus is not Running: '"+@metadata[OT.hasStatus]+"'" unless running?
+          raise "#{@uri}: illegal task state, code is 202, but hasStatus is not Running: '"+@metadata[OT.hasStatus]+"'" unless running?
         elsif @http_code == 201
-          raise "illegal task state, code is 201, but hasStatus is not Completed: '"+@metadata[OT.hasStatus]+"'" unless completed?
-          raise "illegal task state, code is 201, resultURI is no task-URI: '"+@metadata[OT.resultURI].to_s+
+          raise "#{@uri}: illegal task state, code is 201, but hasStatus is not Completed: '"+@metadata[OT.hasStatus]+"'" unless completed?
+          raise "#{@uri}: illegal task state, code is 201, resultURI is no task-URI: '"+@metadata[OT.resultURI].to_s+
               "'" unless @metadata[OT.resultURI] and @metadata[OT.resultURI].to_s.uri?
         end
       rescue => ex
