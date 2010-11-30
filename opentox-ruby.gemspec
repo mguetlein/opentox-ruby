@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{opentox-ruby}
-  s.version = "0.0.1"
+  s.version = "0.0.2"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Christoph Helma, Martin Guetlein, Andreas Maunz, Micha Rautenberg, David Vorgrimmler"]
-  s.date = %q{2010-11-24}
+  s.date = %q{2010-11-30}
   s.description = %q{Ruby wrapper for the OpenTox REST API (http://www.opentox.org)}
   s.email = %q{helma@in-silico.ch}
   s.executables = ["opentox-install-ubuntu.sh", "opentox-install-debian.sh"]
@@ -29,17 +29,22 @@ Gem::Specification.new do |s|
      "lib/config/config_ru.rb",
      "lib/dataset.rb",
      "lib/environment.rb",
+     "lib/feature.rb",
      "lib/helper.rb",
      "lib/model.rb",
+     "lib/opentox-ruby.rb",
      "lib/opentox.owl",
+     "lib/opentox.rb",
      "lib/overwrite.rb",
+     "lib/parser.rb",
      "lib/rest_client_wrapper.rb",
+     "lib/serializer.rb",
      "lib/spork.rb",
      "lib/task.rb",
      "lib/templates/config.yaml",
      "lib/validation.rb"
   ]
-  s.homepage = %q{http://github.com/helma/opentox-ruby-api-wrapper}
+  s.homepage = %q{http://github.com/helma/opentox-ruby}
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.7}
@@ -63,6 +68,7 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<roo>, [">= 0"])
       s.add_runtime_dependency(%q<spreadsheet>, [">= 0"])
       s.add_runtime_dependency(%q<google-spreadsheet-ruby>, [">= 0"])
+      s.add_runtime_dependency(%q<yajl-ruby>, [">= 0"])
       s.add_runtime_dependency(%q<tmail>, [">= 0"])
       s.add_runtime_dependency(%q<rinruby>, [">= 0"])
       s.add_runtime_dependency(%q<rjb>, [">= 0"])
@@ -89,6 +95,7 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<roo>, [">= 0"])
       s.add_dependency(%q<spreadsheet>, [">= 0"])
       s.add_dependency(%q<google-spreadsheet-ruby>, [">= 0"])
+      s.add_dependency(%q<yajl-ruby>, [">= 0"])
       s.add_dependency(%q<tmail>, [">= 0"])
       s.add_dependency(%q<rinruby>, [">= 0"])
       s.add_dependency(%q<rjb>, [">= 0"])
@@ -116,6 +123,7 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<roo>, [">= 0"])
     s.add_dependency(%q<spreadsheet>, [">= 0"])
     s.add_dependency(%q<google-spreadsheet-ruby>, [">= 0"])
+    s.add_dependency(%q<yajl-ruby>, [">= 0"])
     s.add_dependency(%q<tmail>, [">= 0"])
     s.add_dependency(%q<rinruby>, [">= 0"])
     s.add_dependency(%q<rjb>, [">= 0"])
