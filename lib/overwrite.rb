@@ -13,26 +13,34 @@ class Sinatra::Base
 end
 
 class String
-    def task_uri?
-      self.uri? && !self.match(/task/).nil?
-    end
-    
-    def dataset_uri?
-     self.uri? && !self.match(/dataset/).nil?
-    end
-   
-    def self.model_uri?
-     self.uri? && !self.match(/model/).nil?
-    end
+  def task_uri?
+    self.uri? && !self.match(/task/).nil?
+  end
+  
+  def dataset_uri?
+   self.uri? && !self.match(/dataset/).nil?
+  end
+ 
+  def self.model_uri?
+   self.uri? && !self.match(/model/).nil?
+  end
 
-    def uri?
-      begin
-        u = URI::parse(self)
-        return (u.scheme!=nil and u.host!=nil)
-      rescue URI::InvalidURIError
-        return false
-      end
+  def uri?
+    begin
+      u = URI::parse(self)
+      return (u.scheme!=nil and u.host!=nil)
+    rescue URI::InvalidURIError
+      return false
     end
+  end
+
+  def underscore
+    self.gsub(/::/, '/').
+    gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').
+    gsub(/([a-z\d])([A-Z])/,'\1_\2').
+    tr("-", "_").
+    downcase
+  end
 end
 
 require 'logger'

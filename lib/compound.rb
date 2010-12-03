@@ -68,6 +68,12 @@ module OpenTox
       c
     end
 
+		# Get InChI
+    # @return [String] InChI string
+		def to_inchi
+      @inchi
+		end
+
 		# Get (canonical) smiles
     # @return [String] Smiles string
 		def to_smiles
