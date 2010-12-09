@@ -32,7 +32,7 @@ module OpenTox
       include Model
       include Algorithm
 
-      attr_accessor :compound, :prediction_dataset, :features, :effects, :activities, :p_values, :fingerprints, :feature_calculation_algorithm, :similarity_algorithm, :prediction_algorithm, :min_sim
+      attr_accessor :compound, :prediction_dataset, :features, :effects, :activities, :p_values, :fingerprints, :feature_calculation_algorithm, :similarity_algorithm, :prediction_algorithm, :min_sim, :token_id
 
       def initialize(uri=nil)
 
@@ -258,7 +258,7 @@ module OpenTox
 
       # Save model at model service
       def save
-        self.uri = RestClientWrapper.post(@uri,{:content_type =>  "application/x-yaml"},self.to_yaml)
+        self.uri = RestClientWrapper.post(@uri,{:content_type =>  "application/x-yaml", :token_id => @token_id},self.to_yaml)
       end
 
       # Delete model at model service

@@ -17,7 +17,7 @@ helpers do
       ret = OpenTox::Authorization.authorize(request.env['SCRIPT_URI'], request.env['REQUEST_METHOD'], token_id)
       LOGGER.debug "OpenTox helpers OpenTox::Authorization authorized? method: #{request.env['REQUEST_METHOD']} , URI: #{request.env['SCRIPT_URI']}, token_id: #{token_id} with return #{ret}." 
       return ret
-    when "POST"
+    when "POST", "HEAD"
       if OpenTox::Authorization.is_token_valid(token_id)
         LOGGER.debug "OpenTox helpers OpenTox::Authorization.is_token_valid: true"  
         return true
@@ -25,7 +25,6 @@ helpers do
       LOGGER.warn "OpenTox helpers POST on #{request.env['SCRIPT_URI']} with token_id: #{token_id} false."  
     end 
     LOGGER.debug "Not authorized for: 1. #{request['SCRIPT_URI']} 2. #{request.env['SCRIPT_URI']}  with Method: #{request.env['REQUEST_METHOD']} with Token #{token_id}"
-    LOGGER.debug "Request infos: #{request.inspect}"
     return false
   end
 
@@ -55,6 +54,7 @@ before do
       token_id = params[:token_id]  if params[:token_id]  and !check_token_id(token_id)
       token_id = request.env['HTTP_TOKEN_ID'] if request.env['HTTP_TOKEN_ID'] and !check_token_id(token_id)
       # see http://rack.rubyforge.org/doc/SPEC.html
+      token_id = CGI.unescape(token_id) if token_id.include?("%23") 
     rescue
       LOGGER.debug "OpenTox api wrapper: helper before filter: NO token_id." 
       token_id = ""
