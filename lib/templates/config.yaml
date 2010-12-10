@@ -39,3 +39,16 @@
 
 # Uncomment for verbose logging
 # :logger: debug
+
+# OpenSSO Authorization
+# set ":server: nil" to disable A&A
+:authorization:
+  :server: "https://opensso.in-silico.ch"
+  :free_request: #not controlled by A&A
+    - "GET"  
+  :authenticate_request: #only for authenticated user
+    - "POST"
+  :authorize_request:  #only for authenticated and authorizeduser
+    - "DELETE"
+    - "PUT"
+  
