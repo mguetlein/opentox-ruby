@@ -6,6 +6,7 @@ module OpenTox
     include OpenTox
 
     attr_reader :features, :compounds, :data_entries, :metadata
+    attr_accessor :token_id
 
     # Create dataset with optional URI. Does not load data into the dataset - you will need to execute one of the load_* methods to pull data from a service or to insert it from other representations.
     # @example Create an empty dataset
@@ -14,8 +15,9 @@ module OpenTox
     #   dataset = OpenTox::Dataset.new("http:://webservices.in-silico/ch/dataset/1")
     # @param [optional, String] uri Dataset URI
     # @return [OpenTox::Dataset] Dataset object
-    def initialize(uri=nil)
+    def initialize(uri=nil,token_id=nil)
       super uri
+      @token_id = token_id
       @features = {}
       @compounds = []
       @data_entries = {}
@@ -26,8 +28,9 @@ module OpenTox
     #   dataset = OpenTox::Dataset.create
     # @param [optional, String] uri Dataset URI
     # @return [OpenTox::Dataset] Dataset object
-    def self.create(uri=CONFIG[:services]["opentox-dataset"])
+    def self.create(uri=CONFIG[:services]["opentox-dataset"], token_id=nil)
       dataset = Dataset.new
+      dataset.token_id = token_id if token_id
       dataset.save
       dataset
     end
@@ -252,7 +255,7 @@ module OpenTox
       @compounds.uniq!
       if @uri
         if (CONFIG[:yaml_hosts].include?(URI.parse(@uri).host))
-          RestClientWrapper.post(@uri,{:content_type =>  "application/x-yaml"},self.to_yaml)
+          RestClientWrapper.post(@uri,{:content_type =>  "application/x-yaml", :token_id => @token_id},self.to_yaml)
         else
           File.open("ot-post-file.rdf","w+") { |f| f.write(self.to_rdfxml); @path = f.path }
           task_uri = RestClient.post(@uri, {:file => File.new(@path)},{:accept => "text/uri-list"}).to_s.chomp
@@ -262,7 +265,7 @@ module OpenTox
         end
       else
         # create dataset if uri is empty
-        self.uri = RestClientWrapper.post(CONFIG[:services]["opentox-dataset"],{}).to_s.chomp
+        self.uri = RestClientWrapper.post(CONFIG[:services]["opentox-dataset"],{:token_id => @token_id}).to_s.chomp
       end
       @uri
     end
@@ -279,6 +282,7 @@ module OpenTox
       @data_entries = dataset.data_entries
       @compounds = dataset.compounds
       @features = dataset.features
+      @token_id = dataset.token_id
       if @uri
         self.uri = @uri 
       else
