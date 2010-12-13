@@ -38,12 +38,15 @@ EOF
    html += "<h3>Related links</h3><pre><p>"+related_links.link_urls+"</p></pre>" if related_links
    if post_params
       html += "<h3>POST parameters</h3>"
+      count = 0
       post_params.each do |p|
+        html += "<pre><p>alternatively:</p></pre>" if count > 0
         html += "<pre><p><table><thead><tr><th>param</th><th>default_value</th></tr></thead>"
         p.each do |k,v|
           html += "<tr><th>"+k.to_s+"</th><th>"+(v!=nil ? v.to_s : "<i>mandatory</i>")+"</th></tr>"
         end
         html += "</table></p></pre>"
+        count += 1
       end
    end
    html += "<h3>Content</h3>" if description || related_links
