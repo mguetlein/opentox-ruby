@@ -26,9 +26,9 @@ module OpenTox
     #   dataset = OpenTox::Dataset.create
     # @param [optional, String] uri Dataset URI
     # @return [OpenTox::Dataset] Dataset object
-    def self.create(uri=CONFIG[:services]["opentox-dataset"], token_id=nil)
+    def self.create(uri=CONFIG[:services]["opentox-dataset"], subjectid=nil)
       dataset = Dataset.new
-      dataset.save(token_id)
+      dataset.save(subjectid)
       dataset
     end
 
@@ -247,22 +247,22 @@ module OpenTox
     # - creates a new dataset if uri is not set
     # - overwrites dataset if uri exists
     # @return [String] Dataset URI
-    def save(token_id=nil)
+    def save(subjectid=nil)
       # TODO: rewrite feature URI's ??
       @compounds.uniq!
       if @uri
         if (CONFIG[:yaml_hosts].include?(URI.parse(@uri).host))
-          RestClientWrapper.post(@uri,{:content_type =>  "application/x-yaml", :token_id => token_id},self.to_yaml)
+          RestClientWrapper.post(@uri,{:content_type =>  "application/x-yaml", :subjectid => subjectid},self.to_yaml)
         else
           File.open("ot-post-file.rdf","w+") { |f| f.write(self.to_rdfxml); @path = f.path }
-          task_uri = RestClient.post(@uri, {:file => File.new(@path)},{:accept => "text/uri-list" , :token_id => token_id}).to_s.chomp
+          task_uri = RestClient.post(@uri, {:file => File.new(@path)},{:accept => "text/uri-list" , :subjectid => subjectid}).to_s.chomp
           #task_uri = `curl -X POST -H "Accept:text/uri-list" -F "file=@#{@path};type=application/rdf+xml" http://apps.ideaconsult.net:8080/ambit2/dataset`
           Task.find(task_uri).wait_for_completion
           self.uri = RestClientWrapper.get(task_uri,:accept => 'text/uri-list')
         end
       else
         # create dataset if uri is empty
-        self.uri = RestClientWrapper.post(CONFIG[:services]["opentox-dataset"],{:token_id => token_id}).to_s.chomp
+        self.uri = RestClientWrapper.post(CONFIG[:services]["opentox-dataset"],{:subjectid => subjectid}).to_s.chomp
       end
       @uri
     end

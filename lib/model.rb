@@ -32,7 +32,7 @@ module OpenTox
       include Model
       include Algorithm
 
-      attr_accessor :compound, :prediction_dataset, :features, :effects, :activities, :p_values, :fingerprints, :feature_calculation_algorithm, :similarity_algorithm, :prediction_algorithm, :min_sim, :token_id
+      attr_accessor :compound, :prediction_dataset, :features, :effects, :activities, :p_values, :fingerprints, :feature_calculation_algorithm, :similarity_algorithm, :prediction_algorithm, :min_sim, :subjectid
 
       def initialize(uri=nil)
 
@@ -111,7 +111,7 @@ module OpenTox
       # @param [String] compound_uri Compound URI
       # @param [optinal,Boolean] verbose Verbose prediction (output includes neighbors and features)
       # @return [OpenTox::Dataset] Dataset with prediction
-      def predict(compound_uri,verbose=false,token_id=nil)
+      def predict(compound_uri,verbose=false,subjectid=nil)
 
         @compound = Compound.new compound_uri
         features = {}
@@ -119,7 +119,7 @@ module OpenTox
         unless @prediction_dataset
           #@prediction_dataset = cached_prediction
           #return @prediction_dataset if cached_prediction
-          @prediction_dataset = Dataset.create(CONFIG[:services]["opentox-dataset"], token_id)
+          @prediction_dataset = Dataset.create(CONFIG[:services]["opentox-dataset"], subjectid)
           @prediction_dataset.add_metadata( {
             OT.hasSource => @uri,
             DC.creator => @uri,
@@ -217,7 +217,7 @@ module OpenTox
           end
         end
 
-        @prediction_dataset.save(token_id)
+        @prediction_dataset.save(subjectid)
         @prediction_dataset
       end
 
@@ -257,8 +257,8 @@ module OpenTox
       end
 
       # Save model at model service
-      def save(token_id)
-        self.uri = RestClientWrapper.post(@uri,{:content_type =>  "application/x-yaml", :token_id => token_id},self.to_yaml)
+      def save(subjectid)
+        self.uri = RestClientWrapper.post(@uri,{:content_type =>  "application/x-yaml", :subjectid => subjectid},self.to_yaml)
       end
 
       # Delete model at model service
