@@ -6,7 +6,6 @@ module OpenTox
     include OpenTox
 
     attr_reader :features, :compounds, :data_entries, :metadata
-    attr_accessor :token_id
 
     # Create dataset with optional URI. Does not load data into the dataset - you will need to execute one of the load_* methods to pull data from a service or to insert it from other representations.
     # @example Create an empty dataset
@@ -15,9 +14,8 @@ module OpenTox
     #   dataset = OpenTox::Dataset.new("http:://webservices.in-silico/ch/dataset/1")
     # @param [optional, String] uri Dataset URI
     # @return [OpenTox::Dataset] Dataset object
-    def initialize(uri=nil,token_id=nil)
+    def initialize(uri=nil)
       super uri
-      @token_id = token_id
       @features = {}
       @compounds = []
       @data_entries = {}
@@ -30,8 +28,7 @@ module OpenTox
     # @return [OpenTox::Dataset] Dataset object
     def self.create(uri=CONFIG[:services]["opentox-dataset"], token_id=nil)
       dataset = Dataset.new
-      dataset.token_id = token_id if token_id
-      dataset.save
+      dataset.save(token_id)
       dataset
     end
 
@@ -250,22 +247,22 @@ module OpenTox
     # - creates a new dataset if uri is not set
     # - overwrites dataset if uri exists
     # @return [String] Dataset URI
-    def save
+    def save(token_id=nil)
       # TODO: rewrite feature URI's ??
       @compounds.uniq!
       if @uri
         if (CONFIG[:yaml_hosts].include?(URI.parse(@uri).host))
-          RestClientWrapper.post(@uri,{:content_type =>  "application/x-yaml", :token_id => @token_id},self.to_yaml)
+          RestClientWrapper.post(@uri,{:content_type =>  "application/x-yaml", :token_id => token_id},self.to_yaml)
         else
           File.open("ot-post-file.rdf","w+") { |f| f.write(self.to_rdfxml); @path = f.path }
-          task_uri = RestClient.post(@uri, {:file => File.new(@path)},{:accept => "text/uri-list"}).to_s.chomp
+          task_uri = RestClient.post(@uri, {:file => File.new(@path)},{:accept => "text/uri-list" , :token_id => token_id}).to_s.chomp
           #task_uri = `curl -X POST -H "Accept:text/uri-list" -F "file=@#{@path};type=application/rdf+xml" http://apps.ideaconsult.net:8080/ambit2/dataset`
           Task.find(task_uri).wait_for_completion
           self.uri = RestClientWrapper.get(task_uri,:accept => 'text/uri-list')
         end
       else
         # create dataset if uri is empty
-        self.uri = RestClientWrapper.post(CONFIG[:services]["opentox-dataset"],{:token_id => @token_id}).to_s.chomp
+        self.uri = RestClientWrapper.post(CONFIG[:services]["opentox-dataset"],{:token_id => token_id}).to_s.chomp
       end
       @uri
     end
@@ -282,7 +279,6 @@ module OpenTox
       @data_entries = dataset.data_entries
       @compounds = dataset.compounds
       @features = dataset.features
-      @token_id = dataset.token_id
       if @uri
         self.uri = @uri 
       else

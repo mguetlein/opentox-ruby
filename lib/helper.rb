@@ -32,7 +32,7 @@ helpers do
 
   def unprotected_requests
     case  env['REQUEST_URI']
-    when /\/login$|\/logout$|\/predict$|\/upload$/
+    when /\/login$|\/logout$|\/predict$|\/toxcreate\/models$/
       return true
     when /\/compound|\/feature|\/task|\/toxcreate/   #to fix: read from config | validation should be protected
       return true
