@@ -57,7 +57,7 @@ before do
       # see http://rack.rubyforge.org/doc/SPEC.html
       subjectid = CGI.unescape(subjectid) if subjectid.include?("%23")
     rescue
-      LOGGER.debug "OpenTox ruby api wrapper: helper before filter: NO subjectid."
+      LOGGER.debug "OpenTox ruby api wrapper: helper before filter: NO subjectid for URI: #{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}"
       subjectid = ""
     end
     protected!(subjectid) if AA_SERVER

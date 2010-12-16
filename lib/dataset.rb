@@ -38,12 +38,12 @@ module OpenTox
     # - you will have to set remaining metadata manually
     # @param [String] file CSV file path
     # @return [OpenTox::Dataset] Dataset object with CSV data
-    def self.create_from_csv_file(file) 
-      dataset = Dataset.create
+    def self.create_from_csv_file(file, subjectid=nil) 
+      dataset = Dataset.create(CONFIG[:services]["opentox-dataset"], subjectid)
       parser = Parser::Spreadsheets.new
       parser.dataset = dataset
       parser.load_csv(File.open(file).read)
-      dataset.save
+      dataset.save(subjectid)
       dataset
     end
 
@@ -89,8 +89,8 @@ module OpenTox
     # - you will have to set remaining metadata manually
     # @param [String] csv CSV representation of the dataset
     # @return [OpenTox::Dataset] Dataset object with CSV data
-    def load_csv(csv) 
-      save unless @uri # get a uri for creating features
+    def load_csv(csv, subjectid=nil) 
+      save(subjectid) unless @uri # get a uri for creating features
       parser = Parser::Spreadsheets.new
       parser.dataset = self
       parser.load_csv(csv)
@@ -102,8 +102,8 @@ module OpenTox
     # - you will have to set remaining metadata manually
     # @param [Excel] book Excel workbook object (created with roo gem)
     # @return [OpenTox::Dataset] Dataset object with Excel data
-    def load_spreadsheet(book)
-      save unless @uri # get a uri for creating features
+    def load_spreadsheet(book, subjectid=nil)
+      save(subjectid) unless @uri # get a uri for creating features
       parser = Parser::Spreadsheets.new
       parser.dataset = self
       parser.load_spreadsheet(book)
@@ -268,8 +268,8 @@ module OpenTox
     end
 
     # Delete dataset at the dataset service
-    def delete
-      RestClientWrapper.delete @uri
+    def delete(subjectid=nil)
+      RestClientWrapper.delete(@uri, :subjectid => subjectid)
     end
 
     private

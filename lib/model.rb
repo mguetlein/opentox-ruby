@@ -90,8 +90,8 @@ module OpenTox
       # Predict a dataset
       # @param [String] dataset_uri Dataset URI
       # @return [OpenTox::Dataset] Dataset with predictions
-      def predict_dataset(dataset_uri)
-        @prediction_dataset = Dataset.create
+      def predict_dataset(dataset_uri, subjectid=nil)
+        @prediction_dataset = Dataset.create(CONFIG[:services]["opentox-dataset"], subjectid)
         @prediction_dataset.add_metadata({
           OT.hasSource => @uri,
           DC.creator => @uri,
@@ -101,9 +101,9 @@ module OpenTox
         d = Dataset.new(dataset_uri)
         d.load_compounds
         d.compounds.each do |compound_uri|
-          predict(compound_uri,false)
+          predict(compound_uri,false,subjectid)
         end
-        @prediction_dataset.save
+        @prediction_dataset.save(subjectid)
         @prediction_dataset
       end
 
@@ -129,7 +129,7 @@ module OpenTox
           } )
         end
 
-        return @prediction_dataset if database_activity
+        return @prediction_dataset if database_activity(subjectid)
 
         neighbors
         prediction = eval("#{@prediction_algorithm}(@neighbors,{:similarity_algorithm => @similarity_algorithm, :p_values => @p_values})")
@@ -245,11 +245,11 @@ module OpenTox
 
       # Find database activities and store them in @prediction_dataset
       # @return [Boolean] true if compound has databasse activities, false if not
-      def database_activity
+      def database_activity(subjectid)
         if @activities[@compound.uri]
           @activities[@compound.uri].each { |act| @prediction_dataset.add @compound.uri, @metadata[OT.dependentVariables], act }
           @prediction_dataset.add_metadata(OT.hasSource => @metadata[OT.trainingDataset])
-          @prediction_dataset.save
+          @prediction_dataset.save(subjectid)
           true
         else
           false
@@ -262,8 +262,8 @@ module OpenTox
       end
 
       # Delete model at model service
-      def delete
-        RestClientWrapper.delete @uri unless @uri == CONFIG[:services]["opentox-model"]
+      def delete(subjectid)
+        RestClientWrapper.delete(@uri, :subjectid => subjectid) unless @uri == CONFIG[:services]["opentox-model"]
       end
 
     end
