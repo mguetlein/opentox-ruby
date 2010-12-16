@@ -32,7 +32,7 @@ module OpenTox
       include Model
       include Algorithm
 
-      attr_accessor :compound, :prediction_dataset, :features, :effects, :activities, :p_values, :fingerprints, :feature_calculation_algorithm, :similarity_algorithm, :prediction_algorithm, :min_sim, :token_id
+      attr_accessor :compound, :prediction_dataset, :features, :effects, :activities, :p_values, :fingerprints, :feature_calculation_algorithm, :similarity_algorithm, :prediction_algorithm, :min_sim, :subjectid
 
       def initialize(uri=nil)
 
@@ -90,8 +90,8 @@ module OpenTox
       # Predict a dataset
       # @param [String] dataset_uri Dataset URI
       # @return [OpenTox::Dataset] Dataset with predictions
-      def predict_dataset(dataset_uri)
-        @prediction_dataset = Dataset.create
+      def predict_dataset(dataset_uri, subjectid=nil)
+        @prediction_dataset = Dataset.create(CONFIG[:services]["opentox-dataset"], subjectid)
         @prediction_dataset.add_metadata({
           OT.hasSource => @uri,
           DC.creator => @uri,
@@ -101,9 +101,9 @@ module OpenTox
         d = Dataset.new(dataset_uri)
         d.load_compounds
         d.compounds.each do |compound_uri|
-          predict(compound_uri,false)
+          predict(compound_uri,false,subjectid)
         end
-        @prediction_dataset.save
+        @prediction_dataset.save(subjectid)
         @prediction_dataset
       end
 
@@ -111,7 +111,7 @@ module OpenTox
       # @param [String] compound_uri Compound URI
       # @param [optinal,Boolean] verbose Verbose prediction (output includes neighbors and features)
       # @return [OpenTox::Dataset] Dataset with prediction
-      def predict(compound_uri,verbose=false)
+      def predict(compound_uri,verbose=false,subjectid=nil)
 
         @compound = Compound.new compound_uri
         features = {}
@@ -119,7 +119,7 @@ module OpenTox
         unless @prediction_dataset
           #@prediction_dataset = cached_prediction
           #return @prediction_dataset if cached_prediction
-          @prediction_dataset = Dataset.create
+          @prediction_dataset = Dataset.create(CONFIG[:services]["opentox-dataset"], subjectid)
           @prediction_dataset.add_metadata( {
             OT.hasSource => @uri,
             DC.creator => @uri,
@@ -129,7 +129,7 @@ module OpenTox
           } )
         end
 
-        return @prediction_dataset if database_activity
+        return @prediction_dataset if database_activity(subjectid)
 
         neighbors
         prediction = eval("#{@prediction_algorithm}(@neighbors,{:similarity_algorithm => @similarity_algorithm, :p_values => @p_values})")
@@ -217,7 +217,7 @@ module OpenTox
           end
         end
 
-        @prediction_dataset.save
+        @prediction_dataset.save(subjectid)
         @prediction_dataset
       end
 
@@ -245,11 +245,11 @@ module OpenTox
 
       # Find database activities and store them in @prediction_dataset
       # @return [Boolean] true if compound has databasse activities, false if not
-      def database_activity
+      def database_activity(subjectid)
         if @activities[@compound.uri]
           @activities[@compound.uri].each { |act| @prediction_dataset.add @compound.uri, @metadata[OT.dependentVariables], act }
           @prediction_dataset.add_metadata(OT.hasSource => @metadata[OT.trainingDataset])
-          @prediction_dataset.save
+          @prediction_dataset.save(subjectid)
           true
         else
           false
@@ -257,13 +257,13 @@ module OpenTox
       end
 
       # Save model at model service
-      def save
-        self.uri = RestClientWrapper.post(@uri,{:content_type =>  "application/x-yaml", :token_id => @token_id},self.to_yaml)
+      def save(subjectid)
+        self.uri = RestClientWrapper.post(@uri,{:content_type =>  "application/x-yaml", :subjectid => subjectid},self.to_yaml)
       end
 
       # Delete model at model service
-      def delete
-        RestClientWrapper.delete @uri unless @uri == CONFIG[:services]["opentox-model"]
+      def delete(subjectid)
+        RestClientWrapper.delete(@uri, :subjectid => subjectid) unless @uri == CONFIG[:services]["opentox-model"]
       end
 
     end

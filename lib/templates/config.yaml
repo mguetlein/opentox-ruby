@@ -41,7 +41,7 @@
 # :logger: debug
 
 # OpenSSO Authorization
-# set ":server: nil" to disable A&A
+# set ":server: " to disable A&A
 :authorization:
   :server: "https://opensso.in-silico.ch"
   :free_request: #not controlled by A&A
