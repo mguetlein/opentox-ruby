@@ -67,8 +67,8 @@ module OpenTox
       # Find a lazar model
       # @param [String] uri Model URI
       # @return [OpenTox::Model::Lazar] lazar model
-      def self.find(uri)
-        YAML.load RestClientWrapper.get(uri,:accept => 'application/x-yaml')
+      def self.find(uri, subjectid=nil)
+        YAML.load RestClientWrapper.get(uri,{:accept => 'application/x-yaml', :subjectid => subjectid})
       end
 
       # Create a new lazar model
