@@ -114,7 +114,9 @@ module OpenTox
       begin
         resource = RestClient::Resource.new("#{AA_SERVER}/pol")
         out = resource.get(:subjectid => subjectid)
-        return out.split("\n") 
+        return out.split("\n")
+      rescue RestClient::InternalServerError => e
+        raise e.response  
       rescue
         return nil
       end
