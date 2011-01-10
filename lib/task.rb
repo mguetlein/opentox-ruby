@@ -50,12 +50,12 @@ module OpenTox
       cpu_load = `cat /proc/loadavg`.split(/\s+/)[0..2].collect{|c| c.to_f}
       nr_cpu_cores = `cat /proc/cpuinfo |grep "cpu cores"|cut -d ":" -f2|tr -d " "`.split("\n").collect{|c| c.to_i}.inject{|sum,n| sum+n}
       nr_cpu_cores = 1 if !nr_cpu_cores
-      if cpu_load[0] > nr_cpu_cores and cpu_load[0] > cpu_load[1] and cpu_load[1] > cpu_load[2] # average CPU load of the last minute is high and CPU load is increasing
-        LOGGER.warn "Cannot start task  - CPU load too high (#{cpu_load.join(", ")})"
-        task.cancel
-        return task
-        #raise "Server too busy to start a new task"
-      end
+      #if cpu_load[0] > nr_cpu_cores and cpu_load[0] > cpu_load[1] and cpu_load[1] > cpu_load[2] # average CPU load of the last minute is high and CPU load is increasing
+      #  LOGGER.warn "Cannot start task  - CPU load too high (#{cpu_load.join(", ")})"
+      #  task.cancel
+      #  return task
+      #  #raise "Server too busy to start a new task"
+      #end
 
 
       task_pid = Spork.spork(:logger => LOGGER) do
