@@ -33,6 +33,15 @@ module OpenTox
       return true
     end
 
+        #drop all policies in a policies instance
+    def names
+      out = []
+      @policies.each do |name, policy|
+        out << name 
+      end
+      return out
+    end
+
     #loads a default policy template in policies instance
     def load_default_policy(user, uri, group="member")    
       template = case user

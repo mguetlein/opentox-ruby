@@ -34,7 +34,8 @@ helpers do
   # @param [String] uri 
   def clean_uri(uri)
     out = URI.parse(uri)
-    "#{out.scheme}:" + (out.port != 80 ? out.port : "") + "//#{out.host}#{out.path.chomp(File.extname(out.path))}"
+    out.path = out.path[0, out.path.rindex(/[0-9]/) + 1] if out.path.rindex(/[0-9]/) #cuts after id for a&a
+    "#{out.scheme}:" + (out.port != 80 ? out.port : "") + "//#{out.host}#{out.path}"
   end
 
   def check_subjectid(subjectid)
@@ -48,6 +49,8 @@ helpers do
     case  env['REQUEST_URI']
     when /\/login$|\/logout$|\/predict$|\/toxcreate\/models$/
       return true
+    when /\/features/
+      return false
     when /\/compound|\/feature|\/task|\/toxcreate/   #to fix: read from config | validation should be protected
       return true
     else
