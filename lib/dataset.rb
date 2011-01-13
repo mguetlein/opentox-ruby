@@ -60,7 +60,7 @@ module OpenTox
     # @param [optional,String] uri URI of the dataset service, defaults to service specified in configuration
     # @return [Array] Array of dataset object without data (use one of the load_* methods to pull data from the server)
     def self.all(uri=CONFIG[:services]["opentox-dataset"], subjectid=nil)
-      RestClientWrapper.get(uri,{:accept => "text/uri-list",:subjectid => subjectid}).to_s.each_line.collect{|u| Dataset.new(u)}
+      RestClientWrapper.get(uri,{:accept => "text/uri-list",:subjectid => subjectid}).to_s.each_line.collect{|u| Dataset.new(u, subjectid)}
     end
 
     # Load YAML representation into the dataset
@@ -77,10 +77,10 @@ module OpenTox
     # Load RDF/XML representation from a file
     # @param [String] file File with RDF/XML representation of the dataset
     # @return [OpenTox::Dataset] Dataset object with RDF/XML data
-    def load_rdfxml_file(file)
-      parser = Parser::Owl::Dataset.new @uri
+    def load_rdfxml_file(file, subjectid=nil)
+      parser = Parser::Owl::Dataset.new @uri, subjectid
       parser.uri = file.path
-      copy parser.load_uri
+      copy parser.load_uri(subjectid)
     end
 
     # Load CSV string (format specification: http://toxcreate.org/help)
@@ -111,8 +111,8 @@ module OpenTox
     
     # Load and return only metadata of a Dataset object
     # @return [Hash] Metadata of the dataset
-    def load_metadata
-      add_metadata Parser::Owl::Dataset.new(@uri).load_metadata
+    def load_metadata(subjectid=nil)
+      add_metadata Parser::Owl::Dataset.new(@uri, subjectid).load_metadata(subjectid)
       self.uri = @uri if @uri # keep uri
       @metadata
     end
@@ -122,8 +122,8 @@ module OpenTox
       if (CONFIG[:yaml_hosts].include?(URI.parse(@uri).host))
         copy YAML.load(RestClientWrapper.get(@uri, {:accept => "application/x-yaml", :subjectid => subjectid}))
       else
-        parser = Parser::Owl::Dataset.new(@uri)
-        copy parser.load_uri
+        parser = Parser::Owl::Dataset.new(@uri, subjectid)
+        copy parser.load_uri(subjectid)
       end
     end
 
@@ -138,9 +138,9 @@ module OpenTox
 
     # Load and return only features from the dataset service
     # @return [Hash]  Features of the dataset
-    def load_features
-      parser = Parser::Owl::Dataset.new(@uri)
-      @features = parser.load_features
+    def load_features(subjectid=nil)
+      parser = Parser::Owl::Dataset.new(@uri, subjectid)
+      @features = parser.load_features(subjectid)
       @features
     end
 

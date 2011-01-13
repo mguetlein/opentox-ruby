@@ -29,14 +29,14 @@ module OpenTox
 
       # Read metadata from opentox service
       # @return [Hash] Object metadata
-      def load_metadata
+      def load_metadata(subjectid=nil)
 
         if @dataset
           uri = File.join(@uri,"metadata")
         else
           uri = @uri
         end
-
+        uri += "?subjectid=#{CGI.escape(subjectid)}" if subjectid 
         statements = []
         parameter_ids = []
         `rapper -i rdfxml -o ntriples #{uri} 2>/dev/null`.each_line do |line|
@@ -71,9 +71,9 @@ module OpenTox
         # Create a new OWL-DL dataset parser
         # @param uri Dataset URI 
         # @return [OpenTox::Parser::Owl::Dataset] OWL-DL parser
-        def initialize(uri)
+        def initialize(uri, subjectid=nil)
           super uri
-          @dataset = ::OpenTox::Dataset.new(@uri)
+          @dataset = ::OpenTox::Dataset.new(@uri, subjectid)
         end
 
         # Read data from dataset service. Files can be parsed by setting #uri to a filename (after initialization with a real URI)
@@ -87,12 +87,14 @@ module OpenTox
         #   dataset = parser.load_uri
         #   dataset.save
         # @return [Hash] Internal dataset representation
-        def load_uri
+        def load_uri(subjectid=nil)
+          uri = @uri
+          uri += "?subjectid=#{CGI.escape(subjectid)}" if subjectid
           data = {}
           feature_values = {}
           feature = {}
           other_statements = {}
-          `rapper -i rdfxml -o ntriples #{@uri} 2>/dev/null`.each_line do |line|
+          `rapper -i rdfxml -o ntriples #{uri} 2>/dev/null`.each_line do |line|
             triple = line.chomp.split(' ',3)
             triple = triple[0..2].collect{|i| i.sub(/\s+.$/,'').gsub(/[<>"]/,'')}
             case triple[1] 
@@ -122,8 +124,9 @@ module OpenTox
 
         # Read only features from a dataset service. 
         # @return [Hash] Internal features representation
-        def load_features
+        def load_features(subjectid=nil)
           uri = File.join(@uri,"features")
+          uri += "?subjectid=#{CGI.escape(subjectid)}" if subjectid 
           statements = []
           features = Set.new
           `rapper -i rdfxml -o ntriples #{uri} 2>/dev/null`.each_line do |line|

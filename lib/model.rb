@@ -99,7 +99,7 @@ module OpenTox
           OT.parameters => [{DC.title => "dataset_uri", OT.paramValue => dataset_uri}]
         })
         d = Dataset.new(dataset_uri,subjectid)
-        d.load_compounds
+        d.load_compounds(subjectid)
         d.compounds.each do |compound_uri|
           predict(compound_uri,false,subjectid)
         end

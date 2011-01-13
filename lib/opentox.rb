@@ -19,14 +19,14 @@ module OpenTox
 
   # Get all objects from a service
   # @return [Array] List of available URIs
-  def self.all(uri)
-    RestClientWrapper.get(uri,:accept => "text/uri-list").to_s.split(/\n/)
+  def self.all(uri, subjectid=nil)
+    RestClientWrapper.get(uri,:accept => "text/uri-list", :subjectid => subjectid).to_s.split(/\n/)
   end
 
   # Load (and return) metadata from object URI
   # @return [Hash] Metadata
-  def load_metadata
-    @metadata = Parser::Owl::Generic.new(@uri).load_metadata
+  def load_metadata(subjectid=nil)
+    @metadata = Parser::Owl::Generic.new(@uri).load_metadata(subjectid)
     @metadata
   end
 
