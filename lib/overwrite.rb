@@ -1,6 +1,10 @@
 # class overwrites aka monkey patches
 # hack: store sinatra in global var to make url_for and halt methods accessible
-before{ $sinatra = self unless $sinatra }
+before {
+  $sinatra = self unless $sinatra
+  # stupid internet explorer does not ask for text/html, add this manually 
+  request.env['HTTP_ACCEPT'] += ";text/html" if request.env["HTTP_USER_AGENT"]=~/MSIE/
+}
 
 # handle errors manually
 # this is to return 502, when an error occurs during a rest-call (see rest_client_wrapper.rb)

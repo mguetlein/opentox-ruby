@@ -56,42 +56,6 @@ module OpenTox
         raise "unknown model "+[@dependentVariable.feature_type, @metadata[OT.isA], @metadata[DC.title], @uri].inspect
       end
       
-#      def classification?
-#        # TODO test on various services / request to ontology service needed?
-#        # TODO replace bool (for classification/regression) with string value (more types are coming)
-#        #raise "classification?: type: "+@type.to_s+", title: "+@title.to_s+", uri: "+@uri.to_s+" "+((@uri =~ /class/) != nil).to_s
-#        
-#        load_metadata if @metadata==nil or @metadata.size==0 or (@metadata.size==1 && @metadata.values[0]==@uri)
-#        @dependentVariable = OpenTox::Feature.find( @metadata[OT.dependentVariables] ) unless @dependentVariable
-#        case @dependentVariable.feature_type
-#        when "classification"
-#          return true
-#        when "regression"
-#          return false
-#        end
-#        
-#        if @metadata[OT.isA] =~ /(?i)classification/
-#          return true
-#        end
-#        
-#        if @metadata[DC.title] =~ /(?i)classification/
-#          return true
-#        elsif @metadata[DC.title] =~ /(?i)regression/
-#          return false
-#        elsif @uri =~/ntua/ and @metadata[DC.title] =~ /mlr/
-#          return false
-#        elsif @uri =~/tu-muenchen/ and @metadata[DC.title] =~ /regression|M5P|GaussP/
-#          return false
-#        elsif @uri =~/ambit2/ and @metadata[DC.title] =~ /pKa/ || @metadata[DC.title] =~ /Regression|Caco/
-#          return false
-#        elsif @uri =~/majority/
-#          return (@uri =~ /class/) != nil
-#        else
-#          raise "unknown model, uri:'"+@uri.to_s+"' title:'"+@metadata[DC.title].to_s+"'"
-#        end
-#      end
-#    end
-
     end
     
     # Lazy Structure Activity Relationship class
