@@ -46,7 +46,7 @@ module OpenTox
       dataset.save(subjectid)
       dataset
     end
-
+    
     # Find a dataset and load all data. This can be time consuming, use Dataset.new together with one of the load_* methods for a fine grained control over data loading.
     # @param [String] uri Dataset URI
     # @return [OpenTox::Dataset] Dataset object with all data
@@ -241,6 +241,37 @@ module OpenTox
     # @param [Hash] metadata Hash with feature metadata
     def add_feature_metadata(feature,metadata)
       metadata.each { |k,v| @features[feature][k] = v }
+    end
+    
+    # Add a new compound
+    # @param [String] compound Compound URI
+    def add_compound (compound)
+      @compounds << compound unless @compounds.include? compound
+    end
+    
+    # Creates a new dataset, by splitting the current dataset, i.e. using only a subset of compounds and features
+    # @param [Array] compounds List of compound URIs
+    # @param [Array] features List of feature URIs
+    # @param [Hash] metadata Hash containing the metadata for the new dataset
+    # @return [OpenTox::Dataset] newly created dataset, already saved
+    def split( compounds, features, metadata)
+      LOGGER.debug "split dataset using "+compounds.size.to_s+"/"+@compounds.size.to_s+" compounds"
+      raise "no new compounds selected" unless compounds and compounds.size>0
+      dataset = OpenTox::Dataset.create
+      if features.size==0
+        compounds.each{ |c| dataset.add_compound(c) }
+      else
+        compounds.each do |c|
+          features.each do |f|
+            @data_entries[c][f].each do |v|
+              dataset.add(c,f,v)
+            end
+          end
+        end
+      end
+      dataset.add_metadata(metadata)
+      dataset.save
+      dataset
     end
 
     # Save dataset at the dataset service 

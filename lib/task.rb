@@ -1,4 +1,3 @@
-$self_task=nil
 
 module OpenTox
 
@@ -60,7 +59,6 @@ module OpenTox
 
       task_pid = Spork.spork(:logger => LOGGER) do
         LOGGER.debug "Task #{task.uri} started #{Time.now}"
-        $self_task = task
         
         begin
           result = catch(:halt) do
@@ -254,7 +252,111 @@ module OpenTox
         RestClientWrapper.raise_uri_error(ex.message, @uri)
       end
     end
+    
+    public
+    #hint: do not overwrite percentageCompleted=, this is used in toYaml
+    def progress(pct)
+#      #puts "task := "+pct.to_s
+#      raise "no numeric >= 0 and <= 100 : '"+pct.to_s+"'" unless pct.is_a?(Numeric) and pct>=0 and pct<=100
+#      RestClientWrapper.put(File.join(@uri,'Running'),{:percentageCompleted => pct})
+#      reload
+    end
 
+  end
+
+  # Convenience class to split a (sub)task into subtasks
+  #
+  # example:
+  # a crossvalidation is split into creating datasets and performing the validations
+  # creating the dataset is 1/3 of the work, perform the validations is 2/3:
+  # Task.as_task do |task|
+  #   create_datasets( SubTask.new(task, 0, 33) )
+  #   perfom_validations( SubTask.new(task, 33, 100) )
+  # end
+  # inside the create_datasets / perform_validations you can use subtask.progress(<val>)
+  # with vals from 0-100
+  #
+  # note that you can split a subtask into further subtasks
+  class SubTask
+    
+    def initialize(task, min, max)
+      raise "not a task or subtask" unless task.is_a?(Task) or task.is_a?(SubTask) 
+      raise "invalid max ("+max.to_s+"), min ("+min.to_s+") params" unless 
+        min.is_a?(Numeric) and max.is_a?(Numeric) and min >= 0 and max <= 100 and max > min 
+      @task = task
+      @min = min
+      @max = max
+      @delta = max - min
+    end
+
+    # convenience method to handle null tasks
+    def self.create(task, min, max)
+      if task
+        SubTask.new(task, min, max)
+      else
+        nil
+      end
+    end
+    
+    def progress(pct)
+      raise "no numeric >= 0 and <= 100 : '"+pct.to_s+"'" unless pct.is_a?(Numeric) and pct>=0 and pct<=100
+      #puts "subtask := "+pct.to_s+" -> task := "+(@min + @delta * pct.to_f * 0.01).to_s
+      @task.progress( @min + @delta * pct.to_f * 0.01 )
+    end
+    
+    def running?()
+      @task.running?
+    end
+  end
+
+  
+  # The David Gallagher feature:
+  # a fake sub task to keep the progress bar movin for external jobs
+  # note: param could be a subtask
+  # 
+  # usage (for a call that is normally finished in under 60 seconds):
+  #   fsk = FakeSubTask.new(task, 60)
+  #   external_lib_call.start
+  #   external_lib_call.wait_until_finished
+  #   fsk.finished
+  #   
+  # what happens: 
+  # the FakeSubTask updates the task.progress each second until 
+  # runtime is up or the finished mehtod is called 
+  # 
+  # example if the param runtime is too low:
+  #   25% .. 50% .. 75% .. 100% .. 100% .. 100% .. 100% .. 100%
+  # example if the param runtime is too high:
+  #    5% .. 10% .. 15% ..  20% ..  25% ..  30% ..  35% .. 100%
+  # the latter example is better (keep the bar movin!) 
+  # -> better make a conservative runtime estimate 
+  class FakeSubTask
+    
+    def initialize(task, runtime)
+      @task = task
+      @thread = Thread.new do
+        timeleft = runtime
+        while (timeleft > 0 and @task.running?)
+          sleep 1
+          timeleft -= 1
+          @task.progress( (runtime - timeleft) / runtime.to_f * 100 )
+        end
+      end
+    end
+    
+    # convenience method to handle null tasks
+    def self.create(task, runtime)
+      if task
+        FakeSubTask.new(task, runtime)
+      else
+        nil
+      end
+    end
+  
+    def finished
+      @thread.exit
+      @task.progress(100) if @task.running?
+    end
   end
 
 end

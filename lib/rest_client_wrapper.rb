@@ -115,7 +115,7 @@ module OpenTox
         task = OpenTox::Task.from_yaml(res)
       when /text\//
         raise "uri list has more than one entry, should be a task" if res.content_type=~/text\/uri-list/ and res.split("\n").size > 1 #if uri list contains more then one uri, its not a task
-        task = OpenTox::Task.find(res.to_s) if res.to_s.uri?
+        task = OpenTox::Task.find(res.to_s.chomp) if res.to_s.uri?
       else
         raise "unknown content-type for task: '"+res.content_type.to_s+"'" #+"' content: "+res[0..200].to_s
       end
@@ -151,18 +151,14 @@ module OpenTox
       File.new(File.join(error_dir,file_name+"_"+time+"_"+count.to_s),"w").puts(body)
       
       # handle error
-      # we are either in a task, or in sinatra
       # PENDING: always return yaml for now
       
-      if $self_task #this global var in Task.create to mark that the current process is running in a task
-        raise error.to_yaml # the error is caught, logged, and task state is set to error in Task.create
-      #elsif $sinatra  #else halt sinatra
-         #$sinatra.halt(502,error.to_yaml)
-      elsif defined?(halt)         
-         halt(502,error.to_yaml)
-      else #for testing purposes (if classes used directly)
-        raise error.to_yaml
-      end
+      # raising OpenTox::Error
+      # to handle the error yourself, put rest-call in begin, rescue block
+      # if the error is not caught: 
+      #   if we are in a task, the error is caught, logged, and task state is set to error in Task.as_task 
+      #   if we are in a default call, the error is handled in overwrite.rb to return 502 (according to OT API)
+      raise error.to_yaml
     end
   end
 end

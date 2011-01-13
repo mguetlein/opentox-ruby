@@ -2,6 +2,22 @@
 # hack: store sinatra in global var to make url_for and halt methods accessible
 before{ $sinatra = self unless $sinatra }
 
+# handle errors manually
+# this is to return 502, when an error occurs during a rest-call (see rest_client_wrapper.rb)
+set :raise_errors, Proc.new { false }
+set :show_exceptions, false
+error do
+  # try if the error is an OpenTox::Error 
+  if OpenTox::Error.parse(request.env['sinatra.error'].to_s)
+    # if true, this error comes from rest_client_wrapper, halt with 502
+    # (502 is defined in OT API as Error coming from other service)
+    halt 502,request.env['sinatra.error']
+  else
+    # else, raise exception, this will return 500 = internal error
+    raise request.env['sinatra.error']
+  end
+end
+
 class Sinatra::Base
   # overwriting halt to log halts (!= 202)
   def halt(*response)
@@ -60,7 +76,7 @@ class OTLogger < Logger
     n = 2
     line = lines[n]
     
-    while (line =~ /spork.rb/ or line =~ /create/ or line =~ /ot-logger.rb/)
+    while (line =~ /spork.rb/ or line =~ /create/ or line =~ /overwrite.rb/)
       n += 1
       line = lines[n]
     end

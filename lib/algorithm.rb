@@ -29,6 +29,20 @@ module OpenTox
     # Generic Algorithm class, should work with all OpenTox webservices
     class Generic 
       include Algorithm
+      
+      # Find Generic Opentox Algorithm via URI, and loads metadata
+      # @param [String] uri Algorithm URI
+      # @return [OpenTox::Algorithm::Generic] Algorithm instance, nil if alogrithm was not found
+      def self.find(uri)
+        alg = Generic.new(uri)
+        alg.load_metadata
+        if alg.metadata==nil or alg.metadata.size==0
+          nil
+        else
+          alg
+        end
+      end
+      
     end
 
     # Fminer algorithms (https://github.com/amaunz/fminer2)
