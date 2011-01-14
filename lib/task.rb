@@ -12,7 +12,7 @@ module OpenTox
         DC.title => "",
         DC.date => "",
         OT.hasStatus => "Running",
-        OT.percentageCompleted => "0",
+        OT.percentageCompleted => 0.0,
         OT.resultURI => "",
         DC.creator => "", # not mandatory according to API
         DC.description => "", # not mandatory according to API
@@ -160,12 +160,12 @@ module OpenTox
 
     def load_metadata
       if (CONFIG[:yaml_hosts].include?(URI.parse(uri).host))
-        result = RestClientWrapper.get(@uri, {:accept => 'application/x-yaml'}, false)
+        result = RestClientWrapper.get(@uri, {:accept => 'application/x-yaml'}, nil, false)
         @metadata = YAML.load result.to_s
         @http_code = result.code
       else
         @metadata = Parser::Owl::Generic.new(@uri).load_metadata
-        @http_code = RestClientWrapper.get(uri, {:accept => 'application/rdf+xml'}, false).code
+        @http_code = RestClientWrapper.get(uri, {:accept => 'application/rdf+xml'}, nil, false).code
       end
     end
     
@@ -216,7 +216,9 @@ module OpenTox
 =end
 
     # waits for a task, unless time exceeds or state is no longer running
-    def wait_for_completion(dur=0.3)
+    # @param [optional,OpenTox::Task] waiting_task (can be a OpenTox::Subtask as well), progress is updated accordingly
+    # @param [optional,Numeric] dur seconds pausing before cheking again for completion
+    def wait_for_completion( waiting_task=nil, dur=0.3)
       
       due_to_time = Time.new + DEFAULT_TASK_MAX_DURATION
       LOGGER.debug "start waiting for task "+@uri.to_s+" at: "+Time.new.to_s+", waiting at least until "+due_to_time.to_s
@@ -226,6 +228,8 @@ module OpenTox
       while self.running?
         sleep dur
         load_metadata 
+        # if another (sub)task is waiting for self, set progress accordingly 
+        waiting_task.progress(@metadata[OT.percentageCompleted]) if waiting_task
         check_state
         if (Time.new > due_to_time)
           raise "max wait time exceeded ("+DEFAULT_TASK_MAX_DURATION.to_s+"sec), task: '"+@uri.to_s+"'"
@@ -233,6 +237,18 @@ module OpenTox
       end
       
       LOGGER.debug "Task '"+@metadata[OT.hasStatus]+"': "+@uri.to_s+", Result: "+@metadata[OT.resultURI].to_s
+    end
+    
+    # updates percentageCompleted value (can only be increased)
+    # task has to be running 
+    # @param [Numeric] pct value between 0 and 100
+    def progress(pct)
+      #puts "task := "+pct.to_s
+      raise "no numeric >= 0 and <= 100 : '"+pct.to_s+"'" unless pct.is_a?(Numeric) and pct>=0 and pct<=100
+      if (pct > @metadata[OT.percentageCompleted] + 0.0001)
+        RestClientWrapper.put(File.join(@uri,'Running'),{:percentageCompleted => pct})
+        load_metadata
+      end
     end
   
     private
@@ -251,15 +267,6 @@ module OpenTox
       rescue => ex
         RestClientWrapper.raise_uri_error(ex.message, @uri)
       end
-    end
-    
-    public
-    #hint: do not overwrite percentageCompleted=, this is used in toYaml
-    def progress(pct)
-#      #puts "task := "+pct.to_s
-#      raise "no numeric >= 0 and <= 100 : '"+pct.to_s+"'" unless pct.is_a?(Numeric) and pct>=0 and pct<=100
-#      RestClientWrapper.put(File.join(@uri,'Running'),{:percentageCompleted => pct})
-#      reload
     end
 
   end

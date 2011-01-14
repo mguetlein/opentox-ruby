@@ -6,15 +6,16 @@ module OpenTox
 
     # Run a model with parameters
     # @param [Hash] params Parameters for OpenTox model
+    # @param [optional,OpenTox::Task] waiting_task (can be a OpenTox::Subtask as well), progress is updated accordingly
     # @return [text/uri-list] Task or resource URI
-    def run(params)
+    def run( params, waiting_task=nil )
       if CONFIG[:yaml_hosts].include?(URI.parse(@uri).host)
         accept = 'application/x-yaml' 
       else
         accept = 'application/rdf+xml'
       end
       begin
-        RestClientWrapper.post(@uri,{:accept => accept},params).to_s
+        RestClientWrapper.post(@uri,{:accept => accept},params,waiting_task).to_s
       rescue => e
         LOGGER.error "Failed to run #{@uri} with #{params.inspect} (#{e.inspect})"
         raise "Failed to run #{@uri} with #{params.inspect}"
@@ -121,8 +122,10 @@ module OpenTox
 
       # Predict a dataset
       # @param [String] dataset_uri Dataset URI
+      # @param [optional,subjectid] 
+      # @param [optional,OpenTox::Task] waiting_task (can be a OpenTox::Subtask as well), progress is updated accordingly
       # @return [OpenTox::Dataset] Dataset with predictions
-      def predict_dataset(dataset_uri, subjectid=nil)
+      def predict_dataset(dataset_uri, subjectid=nil, waiting_task=nil)
         @prediction_dataset = Dataset.create(CONFIG[:services]["opentox-dataset"], subjectid)
         @prediction_dataset.add_metadata({
           OT.hasSource => @uri,
@@ -132,9 +135,12 @@ module OpenTox
         })
         d = Dataset.new(dataset_uri)
         d.load_compounds
+        count = 0
         d.compounds.each do |compound_uri|
           begin
             predict(compound_uri,false,subjectid)
+            count += 1
+            waiting_task.progress( count/d.compounds.size.to_f*100.0 ) if waiting_task
           rescue => ex
             LOGGER.warn "prediction for compound "+compound_uri.to_s+" failed: "+ex.message
           end

@@ -34,33 +34,67 @@ module OpenTox
   
   class RestClientWrapper
     
-    def self.get(uri, headers=nil, wait=true)
-      execute( "get", uri, headers, nil, wait)
+    # performs a GET REST call
+    # raises OpenTox::Error if call fails (rescued in overwrite.rb -> halt 502)
+    # per default: waits for Task to finish and returns result URI of Task
+    # @param [String] uri destination URI
+    # @param [optional,Hash] headers contains params like accept-header
+    # @param [optional,OpenTox::Task] waiting_task (can be a OpenTox::Subtask as well), progress is updated accordingly
+    # @param [wait,Boolean] wait set to false to NOT wait for task if result is task
+    # @return [OpenTox::WrapperResult] a String containing the result-body of the REST call
+    def self.get(uri, headers=nil, waiting_task=nil, wait=true )
+      execute( "get", uri, headers, nil, waiting_task, wait)
     end
     
-    def self.post(uri, headers, payload=nil, wait=true)
-      execute( "post", uri, headers, payload, wait )
+    # performs a POST REST call
+    # raises OpenTox::Error if call fails (rescued in overwrite.rb -> halt 502)
+    # per default: waits for Task to finish and returns result URI of Task
+    # @param [String] uri destination URI
+    # @param [optional,Hash] headers contains params like accept-header
+    # @param [optional,String] payload data posted to the service
+    # @param [optional,OpenTox::Task] waiting_task (can be a OpenTox::Subtask as well), progress is updated accordingly
+    # @param [wait,Boolean] wait set to false to NOT wait for task if result is task
+    # @return [OpenTox::WrapperResult] a String containing the result-body of the REST call
+    def self.post(uri, headers, payload=nil, waiting_task=nil, wait=true )
+      execute( "post", uri, headers, payload, waiting_task, wait )
     end
     
+    # performs a PUT REST call
+    # raises OpenTox::Error if call fails (rescued in overwrite.rb -> halt 502)
+    # @param [String] uri destination URI
+    # @param [optional,Hash] headers contains params like accept-header
+    # @param [optional,String] payload data put to the service
+    # @return [OpenTox::WrapperResult] a String containing the result-body of the REST call
     def self.put(uri, headers, payload=nil )
       execute( "put", uri, headers, payload )
     end
 
-    def self.delete(uri, headers=nil)
+    # performs a DELETE REST call
+    # raises OpenTox::Error if call fails (rescued in overwrite.rb -> halt 502)
+    # @param [String] uri destination URI
+    # @param [optional,Hash] headers contains params like accept-header
+    # @return [OpenTox::WrapperResult] a String containing the result-body of the REST call
+    def self.delete(uri, headers=nil )
       execute( "delete", uri, headers, nil)
     end
 
+    # raises an Error message (rescued in overwrite.rb -> halt 502)
+    # usage: if the return value of a call is invalid
+    # @param [String] error_msg the error message 
+    # @param [String] uri destination URI that is responsible for the error
+    # @param [optional,Hash] headers sent to the URI
+    # @param [optional,String] payload data sent to the URI  
     def self.raise_uri_error(error_msg, uri, headers=nil, payload=nil)
-      do_halt( "-", error_msg, uri, headers, payload )         
+      raise_ot_error( "-", error_msg, uri, headers, payload )         
     end
     
     private
-    def self.execute( rest_call, uri, headers, payload=nil, wait=true )
+    def self.execute( rest_call, uri, headers, payload=nil, waiting_task=nil, wait=true )
       
-      do_halt 400,"uri is null",uri,headers,payload unless uri
-      do_halt 400,"not a uri",uri,headers,payload unless uri.to_s.uri?
-      do_halt 400,"headers are no hash",uri,headers,payload unless headers==nil or headers.is_a?(Hash)
-      do_halt 400,"nil headers for post not allowed, use {}",uri,headers,payload if rest_call=="post" and headers==nil
+      raise_ot_error 400,"uri is null",uri,headers,payload unless uri
+      raise_ot_error 400,"not a uri",uri,headers,payload unless uri.to_s.uri?
+      raise_ot_error 400,"headers are no hash",uri,headers,payload unless headers==nil or headers.is_a?(Hash)
+      raise_ot_error 400,"nil headers for post not allowed, use {}",uri,headers,payload if rest_call=="post" and headers==nil
       headers.each{ |k,v| headers.delete(k) if v==nil } if headers #remove keys with empty values, as this can cause problems
       
       begin
@@ -84,13 +118,13 @@ module OpenTox
         return res if res.code==200 || !wait
         
         while (res.code==201 || res.code==202)
-          res = wait_for_task(res, uri)
+          res = wait_for_task(res, uri, waiting_task)
         end
         raise "illegal status code: '"+res.code.to_s+"'" unless res.code==200
         return res
         
       rescue RestClient::RequestTimeout => ex
-        do_halt 408,ex.message,uri,headers,payload
+        raise_ot_error 408,ex.message,uri,headers,payload
       rescue => ex
         #raise ex
         #raise "'"+ex.message+"' uri: "+uri.to_s
@@ -101,11 +135,11 @@ module OpenTox
           code = 500
           msg = ex.to_s
         end
-        do_halt code,msg,uri,headers,payload
+        raise_ot_error code,msg,uri,headers,payload
       end
     end
     
-    def self.wait_for_task( res, base_uri )
+    def self.wait_for_task( res, base_uri, waiting_task=nil )
                           
       task = nil
       case res.content_type
@@ -121,7 +155,7 @@ module OpenTox
       end
       
       LOGGER.debug "result is a task '"+task.uri.to_s+"', wait for completion"
-      task.wait_for_completion
+      task.wait_for_completion waiting_task
       raise task.description unless task.completed? # maybe task was cancelled / error
       
       res = WrapperResult.new task.result_uri
@@ -130,7 +164,7 @@ module OpenTox
       return res
     end
     
-    def self.do_halt( code, body, uri, headers, payload=nil )
+    def self.raise_ot_error( code, body, uri, headers, payload=nil )
       
       #build error
       causing_errors = Error.parse(body)
