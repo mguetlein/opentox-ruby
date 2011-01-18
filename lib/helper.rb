@@ -3,17 +3,20 @@ helpers do
   # Authentification
   def protected!(subjectid)
     if env["session"]
-      flash[:notice] = "You don't have access to this section: " and \
-      redirect back and \
-      return unless authorized?(subjectid)
+      unless authorized?(subjectid)
+        flash[:notice] = "You don't have access to this section: "
+        redirect back
+      end
     elsif !env["session"] && subjectid
-      throw(:halt, [401, "Not authorized.\n"]) and \
-      redirect back and \
-      return unless authorized?(subjectid)
+      unless authorized?(subjectid)
+        throw(:halt, [401, "Not authorized.\n"])
+        redirect back
+      end
+    else
+      throw(:halt, [401, "Not authorized.\n"]) unless authorized?(subjectid)
     end
-    throw(:halt, [401, "Not authorized.\n"]) and \
-    return unless authorized?(subjectid)
   end
+
 
   #Check Authorization for URI with method and subjectid. 
   def authorized?(subjectid)
@@ -40,12 +43,6 @@ helpers do
     "#{out.scheme}:" + (out.port != 80 ? out.port : "") + "//#{out.host}#{out.path}"
   end
 
-  def check_subjectid(subjectid)
-    return false if !subjectid
-    return true if subjectid.size > 62
-    false
-  end
-
   #unprotected uris for login/logout, webapplication ...
   def unprotected_requests
     case  env['REQUEST_URI']
@@ -65,9 +62,10 @@ end
 before do
   unless unprotected_requests or CONFIG[:authorization][:free_request].include?(env['REQUEST_METHOD']) 
     begin
+      subjectid = nil
       subjectid = session[:subjectid] if session[:subjectid]
-      subjectid = params[:subjectid]  if params[:subjectid] and !check_subjectid(subjectid)
-      subjectid = request.env['HTTP_SUBJECTID'] if request.env['HTTP_SUBJECTID'] and !check_subjectid(subjectid)
+      subjectid = params[:subjectid]  if params[:subjectid] and !subjectid
+      subjectid = request.env['HTTP_SUBJECTID'] if request.env['HTTP_SUBJECTID'] and !subjectid
       # see http://rack.rubyforge.org/doc/SPEC.html
       subjectid = CGI.unescape(subjectid) if subjectid.include?("%23")
       @subjectid = subjectid

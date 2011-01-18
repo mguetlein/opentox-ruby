@@ -286,7 +286,11 @@ module OpenTox
       end
       true
     end    
-    
+
+    class << self    
+      alias :token_valid? :is_token_valid
+    end
+
   end 
 end
 
