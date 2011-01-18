@@ -17,16 +17,18 @@ helpers do
 
   #Check Authorization for URI with method and subjectid. 
   def authorized?(subjectid)
+    request_method = request.env['REQUEST_METHOD']
     uri = clean_uri("#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}")
-    if CONFIG[:authorization][:authorize_request].include?(request.env['REQUEST_METHOD'])
-      ret = OpenTox::Authorization.authorize(uri, request.env['REQUEST_METHOD'], subjectid)
-      LOGGER.debug "OpenTox helpers OpenTox::Authorization authorized? method: #{request.env['REQUEST_METHOD']} , URI: #{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}, subjectid: #{subjectid} with return >>#{ret}<<"
+    request_method = "GET" if request_method == "POST" &&  uri =~ /\/model\/\d+\/?$/
+    if CONFIG[:authorization][:authorize_request].include?(request_method)
+      ret = OpenTox::Authorization.authorize(uri, request_method, subjectid)
+      LOGGER.debug "OpenTox helpers OpenTox::Authorization authorized? method: #{request_method} , URI: #{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}, subjectid: #{subjectid} with return >>#{ret}<<"
       return ret
     end
-    if CONFIG[:authorization][:authenticate_request].include?(env['REQUEST_METHOD'])
+    if CONFIG[:authorization][:authenticate_request].include?(request_method)
       return true if OpenTox::Authorization.is_token_valid(subjectid)
     end
-    LOGGER.debug "Not authorized for: #{request.env['rack.url_scheme']}://#{request['REQUEST_URI']} with Method: #{request.env['REQUEST_METHOD']} with Token #{subjectid}"
+    LOGGER.debug "Not authorized for: #{uri} with Method: #{request.env['REQUEST_METHOD']}/#{request_method} with Token #{subjectid}"
     return false
   end
 
@@ -68,6 +70,7 @@ before do
       subjectid = request.env['HTTP_SUBJECTID'] if request.env['HTTP_SUBJECTID'] and !check_subjectid(subjectid)
       # see http://rack.rubyforge.org/doc/SPEC.html
       subjectid = CGI.unescape(subjectid) if subjectid.include?("%23")
+      @subjectid = subjectid
     rescue
       LOGGER.debug "OpenTox ruby api wrapper: helper before filter: NO subjectid for URI: #{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}"
       subjectid = ""

@@ -84,6 +84,9 @@ class OwlNamespace
 end
 
 AA_SERVER = CONFIG[:authorization] ? (CONFIG[:authorization][:server] ? CONFIG[:authorization][:server] : nil) : nil
+CONFIG[:authorization][:authenticate_request] = [""] unless CONFIG[:authorization][:authenticate_request]
+CONFIG[:authorization][:authorize_request] =  [""] unless CONFIG[:authorization][:authorize_request]
+CONFIG[:authorization][:free_request] =  [""] unless CONFIG[:authorization][:free_request]
 
 RDF = OwlNamespace.new 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
 OWL = OwlNamespace.new 'http://www.w3.org/2002/07/owl#'
