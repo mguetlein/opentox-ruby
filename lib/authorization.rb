@@ -132,6 +132,20 @@ module OpenTox
       end
     end
     
+    # Lists policies alongside with affected uris
+    # @param [String] subjectid
+    # @return [Hash] keys: all policies of the subjectid owner, values: uris affected by those policies
+    def self.list_policy_uris( subjectid )
+      names = list_policies(subjectid)
+      policies = {}
+      names.each do |n|
+        p = OpenTox::Policies.new
+        p.load_xml( list_policy(n, subjectid) )
+        policies[n] = p.uris
+      end
+      policies
+    end
+    
     #Returns the owner (who created the first policy) of an URI
     # @param [String, String]uri,subjectid
     # return [String, nil]owner,nil returns owner of the URI
@@ -271,21 +285,37 @@ module OpenTox
       return true
     end
 
-    #Checks (if subjectid is valid) if a policy exist and create default policy if not    
+    # Checks (if subjectid is valid) if a policy exist and create default policy if not
+    # @param [String] uri
+    # @param [String] subjectid
+    # @return [Boolean] true if policy checked/created successfully (or no uri/subjectid given), false else 
     def self.check_policy(uri, subjectid)
+      return true unless uri and subjectid
       token_valid = OpenTox::Authorization.is_token_valid(subjectid)      
       LOGGER.debug "OpenTox::Authorization.check_policy with uri: #{uri}, subjectid: #{subjectid} is valid: #{token_valid}"
-      if uri and token_valid
-        if !uri_has_policy(uri, subjectid)     
-          return send_policy(uri, subjectid)
-        else
-          LOGGER.debug "OpenTox::Authorization.check_policy URI: #{uri} has already a Policy."
+      # check if subjectid is valid
+      unless token_valid
+        # abort if invalid
+        LOGGER.error "OpenTox::Authorization.check_policy, subjectid NOT valid: #{subjectid}" 
+        return false
+      end
+      
+      if !uri_has_policy(uri, subjectid)
+        # if no policy exists, create a policy, return result of send policy
+        send_policy(uri, subjectid)
+      else
+        LOGGER.debug "OpenTox::Authorization.check_policy URI: #{uri} has already a Policy."
+        # if policy exists check for POST rights 
+        if authorize(uri, "POST", subjectid)
+          true
+       else
+          LOGGER.error "OpenTox::Authorization.check_policy, already exists, but no POST-authorization with subjectid: #{subjectid}" 
+          false
         end
       end
-      true
-    end    
+    end
     
-  end 
+  end
 end
 
 

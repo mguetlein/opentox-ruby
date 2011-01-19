@@ -3,22 +3,24 @@ helpers do
   # Authentification
   def protected!(subjectid)
     if env["session"]
-      flash[:notice] = "You don't have access to this section: " and \
-      redirect back and \
-      return unless authorized?(subjectid)
+      unless authorized?(subjectid)
+        flash[:notice] = "You don't have access to this section: "
+        redirect back
+      end
     elsif !env["session"] && subjectid
-      throw(:halt, [401, "Not authorized.\n"]) and \
-      redirect back and \
-      return unless authorized?(subjectid)
+      unless authorized?(subjectid)
+        throw(:halt, [401, "Not authorized.\n"])
+        redirect back
+      end
+    else
+      throw(:halt, [401, "Not authorized.\n"]) unless authorized?(subjectid)
     end
-    throw(:halt, [401, "Not authorized.\n"]) and \
-    return unless authorized?(subjectid)
   end
 
   def authorized?(subjectid)
     if CONFIG[:authorization][:authorize_request].include?(request.env['REQUEST_METHOD'])
       ret = OpenTox::Authorization.authorize("#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}", request.env['REQUEST_METHOD'], subjectid)
-      LOGGER.debug "OpenTox helpers OpenTox::Authorization authorized? method: #{request.env['REQUEST_METHOD']} , URI: #{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}, subjectid: #{subjectid} with return #{ret}."
+      LOGGER.debug "OpenTox helpers OpenTox::Authorization authorized? method: #{request.env['REQUEST_METHOD']}, URI: #{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}, subjectid: #{subjectid} with return #{ret}."
       return ret
     end
     if CONFIG[:authorization][:authenticate_request].include?(env['REQUEST_METHOD'])
@@ -49,7 +51,7 @@ helpers do
 end
 
 before do
-  unless unprotected_requests or CONFIG[:authorization][:free_request].include?(env['REQUEST_METHOD']) 
+  unless !AA_SERVER or unprotected_requests or CONFIG[:authorization][:free_request].include?(env['REQUEST_METHOD']) 
     begin
       subjectid = session[:subjectid] if session[:subjectid]
       subjectid = params[:subjectid]  if params[:subjectid]  and !check_subjectid(subjectid)
@@ -60,7 +62,8 @@ before do
       LOGGER.debug "OpenTox ruby api wrapper: helper before filter: NO subjectid for URI: #{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}"
       subjectid = ""
     end
-    protected!(subjectid) if AA_SERVER
+    @subjectid = subjectid
+    protected!(subjectid)
   end
 end
 

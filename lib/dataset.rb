@@ -253,11 +253,12 @@ module OpenTox
     # @param [Array] compounds List of compound URIs
     # @param [Array] features List of feature URIs
     # @param [Hash] metadata Hash containing the metadata for the new dataset
+    # @param [String] subjectid
     # @return [OpenTox::Dataset] newly created dataset, already saved
-    def split( compounds, features, metadata)
+    def split( compounds, features, metadata, subjectid=nil)
       LOGGER.debug "split dataset using "+compounds.size.to_s+"/"+@compounds.size.to_s+" compounds"
       raise "no new compounds selected" unless compounds and compounds.size>0
-      dataset = OpenTox::Dataset.create
+      dataset = OpenTox::Dataset.create(CONFIG[:services]["opentox-dataset"],subjectid)
       if features.size==0
         compounds.each{ |c| dataset.add_compound(c) }
       else
@@ -270,7 +271,7 @@ module OpenTox
         end
       end
       dataset.add_metadata(metadata)
-      dataset.save
+      dataset.save(subjectid)
       dataset
     end
 

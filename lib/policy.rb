@@ -32,6 +32,11 @@ module OpenTox
       end
       return true
     end
+    
+    # @return [Array] set of arrays affected by policies
+    def uris
+      @policies.collect{ |k,v| v.uris }.flatten.uniq
+    end
 
     #loads a default policy template in policies instance
     def load_default_policy(user, uri, group="member")    
@@ -188,6 +193,11 @@ module OpenTox
     #create a new subject instance for the policy 
     def new_subject(name, type, value)
       @subjects[name] = Subject.new(name, type, value)
+    end
+    
+    # @return [Array] set of uris affected by policy
+    def uris
+      @rules.collect{ |k,v| v.uri }.uniq
     end
     
     #rule inside a policy

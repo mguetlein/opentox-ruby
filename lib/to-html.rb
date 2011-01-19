@@ -27,7 +27,8 @@ module OpenTox
   # @return [String] html page
   def self.text_to_html( text, related_links=nil, description=nil, post_params=nil )
     
-    title = $sinatra.url_for($sinatra.request.env['PATH_INFO'], :full) if $sinatra
+    # TODO add title as parameter
+    title = nil #$sinatra.url_for($sinatra.request.env['PATH_INFO'], :full) if $sinatra
     
     html = <<EOF
 <html>

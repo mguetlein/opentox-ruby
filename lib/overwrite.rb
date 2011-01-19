@@ -1,7 +1,11 @@
 # class overwrites aka monkey patches
-# hack: store sinatra in global var to make url_for and halt methods accessible
+# hack: store sinatra instance in global var $url_provider to make url_for and halt methods accessible
 before {
-  $sinatra = self unless $sinatra
+  raise "should not happen, url provider already differently initialized "+
+    $url_provider.request.host.to_s+" != "+self.request.host.to_s if
+    $url_provider and $url_provider.request.host!=self.request.host and 
+    $url_provider.request.script_name!=self.request.script_name
+  $url_provider = self
   # stupid internet explorer does not ask for text/html, add this manually 
   request.env['HTTP_ACCEPT'] += ";text/html" if request.env["HTTP_USER_AGENT"]=~/MSIE/
 }
@@ -91,7 +95,7 @@ class OTLogger < Logger
   end
   
   def format(msg)
-    pwd.ljust(18)+" :: "+msg.to_s+"           :: "+trace+" :: "+($sinatra ? $sinatra.request.env['REMOTE_ADDR'] : nil).to_s
+    pwd.ljust(18)+" :: "+msg.to_s+"           :: "+trace
   end
   
   def debug(msg)
