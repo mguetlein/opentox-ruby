@@ -1,32 +1,4 @@
 module OpenTox
-
-  #PENDING: implement ot error api, move to own file
-  class Error
-    
-    attr_accessor :code, :body, :uri, :payload, :headers
-    
-    def initialize(code, body, uri, payload, headers)
-      self.code = code
-      self.body = body.to_s[0..1000]
-      self.uri = uri
-      self.payload = payload
-      self.headers = headers
-    end
-    
-    def self.parse(error_array_string)
-      begin
-        err = YAML.load(error_array_string)
-        if err and err.is_a?(Array) and err.size>0 and err[0].is_a?(Error)
-          return err
-        else
-          return nil
-        end
-      rescue
-        return nil
-      end
-    end
-    
-  end
   
   class WrapperResult < String
     attr_accessor :content_type, :code
@@ -85,16 +57,16 @@ module OpenTox
     # @param [optional,Hash] headers sent to the URI
     # @param [optional,String] payload data sent to the URI  
     def self.raise_uri_error(error_msg, uri, headers=nil, payload=nil)
-      raise_ot_error( "-", error_msg, uri, headers, payload )         
+      raise_ot_error( nil, error_msg, nil, uri, headers, payload )         
     end
     
     private
     def self.execute( rest_call, uri, headers, payload=nil, waiting_task=nil, wait=true )
       
-      raise_ot_error 400,"uri is null",uri,headers,payload unless uri
-      raise_ot_error 400,"not a uri",uri,headers,payload unless uri.to_s.uri?
-      raise_ot_error 400,"headers are no hash",uri,headers,payload unless headers==nil or headers.is_a?(Hash)
-      raise_ot_error 400,"nil headers for post not allowed, use {}",uri,headers,payload if rest_call=="post" and headers==nil
+      raise OpenTox::BadRequestError.new "uri is null" unless uri
+      raise OpenTox::BadRequestError.new "not a uri: "+uri.to_s unless uri.to_s.uri?
+      raise OpenTox::BadRequestError.new "headers are no hash: "+headers.inspect unless headers==nil or headers.is_a?(Hash)
+      raise OpenTox::BadRequestError.new "nil headers for post not allowed, use {}" if rest_call=="post" and headers==nil
       headers.each{ |k,v| headers.delete(k) if v==nil } if headers #remove keys with empty values, as this can cause problems
       
       begin
@@ -124,18 +96,11 @@ module OpenTox
         return res
         
       rescue RestClient::RequestTimeout => ex
-        raise_ot_error 408,ex.message,uri,headers,payload
+        raise_ot_error 408,ex.message,nil,ex.uri,headers,payload
+      rescue RestClient::ExceptionWithResponse => ex
+        raise_ot_error ex.http_code,ex.message,ex.http_body,uri,headers,payload
       rescue => ex
-        #raise ex
-        #raise "'"+ex.message+"' uri: "+uri.to_s
-        begin
-          code = ex.http_code
-          msg = ex.http_body
-        rescue
-          code = 500
-          msg = ex.to_s
-        end
-        raise_ot_error code,msg,uri,headers,payload
+        raise_ot_error 500,ex.message,nil,uri,headers,payload
       end
     end
     
@@ -164,35 +129,19 @@ module OpenTox
       return res
     end
     
-    def self.raise_ot_error( code, body, uri, headers, payload=nil )
-      
-      #build error
-      causing_errors = Error.parse(body)
-      if causing_errors
-        error = causing_errors + [Error.new(code, "subsequent error", uri, payload, headers)]
+    def self.raise_ot_error( code, message, body, uri, headers, payload=nil )
+      error = OpenTox::RestCallError.new("REST call returned error: '"+message.to_s+"'")
+      error.code = code
+      error.uri = uri
+      error.headers = headers
+      error.payload = payload
+      parsed = OpenTox::ErrorReport.parse(body) if body
+      if parsed
+        error.errorCause = parsed
       else
-        error = [Error.new(code, body, uri, payload, headers)]
+        error.body = body
       end
-
-      #debug utility: write error to file       
-      error_dir = "/tmp/ot_errors"
-      FileUtils.mkdir(error_dir) unless File.exist?(error_dir)
-      raise "could not create error dir" unless File.exist?(error_dir) and File.directory?(error_dir)
-      file_name = "error"
-      time=Time.now.strftime("%m.%d.%Y-%H:%M:%S")
-      count = 1
-      count+=1 while File.exist?(File.join(error_dir,file_name+"_"+time+"_"+count.to_s))
-      File.new(File.join(error_dir,file_name+"_"+time+"_"+count.to_s),"w").puts(body)
-      
-      # handle error
-      # PENDING: always return yaml for now
-      
-      # raising OpenTox::Error
-      # to handle the error yourself, put rest-call in begin, rescue block
-      # if the error is not caught: 
-      #   if we are in a task, the error is caught, logged, and task state is set to error in Task.as_task 
-      #   if we are in a default call, the error is handled in overwrite.rb to return 502 (according to OT API)
-      raise error.to_yaml
+      raise error
     end
   end
 end

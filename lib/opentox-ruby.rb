@@ -1,4 +1,4 @@
-['rubygems', 'sinatra', 'sinatra/url_for', 'rest_client', 'yaml', 'cgi', 'spork', 'overwrite', 'environment'].each do |lib|
+['rubygems', 'sinatra', 'sinatra/url_for', 'rest_client', 'yaml', 'cgi', 'spork', 'error', 'overwrite', 'environment'].each do |lib|
 	require lib
 end
 
@@ -9,6 +9,6 @@ rescue LoadError
 end
 
 ['opentox', 'compound','dataset', 'parser','serializer', 'algorithm','model','task','validation','feature', 
- 'rest_client_wrapper', 'authorization', 'policy', 'helper', 'to-html', 'error' ].each do |lib|
+ 'rest_client_wrapper', 'authorization', 'policy', 'helper', 'to-html' ].each do |lib|
 	require lib
 end
