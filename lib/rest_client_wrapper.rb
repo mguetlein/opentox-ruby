@@ -131,15 +131,15 @@ module OpenTox
     
     def self.raise_ot_error( code, message, body, uri, headers, payload=nil )
       error = OpenTox::RestCallError.new("REST call returned error: '"+message.to_s+"'")
-      error.code = code
-      error.uri = uri
-      error.headers = headers
-      error.payload = payload
+      error.rest_code = code
+      error.rest_uri = uri
+      error.rest_headers = headers
+      error.rest_payload = payload
       parsed = OpenTox::ErrorReport.parse(body) if body
       if parsed
         error.errorCause = parsed
       else
-        error.body = body
+        error.rest_body = body
       end
       raise error
     end

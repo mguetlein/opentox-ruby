@@ -1,22 +1,27 @@
 
 # adding additional fields to Exception class to format errors according to OT-API
 class Exception
-  attr_accessor :creator, :errorCause, :id
+  attr_accessor :creator, :errorCause, :id, :http_code
+  def http_code; 500; end
 end
 
 module OpenTox
   
+  class BadRequestError < Exception
+    def http_code; 400; end
+  end
+  
   class NotAuthorizedError < Exception
+    def http_code; 401; end
   end
   
   class NotFoundError < Exception
-  end
-  
-  class BadRequestError < Exception
+    def http_code; 404; end
   end
   
   class RestCallError < Exception
-    attr_accessor :code, :body, :uri, :payload, :headers
+    attr_accessor :rest_code, :rest_body, :rest_uri, :rest_payload, :rest_headers
+    def http_code; 502; end
   end
 
   class ErrorReport
@@ -30,6 +35,9 @@ module OpenTox
     def self.format(error, request=nil, response=nil)
       # sets current uri
       error.creator = "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}" if request
+      # bit of a hack: set instance attribute in order to add it for the to_yaml conversion 
+      error.http_code = error.http_code
+      
       accept = request.env['HTTP_ACCEPT'].to_s if request
       case accept
       # when /rdf/

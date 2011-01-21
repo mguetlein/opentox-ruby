@@ -18,22 +18,9 @@ error Exception do
   error = request.env['sinatra.error']
   # log error to logfile
   LOGGER.error error.class.to_s+": "+error.message
-  case error.class
-  when OpenTox::BadRequestError
-    code = 400
-  when OpenTox::NotAuthorizedError
-    code = 401
-  when OpenTox::NotFoundError
-    code = 404
-  when OpenTox::RestCallError
-    code = 502
-  else
-    # (unwanted RuntimeExceptions as well as sth. like 'raise "invalid state"' is handled here)
-    code = 500
-    # log backtrace for debugging
-    LOGGER.error error.backtrace.join("\n")
-  end
-  halt code,OpenTox::ErrorReport.format(error,request,response)
+  # log backtrace only if code is 500 -> unwanted (Runtime)Exceptions and internal errors (see error.rb)
+  LOGGER.error error.backtrace.join("\n") if error.http_code==500
+  halt error.http_code,OpenTox::ErrorReport.format(error,request,response)
 end
 
 class String
