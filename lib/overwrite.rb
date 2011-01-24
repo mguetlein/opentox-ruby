@@ -19,8 +19,22 @@ error Exception do
   # log error to logfile
   LOGGER.error error.class.to_s+": "+error.message
   # log backtrace only if code is 500 -> unwanted (Runtime)Exceptions and internal errors (see error.rb)
-  LOGGER.error error.backtrace.join("\n") if error.http_code==500
-  halt error.http_code,OpenTox::ErrorReport.format(error,request,response)
+  LOGGER.error ":\n"+error.backtrace.join("\n") if error.http_code==500
+  
+  actor = "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}"
+  rep = OpenTox::ErrorReport.new(error, actor)
+
+  case request.env['HTTP_ACCEPT']
+  when /rdf/
+    content_type 'application/rdf+xml'
+    halt error.http_code,rep.to_xml
+  when /html/
+    content_type 'text/html'
+    halt error.http_code,(OpenTox.text_to_html rep.to_yaml)
+  else
+    content_type 'application/x-yaml'
+    halt error.http_code,rep.to_yaml
+  end
 end
 
 class String

@@ -56,26 +56,17 @@ module OpenTox
         #raise "Server too busy to start a new task"
       end
 
-
       task_pid = Spork.spork(:logger => LOGGER) do
         LOGGER.debug "Task #{task.uri} started #{Time.now}"
-        
         begin
-          result = catch(:halt) do
-            yield task
-          end
-          # catching halt, set task state to error
-          if result && result.is_a?(Array) && result.size==2 && result[0]>202
-            LOGGER.error "task was halted: "+result.inspect
-            task.error(result[1])
-            return
-          end
+          result = yield task
           LOGGER.debug "Task #{task.uri} done #{Time.now} -> "+result.to_s
           task.completed(result)
-        rescue => ex
-          LOGGER.error "task failed: "+ex.message
-          LOGGER.error ": "+ex.backtrace.join("\n")
-          task.error(ex.message)
+        rescue => error
+          LOGGER.error "task failed: "+error.class.to_s+": "+error.message
+          # log backtrace only if code is 500 -> unwanted (Runtime)Exceptions and internal errors (see error.rb)
+          LOGGER.error ":\n"+error.backtrace.join("\n") if error.http_code==500
+          task.error(OpenTox::ErrorReport.new(error, creator))
         end
       end  
       task.pid = task_pid
@@ -127,6 +118,10 @@ module OpenTox
       @metadata[DC.description]
     end
     
+    def errorReport
+      @metadata[OT.errorReport]
+    end
+    
     def cancel
       RestClientWrapper.put(File.join(@uri,'Cancelled'))
       load_metadata
@@ -137,8 +132,9 @@ module OpenTox
       load_metadata
     end
 
-    def error(description)
-      RestClientWrapper.put(File.join(@uri,'Error'),{:description => description.to_s[0..2000]})
+    def error(error_report)
+      raise "no error report" unless error_report.is_a?(OpenTox::ErrorReport)
+      RestClientWrapper.put(File.join(@uri,'Error'),{:errorReport => error_report.to_yaml})
       load_metadata
     end
     
@@ -236,7 +232,7 @@ module OpenTox
         end
       end
       
-      LOGGER.debug "Task '"+@metadata[OT.hasStatus]+"': "+@uri.to_s+", Result: "+@metadata[OT.resultURI].to_s
+      LOGGER.debug "Task '"+@metadata[OT.hasStatus].to_s+"': "+@uri.to_s+", Result: "+@metadata[OT.resultURI].to_s
     end
     
     # updates percentageCompleted value (can only be increased)
@@ -250,7 +246,7 @@ module OpenTox
         load_metadata
       end
     end
-  
+    
     private
     def check_state
       begin
@@ -265,7 +261,7 @@ module OpenTox
               "'" unless @metadata[OT.resultURI] and @metadata[OT.resultURI].to_s.uri?
         end
       rescue => ex
-        RestClientWrapper.raise_uri_error(ex.message, @uri)
+        raise OpenTox::BadRequestError.new ex.message+" (task-uri:"+@uri+")" 
       end
     end
 

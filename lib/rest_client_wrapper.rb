@@ -50,16 +50,6 @@ module OpenTox
       execute( "delete", uri, headers, nil)
     end
 
-    # raises an Error message (rescued in overwrite.rb -> halt 502)
-    # usage: if the return value of a call is invalid
-    # @param [String] error_msg the error message 
-    # @param [String] uri destination URI that is responsible for the error
-    # @param [optional,Hash] headers sent to the URI
-    # @param [optional,String] payload data sent to the URI  
-    def self.raise_uri_error(error_msg, uri, headers=nil, payload=nil)
-      raise_ot_error( nil, error_msg, nil, uri, headers, payload )         
-    end
-    
     private
     def self.execute( rest_call, uri, headers, payload=nil, waiting_task=nil, wait=true )
       
@@ -70,7 +60,7 @@ module OpenTox
       headers.each{ |k,v| headers.delete(k) if v==nil } if headers #remove keys with empty values, as this can cause problems
       
       begin
-        #LOGGER.debug "RestCall: "+rest_call.to_s+" "+uri.to_s+" "+headers.inspect
+        #LOGGER.debug "RestCall: "+rest_call.to_s+" "+uri.to_s+" "+headers.inspect+" "+payload.inspect
         resource = RestClient::Resource.new(uri,{:timeout => 60}) 
         if payload
           result = resource.send(rest_call, payload, headers)
@@ -86,6 +76,7 @@ module OpenTox
         raise "content-type not set" unless res.content_type
         res.code = result.code
         
+        #LOGGER.debug "RestCall result: "+res.to_s+" "+res.code.to_s+" "+res.content_type.to_s
         # TODO: Ambit returns task representation with 200 instead of result URI
         return res if res.code==200 || !wait
         
@@ -96,11 +87,16 @@ module OpenTox
         return res
         
       rescue RestClient::RequestTimeout => ex
-        raise_ot_error 408,ex.message,nil,ex.uri,headers,payload
+        received_error ex.message, 408, nil, {:rest_uri => uri, :headers => headers}
       rescue RestClient::ExceptionWithResponse => ex
-        raise_ot_error ex.http_code,ex.message,ex.http_body,uri,headers,payload
+        # error comming from a different webservice, 
+        received_error ex.http_body, ex.http_code, ex.response.net_http_res.content_type, {:rest_uri => uri, :headers => headers}
+      rescue OpenTox::RestCallError => ex
+        # already a rest-error, probably comes from wait_for_task, just pass through
+        raise ex       
       rescue => ex
-        raise_ot_error 500,ex.message,nil,uri,headers,payload
+        # some internal error occuring in rest_client_wrapper, just pass through
+        raise ex
       end
     end
     
@@ -121,27 +117,49 @@ module OpenTox
       
       LOGGER.debug "result is a task '"+task.uri.to_s+"', wait for completion"
       task.wait_for_completion waiting_task
-      raise task.description unless task.completed? # maybe task was cancelled / error
-      
+      unless task.completed? # maybe task was cancelled / error
+        if task.errorReport
+          received_error task.errorReport, task.http_code, nil, {:rest_uri => task.uri, :rest_code => task.http_code}
+        else
+          raise "task status: '"+task.status.to_s+"' but errorReport nil"
+        end 
+      end
+    
       res = WrapperResult.new task.result_uri
       res.code = task.http_code
       res.content_type = "text/uri-list"
       return res
     end
     
-    def self.raise_ot_error( code, message, body, uri, headers, payload=nil )
-      error = OpenTox::RestCallError.new("REST call returned error: '"+message.to_s+"'")
-      error.rest_code = code
-      error.rest_uri = uri
-      error.rest_headers = headers
-      error.rest_payload = payload
-      parsed = OpenTox::ErrorReport.parse(body) if body
-      if parsed
-        error.errorCause = parsed
+    def self.received_error( body, code, content_type=nil, params=nil )
+
+      # try to parse body
+      report = nil
+      if body.is_a?(OpenTox::ErrorReport)
+        report = body
       else
-        error.rest_body = body
+        case content_type
+        when /yaml/
+           report = YAML.load(body)
+        when /rdf/
+           report = OpenTox::ErrorReport.from_rdf(body)
+        end
       end
-      raise error
+
+      unless report
+		    # parsing was not successfull
+        # raise 'plain' RestCallError
+        err = OpenTox::RestCallError.new("REST call returned error: '"+body.to_s+"'")
+        err.rest_params = params
+        raise err
+      else
+        # parsing sucessfull
+        # raise RestCallError with parsed report as error cause
+        err = OpenTox::RestCallError.new("REST call subsequent error")
+        err.errorCause = report
+        err.rest_params = params
+        raise err
+      end
     end
   end
 end

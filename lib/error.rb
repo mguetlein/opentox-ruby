@@ -1,69 +1,52 @@
 
 # adding additional fields to Exception class to format errors according to OT-API
 class Exception
-  attr_accessor :creator, :errorCause, :id, :http_code
+  attr_accessor :errorCause
   def http_code; 500; end
 end
 
 module OpenTox
   
-  class BadRequestError < Exception
+  class BadRequestError < RuntimeError
     def http_code; 400; end
   end
   
-  class NotAuthorizedError < Exception
+  class NotAuthorizedError < RuntimeError
     def http_code; 401; end
   end
   
-  class NotFoundError < Exception
+  class NotFoundError < RuntimeError
     def http_code; 404; end
   end
   
-  class RestCallError < Exception
-    attr_accessor :rest_code, :rest_body, :rest_uri, :rest_payload, :rest_headers
+  class RestCallError < RuntimeError
+    attr_accessor :rest_params
     def http_code; 502; end
   end
 
   class ErrorReport
     
-    # formats error according to accept-header, yaml is default
-    # ( sets content-type in response accordingly )
-    # @param [Exception] error
-    # @param |Sinatra::Request, optional] request
-    # @param [Sinatra::Response, optiona,] response, optional to set content-type
-    # @return [String]  formated error
-    def self.format(error, request=nil, response=nil)
-      # sets current uri
-      error.creator = "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}" if request
-      # bit of a hack: set instance attribute in order to add it for the to_yaml conversion 
-      error.http_code = error.http_code
-      
-      accept = request.env['HTTP_ACCEPT'].to_s if request
-      case accept
-      # when /rdf/
-      # TODO add error to rdf
-      when /html/
-        response['Content-Type'] = 'text/html' if response
-        OpenTox.text_to_html error.to_yaml
-      else
-        response['Content-Type'] = 'application/x-yaml' if response
-        error.to_yaml
-      end
+    # TODO replace params with URIs (errorCause -> OT.errorCause)
+    attr_reader :message, :actor, :errorCause, :http_code, :errorDetails, :errorType
+    
+    # creates a error report object, from an ruby-exception object
+	# @param [Exception] error
+	# @param [String] actor, URI of the call that cause the error
+    def initialize( error, actor )
+      @http_code = error.http_code
+      @errorType = error.class.to_s
+      @message = error.message
+      @actor = actor
+      @errorCause = error.errorCause if error.errorCause
+      @rest_params = error.rest_params if error.is_a?(OpenTox::RestCallError) and error.rest_params
+    end
+
+    def self.from_rdf(rdf)
+      raise "not yet implemented"
     end
     
-    # trys to parse error from text
-    # @return [Exception] Exception if parsing sucessfull, nil otherwise
-    def self.parse( body )
-      begin
-        err = YAML.load(body)
-        if err and err.is_a?(Exception)
-          return err
-        else
-          return nil
-        end
-      rescue
-        return nil
-      end
+    def self.to_rdf
+      raise "not yet implemented"
     end
   end
 end
