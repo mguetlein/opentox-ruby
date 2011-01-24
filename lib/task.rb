@@ -102,7 +102,9 @@ module OpenTox
 
     def to_rdfxml
       s = Serializer::Owl.new
+      @metadata[OT.errorReport] = @uri+"/ErrorReport/tmpId" if @error_report
       s.add_task(@uri,@metadata)
+      s.add_resource(@uri+"/ErrorReport/tmpId", OT.errorReport, @error_report.rdf_content) if @error_report
       s.to_rdfxml
     end
 
@@ -136,6 +138,11 @@ module OpenTox
       raise "no error report" unless error_report.is_a?(OpenTox::ErrorReport)
       RestClientWrapper.put(File.join(@uri,'Error'),{:errorReport => error_report.to_yaml})
       load_metadata
+    end
+    
+    # not stored just for to_rdf
+    def add_error_report( error_report )
+      @error_report = error_report
     end
     
     def pid=(pid)

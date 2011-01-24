@@ -40,13 +40,27 @@ module OpenTox
       @errorCause = error.errorCause if error.errorCause
       @rest_params = error.rest_params if error.is_a?(OpenTox::RestCallError) and error.rest_params
     end
+    
+    def rdf_content()
+      c = {
+        RDF.type => OT.ErrorReport,
+        OT.statusCode => @http_code,
+        OT.message => @message,
+        OT.actor => @actor,
+        OT.errorCode => @errorType,
+      }
+      c[OT.errorCause] = @errorCause.rdf_content if @errorCause
+      c
+    end
 
     def self.from_rdf(rdf)
       raise "not yet implemented"
     end
     
-    def self.to_rdf
-      raise "not yet implemented"
+    def to_rdfxml
+      s = Serializer::Owl.new
+      s.add_resource(CONFIG[:services]["opentox-task"]+"/tmpId/ErrorReport/tmpId", OT.errorReport, rdf_content)
+      s.to_rdfxml
     end
   end
 end

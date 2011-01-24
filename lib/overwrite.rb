@@ -27,7 +27,7 @@ error Exception do
   case request.env['HTTP_ACCEPT']
   when /rdf/
     content_type 'application/rdf+xml'
-    halt error.http_code,rep.to_xml
+    halt error.http_code,rep.to_rdfxml
   when /html/
     content_type 'text/html'
     halt error.http_code,(OpenTox.text_to_html rep.to_yaml)

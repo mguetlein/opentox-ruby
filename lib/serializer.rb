@@ -14,7 +14,7 @@ module OpenTox
       def initialize
 
         @object = {
-          # this should come from opntox.owl
+          # this should come from opentox.owl
           OT.Compound => { RDF["type"] => [{ "type" => "uri", "value" => OWL['Class'] }] } ,
           OT.Feature => { RDF["type"] => [{ "type" => "uri", "value" => OWL['Class'] }] } ,
           OT.NominalFeature => { RDF["type"] => [{ "type" => "uri", "value" => OWL['Class'] }] } ,
@@ -35,6 +35,7 @@ module OpenTox
           OT.RegressionStatistics => { RDF["type"] => [{ "type" => "uri", "value" => OWL['Class'] }] } ,
           OT.Crossvalidation => { RDF["type"] => [{ "type" => "uri", "value" => OWL['Class'] }] } ,
           OT.CrossvalidationInfo => { RDF["type"] => [{ "type" => "uri", "value" => OWL['Class'] }] } ,
+          OT.ErrorReport => { RDF["type"] => [{ "type" => "uri", "value" => OWL['Class'] }] } ,
 
           OT.compound => { RDF["type"] => [{ "type" => "uri", "value" => OWL.ObjectProperty }] } ,
           OT.feature => { RDF["type"] => [{ "type" => "uri", "value" => OWL.ObjectProperty }] } ,
@@ -113,6 +114,10 @@ module OpenTox
           OT.numFolds => { RDF["type"] => [{ "type" => "uri", "value" => OWL.AnnotationProperty }] } ,
           OT.randomSeed => { RDF["type"] => [{ "type" => "uri", "value" => OWL.AnnotationProperty }] } ,
           OT.reportType => { RDF["type"] => [{ "type" => "uri", "value" => OWL.AnnotationProperty }] } ,
+          OT.message => { RDF["type"] => [{ "type" => "uri", "value" => OWL.AnnotationProperty }] } ,
+          OT.statusCode => { RDF["type"] => [{ "type" => "uri", "value" => OWL.AnnotationProperty }] } ,
+          OT.actor => { RDF["type"] => [{ "type" => "uri", "value" => OWL.AnnotationProperty }] } ,
+          OT.errorCode => { RDF["type"] => [{ "type" => "uri", "value" => OWL.AnnotationProperty }] } ,
 
           OT.hasSource => { RDF["type"] => [{ "type" => "uri", "value" => OWL.DatatypeProperty }] } ,
           OT.value => { RDF["type"] => [{ "type" => "uri", "value" => OWL.DatatypeProperty }] } ,
@@ -229,10 +234,10 @@ module OpenTox
             @object[uri] = {} unless @object[uri]
             @object[uri][u] = [{ "type" => "bnode", "value" => genid }]
             # add content to new class
-            add_hash(genid,v)
+            add_content(genid,v)
           elsif v.is_a? Array
             # value is an array, i.e. a list of values with property is added 
-            v.each{ |vv| add_hash( uri, { u => vv } ) }
+            v.each{ |vv| add_content( uri, { u => vv } ) }
           else # v.is_a? String
             # simple string value
             @object[uri] = {} unless @object[uri]
