@@ -39,6 +39,15 @@ module OpenTox
       @actor = actor
       @errorCause = error.errorCause if error.errorCause
       @rest_params = error.rest_params if error.is_a?(OpenTox::RestCallError) and error.rest_params
+      @backtrace = error.backtrace.join("\n") if CONFIG[:backtrace]
+    end
+    
+    # overwrite sorting to make easier readable
+    def to_yaml_properties
+       p = super
+       p = ( p - ["@backtrace"]) + ["@backtrace"] if @backtrace
+       p = ( p - ["@errorCause"]) + ["@errorCause"] if @errorCause
+       p
     end
     
     def rdf_content()
