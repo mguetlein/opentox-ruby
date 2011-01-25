@@ -14,7 +14,7 @@ module OpenTox
     #   dataset = OpenTox::Dataset.new("http:://webservices.in-silico/ch/dataset/1")
     # @param [optional, String] uri Dataset URI
     # @return [OpenTox::Dataset] Dataset object
-    def initialize(uri=nil)
+    def initialize(uri=nil,subjectid=nil)
       super uri
       @features = {}
       @compounds = []
@@ -27,7 +27,7 @@ module OpenTox
     # @param [optional, String] uri Dataset URI
     # @return [OpenTox::Dataset] Dataset object
     def self.create(uri=CONFIG[:services]["opentox-dataset"], subjectid=nil)
-      dataset = Dataset.new
+      dataset = Dataset.new(nil,subjectid)
       dataset.save(subjectid)
       dataset
     end
@@ -50,17 +50,17 @@ module OpenTox
     # Find a dataset and load all data. This can be time consuming, use Dataset.new together with one of the load_* methods for a fine grained control over data loading.
     # @param [String] uri Dataset URI
     # @return [OpenTox::Dataset] Dataset object with all data
-    def self.find(uri)
-      dataset = Dataset.new(uri)
-      dataset.load_all
+    def self.find(uri, subjectid=nil)
+      dataset = Dataset.new(uri, subjectid)
+      dataset.load_all(subjectid)
       dataset
     end
 
     # Get all datasets from a service
     # @param [optional,String] uri URI of the dataset service, defaults to service specified in configuration
     # @return [Array] Array of dataset object without data (use one of the load_* methods to pull data from the server)
-    def self.all(uri=CONFIG[:services]["opentox-dataset"])
-      RestClientWrapper.get(uri,:accept => "text/uri-list").to_s.each_line.collect{|u| Dataset.new(u)}
+    def self.all(uri=CONFIG[:services]["opentox-dataset"], subjectid=nil)
+      RestClientWrapper.get(uri,{:accept => "text/uri-list",:subjectid => subjectid}).to_s.each_line.collect{|u| Dataset.new(u, subjectid)}
     end
 
     # Load YAML representation into the dataset
@@ -77,10 +77,10 @@ module OpenTox
     # Load RDF/XML representation from a file
     # @param [String] file File with RDF/XML representation of the dataset
     # @return [OpenTox::Dataset] Dataset object with RDF/XML data
-    def load_rdfxml_file(file)
-      parser = Parser::Owl::Dataset.new @uri
+    def load_rdfxml_file(file, subjectid=nil)
+      parser = Parser::Owl::Dataset.new @uri, subjectid
       parser.uri = file.path
-      copy parser.load_uri
+      copy parser.load_uri(subjectid)
     end
 
     # Load CSV string (format specification: http://toxcreate.org/help)
@@ -111,26 +111,26 @@ module OpenTox
     
     # Load and return only metadata of a Dataset object
     # @return [Hash] Metadata of the dataset
-    def load_metadata
-      add_metadata Parser::Owl::Dataset.new(@uri).load_metadata
+    def load_metadata(subjectid=nil)
+      add_metadata Parser::Owl::Dataset.new(@uri, subjectid).load_metadata(subjectid)
       self.uri = @uri if @uri # keep uri
       @metadata
     end
 
     # Load all data (metadata, data_entries, compounds and features) from URI
-    def load_all
+    def load_all(subjectid=nil)
       if (CONFIG[:yaml_hosts].include?(URI.parse(@uri).host))
-        copy YAML.load(RestClientWrapper.get(@uri, :accept => "application/x-yaml"))
+        copy YAML.load(RestClientWrapper.get(@uri, {:accept => "application/x-yaml", :subjectid => subjectid}))
       else
-        parser = Parser::Owl::Dataset.new(@uri)
-        copy parser.load_uri
+        parser = Parser::Owl::Dataset.new(@uri, subjectid)
+        copy parser.load_uri(subjectid)
       end
     end
 
     # Load and return only compound URIs from the dataset service
     # @return [Array]  Compound URIs in the dataset
-    def load_compounds
-      RestClientWrapper.get(File.join(uri,"compounds"),:accept=> "text/uri-list").to_s.each_line do |compound_uri|
+    def load_compounds(subjectid=nil)
+      RestClientWrapper.get(File.join(uri,"compounds"),{:accept=> "text/uri-list", :subjectid => subjectid}).to_s.each_line do |compound_uri|
         @compounds << compound_uri.chomp
       end
       @compounds.uniq!
@@ -138,9 +138,9 @@ module OpenTox
 
     # Load and return only features from the dataset service
     # @return [Hash]  Features of the dataset
-    def load_features
-      parser = Parser::Owl::Dataset.new(@uri)
-      @features = parser.load_features
+    def load_features(subjectid=nil)
+      parser = Parser::Owl::Dataset.new(@uri, subjectid)
+      @features = parser.load_features(subjectid)
       @features
     end
 
@@ -290,7 +290,7 @@ module OpenTox
           task_uri = RestClient.post(@uri, {:file => File.new(@path)},{:accept => "text/uri-list" , :subjectid => subjectid}).to_s.chomp
           #task_uri = `curl -X POST -H "Accept:text/uri-list" -F "file=@#{@path};type=application/rdf+xml" http://apps.ideaconsult.net:8080/ambit2/dataset`
           Task.find(task_uri).wait_for_completion
-          self.uri = RestClientWrapper.get(task_uri,:accept => 'text/uri-list')
+          self.uri = RestClientWrapper.get(task_uri,{:accept => 'text/uri-list', :subjectid => subjectid})
         end
       else
         # create dataset if uri is empty
@@ -325,9 +325,9 @@ module OpenTox
     # Find a prediction dataset and load all data. 
     # @param [String] uri Prediction dataset URI
     # @return [OpenTox::Dataset] Prediction dataset object with all data
-    def self.find(uri)
-      prediction = LazarPrediction.new(uri)
-      prediction.load_all
+    def self.find(uri, subjectid=nil)
+      prediction = LazarPrediction.new(uri, subjectid)
+      prediction.load_all(subjectid)
       prediction
     end
 

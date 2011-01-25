@@ -16,25 +16,39 @@ helpers do
     end
   end
 
+
+  #Check Authorization for URI with method and subjectid. 
   def authorized?(subjectid)
-    if CONFIG[:authorization][:authorize_request].include?(request.env['REQUEST_METHOD'])
-      ret = OpenTox::Authorization.authorize("#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}", request.env['REQUEST_METHOD'], subjectid)
-      LOGGER.debug "OpenTox helpers OpenTox::Authorization authorized? method: #{request.env['REQUEST_METHOD']}, URI: #{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}, subjectid: #{subjectid} with return #{ret}."
+    request_method = request.env['REQUEST_METHOD']
+    uri = clean_uri("#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}")
+    request_method = "GET" if request_method == "POST" &&  uri =~ /\/model\/\d+\/?$/
+    if CONFIG[:authorization][:authorize_request].include?(request_method)
+      ret = OpenTox::Authorization.authorize(uri, request_method, subjectid)
+      LOGGER.debug "OpenTox helpers OpenTox::Authorization authorized? method: #{request_method} , URI: #{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}, subjectid: #{subjectid} with return >>#{ret}<<"
       return ret
     end
-    if CONFIG[:authorization][:authenticate_request].include?(env['REQUEST_METHOD'])
-      if OpenTox::Authorization.is_token_valid(subjectid)
-        return true
-      end
+    if CONFIG[:authorization][:authenticate_request].include?(request_method)
+      return true if OpenTox::Authorization.is_token_valid(subjectid)
     end
-    LOGGER.debug "Not authorized for: #{request.env['rack.url_scheme']}://#{request['REQUEST_URI']} with Method: #{request.env['REQUEST_METHOD']} with Token #{subjectid}"
+    LOGGER.debug "Not authorized for: #{uri} with Method: #{request.env['REQUEST_METHOD']}/#{request_method} with Token #{subjectid}"
     return false
   end
 
+  #cleans URI from querystring and file-extension. Sets port 80 to emptystring
+  # @param [String] uri 
+  def clean_uri(uri)
+    out = URI.parse(uri)
+    out.path = out.path[0, out.path.rindex(/[0-9]/) + 1] if out.path.rindex(/[0-9]/) #cuts after id for a&a
+    "#{out.scheme}:" + (out.port != 80 ? out.port : "") + "//#{out.host}#{out.path}"
+  end
+
+  #unprotected uris for login/logout, webapplication ...
   def unprotected_requests
     case  env['REQUEST_URI']
     when /\/login$|\/logout$|\/predict$|\/toxcreate\/models$/
       return true
+    when /\/features/
+      return false
     when /\/compound|\/feature|\/task|\/toxcreate/   #to fix: read from config | validation should be protected
       return true
     else
@@ -42,21 +56,18 @@ helpers do
     end
    end
 
-  def check_subjectid(subjectid)
-    return false if !subjectid
-    return true if subjectid.size > 62
-    false
-  end
 end
 
 before do
   unless !AA_SERVER or unprotected_requests or CONFIG[:authorization][:free_request].include?(env['REQUEST_METHOD']) 
     begin
+      subjectid = nil
       subjectid = session[:subjectid] if session[:subjectid]
-      subjectid = params[:subjectid]  if params[:subjectid]  and !check_subjectid(subjectid)
-      subjectid = request.env['HTTP_SUBJECTID'] if request.env['HTTP_SUBJECTID'] and !check_subjectid(subjectid)
+      subjectid = params[:subjectid]  if params[:subjectid] and !subjectid
+      subjectid = request.env['HTTP_SUBJECTID'] if request.env['HTTP_SUBJECTID'] and !subjectid
       # see http://rack.rubyforge.org/doc/SPEC.html
       subjectid = CGI.unescape(subjectid) if subjectid.include?("%23")
+      @subjectid = subjectid
     rescue
       LOGGER.debug "OpenTox ruby api wrapper: helper before filter: NO subjectid for URI: #{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}"
       subjectid = ""

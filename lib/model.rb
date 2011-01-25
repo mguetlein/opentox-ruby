@@ -88,15 +88,15 @@ module OpenTox
 
       # Get URIs of all lazar models
       # @return [Array] List of lazar model URIs
-      def self.all
-        RestClientWrapper.get(CONFIG[:services]["opentox-model"]).to_s.split("\n")
+      def self.all(subjectid=nil)
+        RestClientWrapper.get(CONFIG[:services]["opentox-model"], :subjectid => subjectid).to_s.split("\n")
       end
 
       # Find a lazar model
       # @param [String] uri Model URI
       # @return [OpenTox::Model::Lazar] lazar model
-      def self.find(uri)
-        YAML.load RestClientWrapper.get(uri,:accept => 'application/x-yaml')
+      def self.find(uri, subjectid=nil)
+        YAML.load RestClientWrapper.get(uri,{:accept => 'application/x-yaml', :subjectid => subjectid})
       end
 
       # Create a new lazar model
@@ -105,7 +105,7 @@ module OpenTox
       def self.create(params)
         lazar_algorithm = OpenTox::Algorithm::Generic.new File.join( CONFIG[:services]["opentox-algorithm"],"lazar")
         model_uri = lazar_algorithm.run(params)
-        OpenTox::Model::Lazar.find(model_uri)
+        OpenTox::Model::Lazar.find(model_uri, params[:subjectid])
       end
 
       # Get a parameter value
@@ -128,7 +128,7 @@ module OpenTox
           DC.title => URI.decode(File.basename( @metadata[OT.dependentVariables] )),
           OT.parameters => [{DC.title => "dataset_uri", OT.paramValue => dataset_uri}]
         })
-        d = Dataset.new(dataset_uri)
+        d = Dataset.new(dataset_uri,subjectid)
         d.load_compounds
         count = 0
         d.compounds.each do |compound_uri|
