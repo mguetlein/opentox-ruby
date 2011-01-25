@@ -14,12 +14,7 @@ module OpenTox
       else
         accept = 'application/rdf+xml'
       end
-      begin
-        RestClientWrapper.post(@uri,{:accept => accept},params,waiting_task).to_s
-      rescue => e
-        LOGGER.error "Failed to run #{@uri} with #{params.inspect} (#{e.inspect})"
-        raise "Failed to run #{@uri} with #{params.inspect}"
-      end
+      RestClientWrapper.post(@uri,{:accept => accept},params,waiting_task).to_s
     end
 
     # Generic OpenTox model class for all API compliant services
