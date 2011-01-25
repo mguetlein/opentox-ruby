@@ -9,11 +9,10 @@ helpers do
       end
     elsif !env["session"] && subjectid
       unless authorized?(subjectid)
-        throw(:halt, [401, "Not authorized.\n"])
-        redirect back
+        raise OpenTox::NotAuthorizedError.new "Not authorized" 
       end
     else
-      throw(:halt, [401, "Not authorized.\n"]) unless authorized?(subjectid)
+      raise OpenTox::NotAuthorizedError.new "Not authorized" unless authorized?(subjectid)
     end
   end
 
