@@ -362,7 +362,7 @@ module OpenTox
       elsif uri_match.is_a?(String)
         uri_regex = Regexp.new("^"+uri_match+"$")
       else
-        raise "uri-match param is neither string(->exact uri match) nor regexp: "+uri_match.class
+        raise "uri-match param is neither string(->exact uri match) nor regexp: "+uri_match.class.to_s
       end
       LOGGER.info("whitelisted "+request_method.to_s+" "+uri_regex.to_s)
       @@whitelist[request_method] = [] unless @@whitelist[request_method]
