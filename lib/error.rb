@@ -39,7 +39,7 @@ module OpenTox
       @actor = actor
       @errorCause = error.errorCause if error.errorCause
       @rest_params = error.rest_params if error.is_a?(OpenTox::RestCallError) and error.rest_params
-      @backtrace = error.backtrace.join("\n") if CONFIG[:backtrace]
+      @backtrace = error.backtrace.short_backtrace if CONFIG[:backtrace]
     end
     
     # overwrite sorting to make easier readable
@@ -71,5 +71,16 @@ module OpenTox
       s.add_resource(CONFIG[:services]["opentox-task"]+"/tmpId/ErrorReport/tmpId", OT.errorReport, rdf_content)
       s.to_rdfxml
     end
+  end
+end
+
+class Array
+  def short_backtrace
+    short = []
+    each do |c|
+      break if c =~ /sinatra\/base/
+      short << c
+    end
+    short.join("\n")
   end
 end

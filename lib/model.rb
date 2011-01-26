@@ -24,9 +24,9 @@ module OpenTox
       # Find Generic Opentox Model via URI, and loads metadata
       # @param [String] uri Model URI
       # @return [OpenTox::Model::Generic] Model instance, nil if model was not found
-      def self.find(uri)
+      def self.find(uri,subjectid=nil)
         model = Generic.new(uri)
-        model.load_metadata
+        model.load_metadata(subjectid)
         if model.metadata==nil or model.metadata.size==0
           nil
         else
@@ -36,10 +36,10 @@ module OpenTox
     
        # provides feature type, possible types are "regression" or "classification"
        # @return [String] feature type, "unknown" if type could not be estimated
-      def feature_type
+      def feature_type(subjectid=nil)
         # dynamically perform restcalls if necessary
-        load_metadata if @metadata==nil or @metadata.size==0 or (@metadata.size==1 && @metadata.values[0]==@uri)
-        @dependentVariable = OpenTox::Feature.find( @metadata[OT.dependentVariables] ) unless @dependentVariable
+        load_metadata(subjectid) if @metadata==nil or @metadata.size==0 or (@metadata.size==1 && @metadata.values[0]==@uri)
+        @dependentVariable = OpenTox::Feature.find( @metadata[OT.dependentVariables],subjectid ) unless @dependentVariable
         
         [@dependentVariable.feature_type, @metadata[OT.isA], @metadata[DC.title], @uri].each do |type|
           case type

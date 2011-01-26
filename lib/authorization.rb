@@ -322,7 +322,47 @@ module OpenTox
       alias :token_valid? :is_token_valid
     end
 
-  end 
+    #Check Authorization for URI with method and subjectid. 
+    def self.authorized?(uri, request_method, subjectid)
+      return true if OpenTox::Authorization.whitelisted?(uri, request_method)
+      if CONFIG[:authorization][:authorize_request].include?(request_method)
+        ret = OpenTox::Authorization.authorize(uri, request_method, subjectid)
+        LOGGER.debug "OpenTox helpers OpenTox::Authorization authorized? method: #{request_method} , URI: #{uri}, subjectid: #{subjectid} with return >>#{ret}<<"
+        return ret
+      end
+      if CONFIG[:authorization][:authenticate_request].include?(request_method)
+        return true if OpenTox::Authorization.is_token_valid(subjectid)
+      end
+      LOGGER.debug "Not authorized for: #{uri} with Method: #{request_method} with Token #{subjectid}"
+      return false
+    end
+    
+    @@whitelist = {}
+    
+    private
+    def self.whitelisted?(uri, request_method)
+      return false unless @@whitelist[request_method]
+      @@whitelist[request_method].each do |r|
+        return true if r.match(uri)
+      end
+      return false
+    end
+    
+    public
+    def self.whitelist(uri_match, request_method)
+      if uri_match.is_a?(Regexp)
+        uri_regex = uri_match
+      elsif uri_match.is_a?(String)
+        uri_regex = Regexp.new("^"+uri_match+"$")
+      else
+        raise "uri-match param is neither string(->exact uri match) nor regexp: "+uri_match.class
+      end
+      LOGGER.info("whitelisted "+request_method+" "+uri_regex.to_s)
+      @@whitelist[request_method] = [] unless @@whitelist[request_method]
+      @@whitelist[request_method] << uri_regex
+    end
+    
+  end
 end
 
 
