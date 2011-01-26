@@ -322,7 +322,11 @@ module OpenTox
       alias :token_valid? :is_token_valid
     end
 
-    #Check Authorization for URI with method and subjectid. 
+    # Check Authorization for a resource (identified via URI) with method and subjectid. 
+    # @param [String] uri
+    # @param [String] request_method, should be GET, POST, PUT, DELETE
+    # @param [String] subjectid
+    # @return [Boolean] true if access granted, else otherwise
     def self.authorized?(uri, request_method, subjectid)
       return true if OpenTox::Authorization.whitelisted?(uri, request_method)
       if CONFIG[:authorization][:authorize_request].include?(request_method)
@@ -349,6 +353,9 @@ module OpenTox
     end
     
     public
+    # adds uri/regexp-for-matching-uri to the whitelist for a request-method (i.e. access will be granted without cheking the A&A service)
+    # @param [String or Regexp] uri_match if string match must be ecaxt
+    # @param [String] request_method, must be GET, POST, PUT, DELETE
     def self.whitelist(uri_match, request_method)
       if uri_match.is_a?(Regexp)
         uri_regex = uri_match
@@ -357,7 +364,7 @@ module OpenTox
       else
         raise "uri-match param is neither string(->exact uri match) nor regexp: "+uri_match.class
       end
-      LOGGER.info("whitelisted "+request_method+" "+uri_regex.to_s)
+      LOGGER.info("whitelisted "+request_method.to_s+" "+uri_regex.to_s)
       @@whitelist[request_method] = [] unless @@whitelist[request_method]
       @@whitelist[request_method] << uri_regex
     end
