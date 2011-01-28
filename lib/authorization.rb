@@ -329,19 +329,20 @@ module OpenTox
     # @return [Boolean] true if access granted, else otherwise
     def self.authorized?(uri, request_method, subjectid)
       if OpenTox::Authorization.whitelisted?(uri, request_method)
-        LOGGER.debug "whitelisted! "+uri.to_s
-        return true 
-      end
-      if CONFIG[:authorization][:authorize_request].include?(request_method)
+        LOGGER.debug "authorized? >>true<< (uris is whitelisted), method: #{request_method}, URI: #{uri}, subjectid: #{subjectid}"
+        true 
+      elsif CONFIG[:authorization][:authorize_request].include?(request_method)
         ret = OpenTox::Authorization.authorize(uri, request_method, subjectid)
-        LOGGER.debug "OpenTox helpers OpenTox::Authorization authorized? method: #{request_method} , URI: #{uri}, subjectid: #{subjectid} with return >>#{ret}<<"
-        return ret
+        LOGGER.debug "authorized? >>#{ret}<< (uri authorized), method: #{request_method}, URI: #{uri}, subjectid: #{subjectid}"
+        ret
+      elsif CONFIG[:authorization][:authenticate_request].include?(request_method)
+        ret = OpenTox::Authorization.is_token_valid(subjectid)
+        LOGGER.debug "authorized? >>#{ret}<< (token is valid), method: #{request_method}, URI: #{uri}, subjectid: #{subjectid}"
+        ret
+      else 
+        LOGGER.debug "authorized? >>true<< (request is free), method: #{request_method}, URI: #{uri}, subjectid: #{subjectid}"
+        true
       end
-      if CONFIG[:authorization][:authenticate_request].include?(request_method)
-        return true if OpenTox::Authorization.is_token_valid(subjectid)
-      end
-      LOGGER.debug "Not authorized for: #{uri} with Method: #{request_method} with Token #{subjectid}"
-      return false
     end
     
     @@whitelist = {}
