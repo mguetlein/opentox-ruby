@@ -78,6 +78,7 @@ module OpenTox
     # @param [String] uri Task URI
     # @return [OpenTox::Task] Task object
     def self.find(uri)
+      return nil unless uri
       task = Task.new(uri)
       task.load_metadata
       task
@@ -94,10 +95,23 @@ module OpenTox
       @metadata = YAML.load(yaml)
     end
 
+    
     def self.from_rdfxml(rdfxml)
-      file = Tempfile.open("ot-rdfxml"){|f| f.write(rdfxml)}.path
+      file = Tempfile.new("ot-rdfxml")
+      file.puts rdfxml
+      file.close
+      file = "file://"+file.path
+       
+      # PENDING
+      raise "Parse from file not working: what is the base-object-uri??? (omitted in triples)"    
+          
       parser = Parser::Owl::Generic.new file
-      @metadata = parser.load_metadata
+      metadata = parser.load_metadata
+      puts metadata.inspect
+      
+      task = Task.new(uri)
+      task.add_metadata(metadata)
+      task
     end
 
     def to_rdfxml
@@ -232,7 +246,7 @@ module OpenTox
         sleep dur
         load_metadata 
         # if another (sub)task is waiting for self, set progress accordingly 
-        waiting_task.progress(@metadata[OT.percentageCompleted]) if waiting_task
+        waiting_task.progress(@metadata[OT.percentageCompleted].to_f) if waiting_task
         check_state
         if (Time.new > due_to_time)
           raise "max wait time exceeded ("+DEFAULT_TASK_MAX_DURATION.to_s+"sec), task: '"+@uri.to_s+"'"

@@ -8,13 +8,16 @@ module OpenTox
     # @param [Hash] params Parameters for OpenTox model
     # @param [optional,OpenTox::Task] waiting_task (can be a OpenTox::Subtask as well), progress is updated accordingly
     # @return [text/uri-list] Task or resource URI
-    def run( params, waiting_task=nil )
-      if CONFIG[:yaml_hosts].include?(URI.parse(@uri).host)
-        accept = 'application/x-yaml' 
-      else
-        accept = 'application/rdf+xml'
+    def run( params, accept_header=nil, waiting_task=nil )
+      unless accept_header
+        if CONFIG[:yaml_hosts].include?(URI.parse(@uri).host)
+          accept_header = 'application/x-yaml' 
+        else
+          accept_header = 'application/rdf+xml'
+        end
       end
-      RestClientWrapper.post(@uri,{:accept => accept},params,waiting_task).to_s
+      LOGGER.info "running model "+@uri.to_s+", params: "+params.inspect+", accept: "+accept_header.to_s
+      RestClientWrapper.post(@uri,{:accept => accept_header},params,waiting_task).to_s
     end
 
     # Generic OpenTox model class for all API compliant services
@@ -25,6 +28,7 @@ module OpenTox
       # @param [String] uri Model URI
       # @return [OpenTox::Model::Generic] Model instance, nil if model was not found
       def self.find(uri,subjectid=nil)
+        return nil unless uri
         model = Generic.new(uri)
         model.load_metadata(subjectid)
         if model.metadata==nil or model.metadata.size==0
@@ -39,9 +43,12 @@ module OpenTox
       def feature_type(subjectid=nil)
         # dynamically perform restcalls if necessary
         load_metadata(subjectid) if @metadata==nil or @metadata.size==0 or (@metadata.size==1 && @metadata.values[0]==@uri)
+        
+        @algorithm = OpenTox::Algorithm::Generic.find(@metadata[OT.algorithm], subjectid) unless @algorithm
+        algorithm_title = @algorithm ? @algorithm.metadata[DC.title] : nil
         @dependentVariable = OpenTox::Feature.find( @metadata[OT.dependentVariables],subjectid ) unless @dependentVariable
         
-        [@dependentVariable.feature_type, @metadata[OT.isA], @metadata[DC.title], @uri].each do |type|
+        [@dependentVariable.feature_type, @metadata[OT.isA], @metadata[DC.title], @uri, algorithm_title].each do |type|
           case type
           when /(?i)classification/
             return "classification"
@@ -49,7 +56,8 @@ module OpenTox
             return "regression"
           end
         end
-        raise "unknown model "+[@dependentVariable.feature_type, @metadata[OT.isA], @metadata[DC.title], @uri].inspect
+        raise "unknown model "+[@dependentVariable.feature_type, @metadata[OT.isA],
+          @metadata[DC.title], @uri, algorithm_title].inspect
       end
       
     end

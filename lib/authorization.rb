@@ -328,7 +328,10 @@ module OpenTox
     # @param [String] subjectid
     # @return [Boolean] true if access granted, else otherwise
     def self.authorized?(uri, request_method, subjectid)
-      return true if OpenTox::Authorization.whitelisted?(uri, request_method)
+      if OpenTox::Authorization.whitelisted?(uri, request_method)
+        LOGGER.debug "whitelisted! "+uri.to_s
+        return true 
+      end
       if CONFIG[:authorization][:authorize_request].include?(request_method)
         ret = OpenTox::Authorization.authorize(uri, request_method, subjectid)
         LOGGER.debug "OpenTox helpers OpenTox::Authorization authorized? method: #{request_method} , URI: #{uri}, subjectid: #{subjectid} with return >>#{ret}<<"
@@ -346,8 +349,12 @@ module OpenTox
     private
     def self.whitelisted?(uri, request_method)
       return false unless @@whitelist[request_method]
-      @@whitelist[request_method].each do |r|
-        return true if r.match(uri)
+      @@whitelist[request_method].each do |regexp,invert|
+        if invert
+          return true if !regexp.match(uri) 
+        else
+          return true if regexp.match(uri)
+        end
       end
       return false
     end
@@ -356,7 +363,8 @@ module OpenTox
     # adds uri/regexp-for-matching-uri to the whitelist for a request-method (i.e. access will be granted without cheking the A&A service)
     # @param [String or Regexp] uri_match if string match must be ecaxt
     # @param [String] request_method, must be GET, POST, PUT, DELETE
-    def self.whitelist(uri_match, request_method)
+    # @param [Boolean,optional] invert, set to true if you want to whitelist everything that does not match (careful!)
+    def self.whitelist(uri_match, request_method, invert=false)
       if uri_match.is_a?(Regexp)
         uri_regex = uri_match
       elsif uri_match.is_a?(String)
@@ -366,7 +374,7 @@ module OpenTox
       end
       LOGGER.info("whitelisted "+request_method.to_s+" "+uri_regex.to_s)
       @@whitelist[request_method] = [] unless @@whitelist[request_method]
-      @@whitelist[request_method] << uri_regex
+      @@whitelist[request_method] << [ uri_regex, invert ]
     end
     
   end

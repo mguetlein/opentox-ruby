@@ -51,6 +51,7 @@ module OpenTox
     # @param [String] uri Dataset URI
     # @return [OpenTox::Dataset] Dataset object with all data
     def self.find(uri, subjectid=nil)
+      return nil unless uri
       dataset = Dataset.new(uri, subjectid)
       dataset.load_all(subjectid)
       dataset
