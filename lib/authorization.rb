@@ -328,55 +328,60 @@ module OpenTox
     # @param [String] subjectid
     # @return [Boolean] true if access granted, else otherwise
     def self.authorized?(uri, request_method, subjectid)
-      if OpenTox::Authorization.whitelisted?(uri, request_method)
-        LOGGER.debug "authorized? >>true<< (uris is whitelisted), method: #{request_method}, URI: #{uri}, subjectid: #{subjectid}"
-        true 
-      elsif CONFIG[:authorization][:authorize_request].include?(request_method)
-        ret = OpenTox::Authorization.authorize(uri, request_method, subjectid)
-        LOGGER.debug "authorized? >>#{ret}<< (uri authorized), method: #{request_method}, URI: #{uri}, subjectid: #{subjectid}"
-        ret
+      if CONFIG[:authorization][:free_request].include?(request_method)  
+        #LOGGER.debug "authorized? >>true<< (request is free), method: #{request_method}, URI: #{uri}, subjectid: #{subjectid}"
+        true
+      elsif OpenTox::Authorization.free_uri?(uri, request_method)
+        #LOGGER.debug "authorized? >>true<< (uris is free_uri), method: #{request_method}, URI: #{uri}, subjectid: #{subjectid}"
+        true
       elsif CONFIG[:authorization][:authenticate_request].include?(request_method)
         ret = OpenTox::Authorization.is_token_valid(subjectid)
-        LOGGER.debug "authorized? >>#{ret}<< (token is valid), method: #{request_method}, URI: #{uri}, subjectid: #{subjectid}"
+        #LOGGER.debug "authorized? >>#{ret}<< (token is in/valid), method: #{request_method}, URI: #{uri}, subjectid: #{subjectid}"
+        ret
+      elsif OpenTox::Authorization.authorize_exception?(uri, request_method)
+        ret = OpenTox::Authorization.is_token_valid(subjectid)
+        #LOGGER.debug "authorized? >>#{ret}<< (uris is authorize exception, token is in/valid), method: #{request_method}, URI: #{uri}, subjectid: #{subjectid}"
+        ret
+      elsif CONFIG[:authorization][:authorize_request].include?(request_method)
+        ret = OpenTox::Authorization.authorize(uri, request_method, subjectid)
+        LOGGER.debug "authorized? >>#{ret}<< (uri (not) authorized), method: #{request_method}, URI: #{uri}, subjectid: #{subjectid}"
         ret
       else 
-        LOGGER.debug "authorized? >>true<< (request is free), method: #{request_method}, URI: #{uri}, subjectid: #{subjectid}"
-        true
+        LOGGER.error "invalid request/uri method: #{request_method}, URI: #{uri}, subjectid: #{subjectid}"
+        false
       end
     end
     
-    @@whitelist = {}
-    
     private
-    def self.whitelisted?(uri, request_method)
-      return false unless @@whitelist[request_method]
-      @@whitelist[request_method].each do |regexp,invert|
-        if invert
-          return true if !regexp.match(uri) 
-        else
-          return true if regexp.match(uri)
+    def self.free_uri?(uri, request_method)
+      if CONFIG[:authorization][:free_uris]
+        CONFIG[:authorization][:free_uris].each do |request_methods,uris|
+          LOGGER.info "free uris "+request_methods.inspect+" -> "+uris.inspect
+          if request_methods and uris and request_methods.include?(request_method.to_sym) 
+            uris.each do |u|
+              return true if u.match uri
+            end
+          end
         end
-      end
+      end    
       return false
     end
     
-    public
-    # adds uri/regexp-for-matching-uri to the whitelist for a request-method (i.e. access will be granted without cheking the A&A service)
-    # @param [String or Regexp] uri_match if string match must be ecaxt
-    # @param [String] request_method, must be GET, POST, PUT, DELETE
-    # @param [Boolean,optional] invert, set to true if you want to whitelist everything that does not match (careful!)
-    def self.whitelist(uri_match, request_method, invert=false)
-      if uri_match.is_a?(Regexp)
-        uri_regex = uri_match
-      elsif uri_match.is_a?(String)
-        uri_regex = Regexp.new("^"+uri_match+"$")
-      else
-        raise "uri-match param is neither string(->exact uri match) nor regexp: "+uri_match.class.to_s
-      end
-      LOGGER.info("whitelisted "+request_method.to_s+" "+uri_regex.to_s)
-      @@whitelist[request_method] = [] unless @@whitelist[request_method]
-      @@whitelist[request_method] << [ uri_regex, invert ]
-    end
+    def self.authorize_exception?(uri, request_method)
+      if CONFIG[:authorization][:authorize_exceptions]
+        CONFIG[:authorization][:authorize_exceptions].each do |request_methods,uris|
+          if request_methods and uris and request_methods.include?(request_method.to_sym) 
+            uris.each do |u|
+              return true if u.match uri
+            end
+          end
+        end
+      end    
+      return false
+    end    
+    
+    
+
     
   end
 end

@@ -9,6 +9,7 @@ helpers do
       end
     elsif !env["session"] && subjectid
       unless authorized?(subjectid)
+        LOGGER.debug "URI not authorized: #{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']} with request: #{request.env['REQUEST_METHOD']}"
         raise OpenTox::NotAuthorizedError.new "Not authorized" 
       end
     else
@@ -29,27 +30,18 @@ helpers do
   def clean_uri(uri)
     out = URI.parse(uri)
     out.path = out.path[0, out.path.rindex(/[0-9]/) + 1] if out.path.rindex(/[0-9]/) #cuts after id for a&a
-    "#{out.scheme}:" + (out.port != 80 ? out.port : "") + "//#{out.host}#{out.path}"
+    "#{out.scheme}:" + (out.port != 80 ? out.port : "") + "//#{out.host}#{out.path.chomp('/')}"
   end
 
-  #unprotected uris for login/logout, webapplication ...
-  def unprotected_requests
-    case  env['REQUEST_URI']
-    when /\/login$|\/logout$|\/predict$|\/toxcreate\/models$/
-      return true
-    when /\/features/
-      return false
-    when /\/compound|\/feature|\/task|\/toxcreate/   #to fix: read from config | validation should be protected
-      return true
-    else
-      return false
-    end
+  #unprotected uri for login
+  def login_requests
+    return env['REQUEST_URI'] =~ /\/login$/ 
    end
 
 end
 
 before do
-  unless !AA_SERVER or unprotected_requests or CONFIG[:authorization][:free_request].include?(env['REQUEST_METHOD']) 
+  unless !AA_SERVER or login_requests or CONFIG[:authorization][:free_request].include?(env['REQUEST_METHOD']) 
     begin
       subjectid = nil
       subjectid = session[:subjectid] if session[:subjectid]

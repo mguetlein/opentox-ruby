@@ -46,7 +46,7 @@ module OpenTox
         
         @algorithm = OpenTox::Algorithm::Generic.find(@metadata[OT.algorithm], subjectid) unless @algorithm
         algorithm_title = @algorithm ? @algorithm.metadata[DC.title] : nil
-        @dependentVariable = OpenTox::Feature.find( @metadata[OT.dependentVariables],subjectid ) unless @dependentVariable
+        @dependentVariable = OpenTox::Feature.find( @metadata[OT.dependentVariables], subjectid) unless @dependentVariable
         
         [@dependentVariable.feature_type, @metadata[OT.isA], @metadata[DC.title], @uri, algorithm_title].each do |type|
           case type
@@ -137,7 +137,7 @@ module OpenTox
           OT.parameters => [{DC.title => "dataset_uri", OT.paramValue => dataset_uri}]
         })
         d = Dataset.new(dataset_uri,subjectid)
-        d.load_compounds
+        d.load_compounds(subjectid)
         count = 0
         d.compounds.each do |compound_uri|
           begin
