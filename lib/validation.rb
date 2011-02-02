@@ -9,7 +9,7 @@ module OpenTox
       params[:num_folds] = 10 unless params[:num_folds]
 		 	params[:random_seed] = 2 unless params[:random_seed]
 		 	params[:stratified] = false unless params[:stratified]
-      uri = OpenTox::RestClientWrapper.post(File.join(CONFIG[:services]["opentox-validation"],"/crossvalidation"),params,nil,false)
+      uri = OpenTox::RestClientWrapper.post(File.join(CONFIG[:services]["opentox-validation"],"/crossvalidation"),params,{},false)
 			OpenTox::Validation.new(uri)
 		end
 

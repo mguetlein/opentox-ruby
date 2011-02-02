@@ -16,13 +16,12 @@ before {
 # IMPT: set sinatra settings :show_exceptions + :raise_errors to false in config.ru, otherwise Rack::Showexceptions takes over
 error Exception do
   error = request.env['sinatra.error']
-  # log error to logfile
+  # log error message and backtrace to logfile
   LOGGER.error error.class.to_s+": "+error.message
-  # log backtrace only if code is 500 -> unwanted (Runtime)Exceptions and internal errors (see error.rb)
-  LOGGER.error ":\n"+error.backtrace.join("\n") if error.http_code==500
+  LOGGER.error ":\n"+error.backtrace.join("\n")
   
   actor = "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}"
-  rep = OpenTox::ErrorReport.new(error, actor)
+  rep = OpenTox::ErrorReport.create(error, actor)
 
   case request.env['HTTP_ACCEPT']
   when /rdf/
