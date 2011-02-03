@@ -55,11 +55,12 @@ module OpenTox
       
       raise OpenTox::BadRequestError.new "uri is null" unless uri
       raise OpenTox::BadRequestError.new "not a uri: "+uri.to_s unless uri.to_s.uri?
-      raise OpenTox::BadRequestError.new "headers are no hash: "+headers.inspect unless headers==nil or headers.is_a?(Hash)
-      raise OpenTox::BadRequestError.new "nil headers for post not allowed, use {}" if rest_call=="post" and headers==nil
-      headers.each{ |k,v| headers.delete(k) if v==nil } if headers #remove keys with empty values, as this can cause problems
+      raise "headers are no hash: "+headers.inspect unless headers==nil or headers.is_a?(Hash)
       raise OpenTox::BadRequestError.new "accept should go into the headers" if payload and payload.is_a?(Hash) and payload[:accept] 
       raise OpenTox::BadRequestError.new "content_type should go into the headers" if payload and payload.is_a?(Hash) and payload[:content_type]
+      raise "__waiting_task__ must be 'nil' or '(sub)task', is "+waiting_task.class.to_s if
+        waiting_task!=nil and !(waiting_task.is_a?(Task) || waiting_task.is_a?(SubTask))
+      headers.each{ |k,v| headers.delete(k) if v==nil } if headers #remove keys with empty values, as this can cause problems
       
       # PENDING needed for NUTA, until we finally agree on how to send subjectid
       headers[:subjectid] = payload.delete(:subjectid) if uri=~/ntua/ and payload and payload.is_a?(Hash) and payload.has_key?(:subjectid) 

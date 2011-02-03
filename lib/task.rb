@@ -33,7 +33,7 @@ module OpenTox
     def self.create( title=nil, creator=nil, max_duration=DEFAULT_TASK_MAX_DURATION, description=nil )
       
       params = {:title=>title, :creator=>creator, :max_duration=>max_duration, :description=>description }
-      task_uri = RestClientWrapper.post(CONFIG[:services]["opentox-task"], params, {}, false).to_s
+      task_uri = RestClientWrapper.post(CONFIG[:services]["opentox-task"], params, {}, nil, false).to_s
       task = Task.new(task_uri.chomp)
 
       # measure current memory consumption
@@ -284,7 +284,6 @@ module OpenTox
         raise OpenTox::BadRequestError.new ex.message+" (task-uri:"+@uri+")" 
       end
     end
-
   end
 
   # Convenience class to split a (sub)task into subtasks

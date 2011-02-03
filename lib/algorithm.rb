@@ -34,7 +34,7 @@ module OpenTox
       # Find Generic Opentox Algorithm via URI, and loads metadata
       # @param [String] uri Algorithm URI
       # @return [OpenTox::Algorithm::Generic] Algorithm instance, nil if alogrithm was not found
-      def self.find(uri, subjectid)
+      def self.find(uri, subjectid=nil)
         return nil unless uri
         alg = Generic.new(uri)
         alg.load_metadata( subjectid )
