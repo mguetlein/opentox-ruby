@@ -36,6 +36,27 @@ error Exception do
   end
 end
 
+class Sinatra::Base
+
+  def return_task( task )
+    code = task.running? ? 202 : 200
+    case request.env['HTTP_ACCEPT']
+    when /rdf/
+      response['Content-Type'] = "application/rdf+xml"
+      halt code,task.to_rdfxml
+    when /yaml/
+      response['Content-Type'] = "application/rdf+xml"
+      halt code,task.to_yaml # PENDING differs from task-webservice
+    when /html/
+      response['Content-Type'] = "text/html"
+      halt code,OpenTox.text_to_html(task.to_yaml)
+    else # default /uri-list/
+      response['Content-Type'] = "text/uri-list"
+      halt code,task.uri+"\n"
+    end
+  end
+end
+
 class String
   def task_uri?
     self.uri? && !self.match(/task/).nil?
