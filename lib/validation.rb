@@ -41,8 +41,8 @@ module OpenTox
     end
 
     # PENDING: creates summary as used for ToxCreate
-    def summary
-      v = YAML.load RestClientWrapper.get(File.join(@uri, 'statistics'),:accept => "application/x-yaml").to_s
+    def summary( subjectid=nil )
+      v = YAML.load RestClientWrapper.get(File.join(@uri, 'statistics'),{:accept => "application/x-yaml", :subjectid => subjectid}).to_s
       if v[OT.classificationStatistics]
         res = {
           :nr_predictions => v[OT.numInstances] - v[OT.numUnpredicted],
