@@ -1,8 +1,8 @@
 module OpenTox
-	class Crossvalidation
+  class Crossvalidation
     include OpenTox
 
-		attr_reader :report
+    attr_reader :report
     
     # find crossvalidation, raises error if not found
     # @param [String] uri
@@ -15,17 +15,13 @@ module OpenTox
     end
 		
     # creates a crossvalidations, waits until it finishes, may take some time
-    # @param [Hash] params
+    # @param [Hash] params (required:algorithm_uri,dataset_uri,prediction_feature, optional:algorithm_params,num_folds(10),random_seed(1),stratified(false))
     # @param [String,optional] subjectid
     # @param [OpenTox::Task,optional] waiting_task (can be a OpenTox::Subtask as well), progress is updated accordingly
     # @return [OpenTox::Crossvalidation]
     def self.create( params, subjectid=nil, waiting_task=nil )
-      params[:uri] = File.join(CONFIG[:services]['opentox-validation'], "crossvalidation")
-      params[:num_folds] = 10 unless params[:num_folds]
-      params[:random_seed] = 2 unless params[:random_seed]
-      params[:stratified] = false unless params[:stratified]
       params[:subjectid] = subjectid if subjectid
-      uri = OpenTox::RestClientWrapper.post( File.join(CONFIG[:services]["opentox-validation"],"/crossvalidation"),
+      uri = OpenTox::RestClientWrapper.post( File.join(CONFIG[:services]["opentox-validation"],"crossvalidation"),
         params,{:content_type => "text/uri-list"},waiting_task )
       Crossvalidation.new(uri)
     end
