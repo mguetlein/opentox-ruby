@@ -56,6 +56,19 @@ module OpenTox
       dataset.load_all(subjectid)
       dataset
     end
+    
+    # replaces find as exist check, takes not as long, does NOT raise an un-authorized exception
+    # @param [String] uri Dataset URI
+    # @return [Boolean] true if dataset exists and user has get rights, false else 
+    def self.exist?(uri, subjectid=nil)
+      return false unless uri
+      dataset = Dataset.new(uri, subjectid)
+      begin
+        dataset.load_metadata( subjectid ).size > 0
+      rescue
+        false
+      end
+    end
 
     # Get all datasets from a service
     # @param [optional,String] uri URI of the dataset service, defaults to service specified in configuration
