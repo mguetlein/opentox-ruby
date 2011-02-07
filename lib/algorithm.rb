@@ -31,18 +31,15 @@ module OpenTox
     class Generic 
       include Algorithm
       
-      # Find Generic Opentox Algorithm via URI, and loads metadata
+      # Find Generic Opentox Algorithm via URI, and loads metadata, could raise NotFound/NotAuthorized error
       # @param [String] uri Algorithm URI
-      # @return [OpenTox::Algorithm::Generic] Algorithm instance, nil if alogrithm was not found
+      # @return [OpenTox::Algorithm::Generic] Algorithm instance
       def self.find(uri, subjectid=nil)
         return nil unless uri
         alg = Generic.new(uri)
         alg.load_metadata( subjectid )
-        if alg.metadata==nil or alg.metadata.size==0
-          nil
-        else
-          alg
-        end
+        raise "cannot load algorithm metadata" if alg.metadata==nil or alg.metadata.size==0
+        alg
       end
       
     end

@@ -80,6 +80,7 @@ module OpenTox
       return nil unless uri
       task = Task.new(uri)
       task.load_metadata
+      raise "could not load task metadata" if task.metadata==nil or task.metadata.size==0
       task
     end
 

@@ -24,18 +24,15 @@ module OpenTox
     class Generic
       include Model
       
-      # Find Generic Opentox Model via URI, and loads metadata
+      # Find Generic Opentox Model via URI, and loads metadata, could raise NotFound/NotAuthorized error 
       # @param [String] uri Model URI
-      # @return [OpenTox::Model::Generic] Model instance, nil if model was not found
+      # @return [OpenTox::Model::Generic] Model instance
       def self.find(uri,subjectid=nil)
         return nil unless uri
         model = Generic.new(uri)
         model.load_metadata(subjectid)
-        if model.metadata==nil or model.metadata.size==0
-          nil
-        else
-          model
-        end
+        raise "could not load model metadata" if model.metadata==nil or model.metadata.size==0
+        model
       end
     
        # provides feature type, possible types are "regression" or "classification"
