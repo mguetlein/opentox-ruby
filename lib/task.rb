@@ -139,7 +139,7 @@ module OpenTox
     end
     
     def cancel
-      RestClientWrapper.put(File.join(@uri,'Cancelled'))
+      RestClientWrapper.put(File.join(@uri,'Cancelled'),{:cannot_be => "empty"})
       load_metadata
     end
 
@@ -237,6 +237,7 @@ module OpenTox
     # @param [optional,Numeric] dur seconds pausing before cheking again for completion
     def wait_for_completion( waiting_task=nil, dur=0.3)
       
+      waiting_task.waiting_for(self.uri) if waiting_task
       due_to_time = Time.new + DEFAULT_TASK_MAX_DURATION
       LOGGER.debug "start waiting for task "+@uri.to_s+" at: "+Time.new.to_s+", waiting at least until "+due_to_time.to_s
       
@@ -252,7 +253,7 @@ module OpenTox
           raise "max wait time exceeded ("+DEFAULT_TASK_MAX_DURATION.to_s+"sec), task: '"+@uri.to_s+"'"
         end
       end
-      
+      waiting_task.waiting_for(nil) if waiting_task
       LOGGER.debug "Task '"+@metadata[OT.hasStatus].to_s+"': "+@uri.to_s+", Result: "+@metadata[OT.resultURI].to_s
     end
     
@@ -266,6 +267,10 @@ module OpenTox
         RestClientWrapper.put(File.join(@uri,'Running'),{:percentageCompleted => pct})
         load_metadata
       end
+    end
+    
+    def waiting_for(task_uri)
+      RestClientWrapper.put(File.join(@uri,'Running'),{:waiting_for => task_uri})
     end
     
     private
@@ -319,6 +324,10 @@ module OpenTox
       else
         nil
       end
+    end
+    
+    def waiting_for(task_uri)
+      @task.waiting_for(task_uri)
     end
     
     def progress(pct)
