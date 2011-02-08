@@ -56,6 +56,19 @@ module OpenTox
       dataset.load_all(subjectid)
       dataset
     end
+    
+    # replaces find as exist check, takes not as long, does NOT raise an un-authorized exception
+    # @param [String] uri Dataset URI
+    # @return [Boolean] true if dataset exists and user has get rights, false else 
+    def self.exist?(uri, subjectid=nil)
+      return false unless uri
+      dataset = Dataset.new(uri, subjectid)
+      begin
+        dataset.load_metadata( subjectid ).size > 0
+      rescue
+        false
+      end
+    end
 
     # Get all datasets from a service
     # @param [optional,String] uri URI of the dataset service, defaults to service specified in configuration
@@ -285,7 +298,7 @@ module OpenTox
       @compounds.uniq!
       if @uri
         if (CONFIG[:yaml_hosts].include?(URI.parse(@uri).host))
-          RestClientWrapper.post(@uri,{:content_type =>  "application/x-yaml", :subjectid => subjectid},self.to_yaml)
+          RestClientWrapper.post(@uri,self.to_yaml,{:content_type =>  "application/x-yaml", :subjectid => subjectid})
         else
           File.open("ot-post-file.rdf","w+") { |f| f.write(self.to_rdfxml); @path = f.path }
           task_uri = RestClient.post(@uri, {:file => File.new(@path)},{:accept => "text/uri-list" , :subjectid => subjectid}).to_s.chomp

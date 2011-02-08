@@ -36,10 +36,18 @@ module OpenTox
         else
           uri = @uri
         end
-        uri += "?subjectid=#{CGI.escape(subjectid)}" if subjectid 
+        # avoid using rapper directly because of 2 reasons:
+        # * http errors wont be noticed
+        # * subjectid cannot be sent as header
+        ##uri += "?subjectid=#{CGI.escape(subjectid)}" if subjectid 
+        ## `rapper -i rdfxml -o ntriples #{uri} 2>/dev/null`.each_line do |line|
+        file = Tempfile.new("ot-rdfxml")
+        file.puts OpenTox::RestClientWrapper.get @uri,{:subjectid => subjectid,:accept => "application/rdf+xml"}
+        file.close
+        file = "file://"+file.path
         statements = []
         parameter_ids = []
-        `rapper -i rdfxml -o ntriples #{uri} 2>/dev/null`.each_line do |line|
+        `rapper -i rdfxml -o ntriples #{file} 2>/dev/null`.each_line do |line|
           triple = line.to_triple
           @metadata[triple[1]] = triple[2].split('^^').first if triple[0] == @uri and triple[1] != RDF['type']
           statements << triple 
@@ -54,6 +62,38 @@ module OpenTox
           end
         end
         @metadata
+      end
+      
+      # loads metadata from rdf-data
+      # @param [String] rdf
+      # @param [String] type of the info (e.g. OT.Task, OT.ErrorReport) needed to get the subject-uri
+      # @return [Hash] metadata 
+      def self.metadata_from_rdf( rdf, type )
+        # write to file and read convert with rapper into tripples
+        file = Tempfile.new("ot-rdfxml")
+        file.puts rdf
+        file.close
+        file = "file://"+file.path
+        #puts "cmd: rapper -i rdfxml -o ntriples #{file} 2>/dev/null"
+        triples = `rapper -i rdfxml -o ntriples #{file} 2>/dev/null`
+        
+        # load uri via type
+        uri = nil
+        triples.each_line do |line|
+          triple = line.to_triple
+          if triple[1] == RDF['type'] and triple[2]==type
+             raise "uri already set, two uris found with type: "+type.to_s if uri
+             uri = triple[0]
+          end
+        end
+        
+        # load metadata
+        metadata = {}
+        triples.each_line do |line|
+          triple = line.to_triple
+          metadata[triple[1]] = triple[2].split('^^').first if triple[0] == uri and triple[1] != RDF['type']
+        end
+        metadata
       end
 
       # Generic parser for all OpenTox classes

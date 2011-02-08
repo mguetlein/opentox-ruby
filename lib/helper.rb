@@ -28,8 +28,9 @@ helpers do
   #cleans URI from querystring and file-extension. Sets port 80 to emptystring
   # @param [String] uri 
   def clean_uri(uri)
+    uri = uri.sub(" ", "%20")
     out = URI.parse(uri)
-    out.path = out.path[0, out.path.rindex(/[0-9]/) + 1] if out.path.rindex(/[0-9]/) #cuts after id for a&a
+    out.path = out.path[0, out.path.index(/[0-9]/)] if out.path.index(/[0-9]/) #cuts after id for a&a
     "#{out.scheme}:" + (out.port != 80 ? out.port : "") + "//#{out.host}#{out.path.chomp('/')}"
   end
 
@@ -51,7 +52,7 @@ before do
       subjectid = CGI.unescape(subjectid) if subjectid.include?("%23")
       @subjectid = subjectid
     rescue
-      LOGGER.debug "OpenTox ruby api wrapper: helper before filter: NO subjectid for URI: #{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}"
+      #LOGGER.debug "OpenTox ruby api wrapper: helper before filter: NO subjectid for URI: #{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}"
       subjectid = ""
     end
     @subjectid = subjectid

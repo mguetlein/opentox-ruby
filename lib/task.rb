@@ -33,7 +33,7 @@ module OpenTox
     def self.create( title=nil, creator=nil, max_duration=DEFAULT_TASK_MAX_DURATION, description=nil )
       
       params = {:title=>title, :creator=>creator, :max_duration=>max_duration, :description=>description }
-      task_uri = RestClientWrapper.post(CONFIG[:services]["opentox-task"], params, nil, false).to_s
+      task_uri = RestClientWrapper.post(CONFIG[:services]["opentox-task"], params, {}, nil, false).to_s
       task = Task.new(task_uri.chomp)
 
       # measure current memory consumption
@@ -64,9 +64,8 @@ module OpenTox
           task.completed(result)
         rescue => error
           LOGGER.error "task failed: "+error.class.to_s+": "+error.message
-          # log backtrace only if code is 500 -> unwanted (Runtime)Exceptions and internal errors (see error.rb)
-          LOGGER.error ":\n"+error.backtrace.join("\n") if error.http_code==500
-          task.error(OpenTox::ErrorReport.new(error, creator))
+          LOGGER.error ":\n"+error.backtrace.join("\n")
+          task.error(OpenTox::ErrorReport.create(error, creator))
         end
       end  
       task.pid = task_pid
@@ -81,7 +80,18 @@ module OpenTox
       return nil unless uri
       task = Task.new(uri)
       task.load_metadata
+      raise "could not load task metadata" if task.metadata==nil or task.metadata.size==0
       task
+    end
+
+    # Find a task for querying, status changes
+    # @param [String] uri Task URI
+    # @return [OpenTox::Task] Task object
+    def self.exist?(uri)
+      begin
+        return find(uri)
+      rescue
+      end 
     end
 
     # Get a list of all tasks
@@ -188,7 +198,7 @@ module OpenTox
     
     # create is private now, use OpenTox::Task.as_task
     #def self.create( params )
-      #task_uri = RestClientWrapper.post(CONFIG[:services]["opentox-task"], params, nil, false).to_s
+      #task_uri = RestClientWrapper.post(CONFIG[:services]["opentox-task"], params, {}, false).to_s
       #Task.find(task_uri.chomp)
     #end
     
@@ -304,7 +314,7 @@ module OpenTox
   class SubTask
     
     def initialize(task, min, max)
-      raise "not a task or subtask" unless task.is_a?(Task) or task.is_a?(SubTask) 
+      raise "not a task or subtask" if task!=nil and !(task.is_a?(Task) or task.is_a?(SubTask)) 
       raise "invalid max ("+max.to_s+"), min ("+min.to_s+") params" unless 
         min.is_a?(Numeric) and max.is_a?(Numeric) and min >= 0 and max <= 100 and max > min 
       @task = task

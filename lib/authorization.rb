@@ -192,10 +192,10 @@ module OpenTox
     # return [Boolean] returns true if policy is created   
     def self.create_policy(policy, subjectid)
       begin
-#        resource = RestClient::Resource.new("#{AA_SERVER}/Pol/opensso-pol")
+        resource = RestClient::Resource.new("#{AA_SERVER}/Pol/opensso-pol")
         LOGGER.debug "OpenTox::Authorization.create_policy policy: #{policy[168,43]} with token:" + subjectid.to_s + " length: " + subjectid.length.to_s 
-#        return true if resource.post(policy, :subjectid => subjectid, :content_type =>  "application/xml")
-        return true if RestClientWrapper.post("#{AA_SERVER}/pol", {:subjectid => subjectid, :content_type =>  "application/xml"}, policy)        
+        return true if resource.post(policy, :subjectid => subjectid, :content_type =>  "application/xml")
+        #return true if RestClientWrapper.post("#{AA_SERVER}/pol", {:subjectid => subjectid, :content_type =>  "application/xml"}, policy)        
       rescue
         return false
       end
@@ -306,7 +306,6 @@ module OpenTox
         # if no policy exists, create a policy, return result of send policy
         send_policy(uri, subjectid)
       else
-        LOGGER.debug "OpenTox::Authorization.check_policy URI: #{uri} has already a Policy."
         # if policy exists check for POST rights 
         if authorize(uri, "POST", subjectid)
           true
@@ -356,7 +355,6 @@ module OpenTox
     def self.free_uri?(uri, request_method)
       if CONFIG[:authorization][:free_uris]
         CONFIG[:authorization][:free_uris].each do |request_methods,uris|
-          LOGGER.info "free uris "+request_methods.inspect+" -> "+uris.inspect
           if request_methods and uris and request_methods.include?(request_method.to_sym) 
             uris.each do |u|
               return true if u.match uri
@@ -379,9 +377,6 @@ module OpenTox
       end    
       return false
     end    
-    
-    
-
     
   end
 end
