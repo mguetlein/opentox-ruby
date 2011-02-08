@@ -31,7 +31,7 @@ module OpenTox
         return nil unless uri
         model = Generic.new(uri)
         model.load_metadata(subjectid)
-        raise "could not load model metadata" if model.metadata==nil or model.metadata.size==0
+        raise "could not load model metadata '"+uri.to_s+"'" if model.metadata==nil or model.metadata.size==0
         model
       end
     
@@ -134,7 +134,7 @@ module OpenTox
           OT.parameters => [{DC.title => "dataset_uri", OT.paramValue => dataset_uri}]
         })
         d = Dataset.new(dataset_uri,subjectid)
-        d.load_compounds
+        d.load_compounds(subjectid)
         count = 0
         d.compounds.each do |compound_uri|
           begin

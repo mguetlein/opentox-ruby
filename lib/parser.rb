@@ -35,10 +35,18 @@ module OpenTox
         else
           uri = @uri
         end
-        uri += "?subjectid=#{CGI.escape(subjectid)}" if subjectid 
+        # avoid using rapper directly because of 2 reasons:
+        # * http errors wont be noticed
+        # * subjectid cannot be sent as header
+        ##uri += "?subjectid=#{CGI.escape(subjectid)}" if subjectid 
+        ## `rapper -i rdfxml -o ntriples #{uri} 2>/dev/null`.each_line do |line|
+        file = Tempfile.new("ot-rdfxml")
+        file.puts OpenTox::RestClientWrapper.get @uri,{:subjectid => subjectid,:accept => "application/rdf+xml"}
+        file.close
+        file = "file://"+file.path
         statements = []
         parameter_ids = []
-        `rapper -i rdfxml -o ntriples #{uri} 2>/dev/null`.each_line do |line|
+        `rapper -i rdfxml -o ntriples #{file} 2>/dev/null`.each_line do |line|
           triple = line.to_triple
           @metadata[triple[1]] = triple[2].split('^^').first if triple[0] == @uri and triple[1] != RDF['type']
           statements << triple 

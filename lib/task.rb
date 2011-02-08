@@ -303,7 +303,7 @@ module OpenTox
   class SubTask
     
     def initialize(task, min, max)
-      raise "not a task or subtask" unless task.is_a?(Task) or task.is_a?(SubTask) 
+      raise "not a task or subtask" if task!=nil and !(task.is_a?(Task) or task.is_a?(SubTask)) 
       raise "invalid max ("+max.to_s+"), min ("+min.to_s+") params" unless 
         min.is_a?(Numeric) and max.is_a?(Numeric) and min >= 0 and max <= 100 and max > min 
       @task = task
