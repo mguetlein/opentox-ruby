@@ -58,7 +58,7 @@ module OpenTox
     # @param [String, String]Username,Password 
     # @return [String, nil] gives subjectid or nil
     def self.authenticate(user, pw)
-      return true if !AA_SERVER
+      return nil if !AA_SERVER
       begin 
         resource = RestClient::Resource.new("#{AA_SERVER}/auth/authenticate")
         out = resource.post(:username=>user, :password => pw).sub("token.id=","").sub("\n","")
