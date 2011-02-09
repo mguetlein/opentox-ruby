@@ -110,7 +110,7 @@ module OpenTox
     def self.wait_for_task( res, base_uri, waiting_task=nil )
       #TODO remove TUM hack
       content_type = "text/uri-list" if base_uri =~/tu-muenchen/ and res.content_type == "application/x-www-form-urlencoded;charset=UTF-8"
-s
+
       task = nil
       case res.content_type
       when /application\/rdf\+xml/
