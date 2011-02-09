@@ -94,23 +94,11 @@ module OpenTox
     def self.from_yaml(yaml)
       @metadata = YAML.load(yaml)
     end
-
     
     def self.from_rdfxml(rdfxml)
-      file = Tempfile.new("ot-rdfxml")
-      file.puts rdfxml
-      file.close
-      file = "file://"+file.path
-       
-      # PENDING
-      raise "Parse from file not working: what is the base-object-uri??? (omitted in triples)"    
-          
-      parser = Parser::Owl::Generic.new file
-      metadata = parser.load_metadata
-      puts metadata.inspect
-      
-      task = Task.new(uri)
-      task.add_metadata(metadata)
+      owl = OpenTox::Parser::Owl.from_rdf(rdfxml, OT.Task)
+      task = Task.new(owl.uri)
+      task.add_metadata(owl.metadata)
       task
     end
 
@@ -176,7 +164,7 @@ module OpenTox
     end
 
     def load_metadata
-      if (CONFIG[:yaml_hosts].include?(URI.parse(uri).host))
+      if (CONFIG[:yaml_hosts].include?(URI.parse(@uri).host))
         result = RestClientWrapper.get(@uri, {:accept => 'application/x-yaml'}, nil, false)
         @metadata = YAML.load result.to_s
         @http_code = result.code
@@ -184,6 +172,7 @@ module OpenTox
         @metadata = Parser::Owl::Generic.new(@uri).load_metadata
         @http_code = RestClientWrapper.get(uri, {:accept => 'application/rdf+xml'}, nil, false).code
       end
+      raise "could not load task metadata for task "+@uri.to_s if @metadata==nil || @metadata.size==0
     end
     
     # create is private now, use OpenTox::Task.as_task
@@ -274,11 +263,14 @@ module OpenTox
     end
     
     private
+    VALID_TASK_STATES = ["Cancelled", "Completed", "Running", "Error"]
+    
     def check_state
       begin
+        raise "illegal task state, invalid status: '"+@metadata[OT.hasStatus].to_s+"'" unless 
+          @metadata[OT.hasStatus] unless VALID_TASK_STATES.include?(@metadata[OT.hasStatus])
         raise "illegal task state, task is completed, resultURI is no URI: '"+@metadata[OT.resultURI].to_s+
             "'" unless @metadata[OT.resultURI] and @metadata[OT.resultURI].to_s.uri? if completed?
-        
         if @http_code == 202
           raise "#{@uri}: illegal task state, code is 202, but hasStatus is not Running: '"+@metadata[OT.hasStatus]+"'" unless running?
         elsif @http_code == 201

@@ -61,9 +61,8 @@ module OpenTox
       raise "__waiting_task__ must be 'nil' or '(sub)task', is "+waiting_task.class.to_s if
         waiting_task!=nil and !(waiting_task.is_a?(Task) || waiting_task.is_a?(SubTask))
       headers.each{ |k,v| headers.delete(k) if v==nil } if headers #remove keys with empty values, as this can cause problems
-      
-      # PENDING needed for NUTA, until we finally agree on how to send subjectid
-      headers[:subjectid] = payload.delete(:subjectid) if uri=~/ntua/ and payload and payload.is_a?(Hash) and payload.has_key?(:subjectid) 
+      ## PENDING partner services accept subjectid only in header
+      headers[:subjectid] = payload.delete(:subjectid) if payload and payload.is_a?(Hash) and payload.has_key?(:subjectid) 
       
       begin
         #LOGGER.debug "RestCall: "+rest_call.to_s+" "+uri.to_s+" "+headers.inspect+" "+payload.inspect
@@ -94,6 +93,8 @@ module OpenTox
         
       rescue RestClient::RequestTimeout => ex
         received_error ex.message, 408, nil, {:rest_uri => uri, :headers => headers, :payload => payload}
+      rescue Errno::ECONNREFUSED => ex
+        received_error ex.message, 500, nil, {:rest_uri => uri, :headers => headers, :payload => payload}
       rescue RestClient::ExceptionWithResponse => ex
         # error comming from a different webservice, 
         received_error ex.http_body, ex.http_code, ex.response.net_http_res.content_type, {:rest_uri => uri, :headers => headers, :payload => payload}
@@ -107,7 +108,9 @@ module OpenTox
     end
     
     def self.wait_for_task( res, base_uri, waiting_task=nil )
-                          
+      #TODO remove TUM hack
+      content_type = "text/uri-list" if base_uri =~/tu-muenchen/ and res.content_type == "application/x-www-form-urlencoded;charset=UTF-8"
+s
       task = nil
       case res.content_type
       when /application\/rdf\+xml/
@@ -118,7 +121,7 @@ module OpenTox
         raise "uri list has more than one entry, should be a task" if res.content_type=~/text\/uri-list/ and res.split("\n").size > 1 #if uri list contains more then one uri, its not a task
         task = OpenTox::Task.find(res.to_s.chomp) if res.to_s.uri?
       else
-        raise "unknown content-type for task: '"+res.content_type.to_s+"'" #+"' content: "+res[0..200].to_s
+        raise "unknown content-type for task : '"+res.content_type.to_s+"'"+" content: "+res[0..200].to_s
       end
       
       LOGGER.debug "result is a task '"+task.uri.to_s+"', wait for completion"

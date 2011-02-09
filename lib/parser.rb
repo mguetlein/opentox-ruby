@@ -41,17 +41,17 @@ module OpenTox
         ##uri += "?subjectid=#{CGI.escape(subjectid)}" if subjectid 
         ## `rapper -i rdfxml -o ntriples #{uri} 2>/dev/null`.each_line do |line|
         file = Tempfile.new("ot-rdfxml")
-        file.puts OpenTox::RestClientWrapper.get @uri,{:subjectid => subjectid,:accept => "application/rdf+xml"}
+        file.puts OpenTox::RestClientWrapper.get @uri,{:subjectid => subjectid,:accept => "application/rdf+xml"},nil,false
         file.close
-        file = "file://"+file.path
         statements = []
         parameter_ids = []
-        `rapper -i rdfxml -o ntriples #{file} 2>/dev/null`.each_line do |line|
+        `rapper -i rdfxml -o ntriples file://#{file.path} 2>/dev/null`.each_line do |line|
           triple = line.to_triple
           @metadata[triple[1]] = triple[2].split('^^').first if triple[0] == @uri and triple[1] != RDF['type']
           statements << triple 
           parameter_ids << triple[2] if triple[1] == OT.parameters
         end
+        File.delete(file.path)
         unless parameter_ids.empty?
           @metadata[OT.parameters] = []
           parameter_ids.each do |p|
@@ -63,18 +63,17 @@ module OpenTox
         @metadata
       end
       
-      # loads metadata from rdf-data
+      # creates owl object from rdf-data
       # @param [String] rdf
       # @param [String] type of the info (e.g. OT.Task, OT.ErrorReport) needed to get the subject-uri
-      # @return [Hash] metadata 
-      def self.metadata_from_rdf( rdf, type )
+      # @return [Owl] with uri and metadata set 
+      def self.from_rdf( rdf, type )
         # write to file and read convert with rapper into tripples
         file = Tempfile.new("ot-rdfxml")
         file.puts rdf
         file.close
-        file = "file://"+file.path
         #puts "cmd: rapper -i rdfxml -o ntriples #{file} 2>/dev/null"
-        triples = `rapper -i rdfxml -o ntriples #{file} 2>/dev/null`
+        triples = `rapper -i rdfxml -o ntriples file://#{file.path} 2>/dev/null`
         
         # load uri via type
         uri = nil
@@ -85,19 +84,23 @@ module OpenTox
              uri = triple[0]
           end
         end
-        
+        File.delete(file)
         # load metadata
         metadata = {}
         triples.each_line do |line|
           triple = line.to_triple
           metadata[triple[1]] = triple[2].split('^^').first if triple[0] == uri and triple[1] != RDF['type']
         end
-        metadata
+        owl = Owl::Generic.new(uri)
+        owl.metadata = metadata
+        owl
       end
-
+      
       # Generic parser for all OpenTox classes
       class Generic
         include Owl
+        
+        attr_accessor :uri, :metadata
       end
 
       # OWL-DL parser for datasets
@@ -128,12 +131,21 @@ module OpenTox
         # @return [Hash] Internal dataset representation
         def load_uri(subjectid=nil)
           uri = @uri
-          uri += "?subjectid=#{CGI.escape(subjectid)}" if subjectid
+          
+          # avoid using rapper directly because of 2 reasons:
+          # * http errors wont be noticed
+          # * subjectid cannot be sent as header
+          ##uri += "?subjectid=#{CGI.escape(subjectid)}" if subjectid
+          ##`rapper -i rdfxml -o ntriples #{file} 2>/dev/null`.each_line do |line| 
+          file = Tempfile.new("ot-rdfxml")
+          file.puts OpenTox::RestClientWrapper.get @uri,{:subjectid => subjectid,:accept => "application/rdf+xml"},nil,false
+          file.close
+          
           data = {}
           feature_values = {}
           feature = {}
           other_statements = {}
-          `rapper -i rdfxml -o ntriples #{uri} 2>/dev/null`.each_line do |line|
+          `rapper -i rdfxml -o ntriples file://#{file.path} 2>/dev/null`.each_line do |line|
             triple = line.chomp.split(' ',3)
             triple = triple[0..2].collect{|i| i.sub(/\s+.$/,'').gsub(/[<>"]/,'')}
             case triple[1] 
@@ -150,6 +162,7 @@ module OpenTox
             else 
             end
           end
+          File.delete(file.path)
           data.each do |id,entry|
             entry[:values].each do |value_id|
               value = feature_values[value_id].split(/\^\^/).first # remove XSD.type
@@ -157,7 +170,7 @@ module OpenTox
             end
           end
           load_features
-          @dataset.metadata = load_metadata
+          @dataset.metadata = load_metadata(subjectid)
           @dataset
         end
 

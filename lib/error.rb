@@ -55,7 +55,7 @@ module OpenTox
     end
     
     def self.from_rdf(rdf)
-      metadata = OpenTox::Parser::Owl.metadata_from_rdf( rdf, OT.ErrorReport )
+      metadata = OpenTox::Parser::Owl.from_rdf( rdf, OT.ErrorReport ).metadata
       ErrorReport.new(metadata[OT.statusCode], metadata[OT.errorCode], metadata[OT.message], metadata[OT.actor], metadata[OT.errorCause])
     end
     

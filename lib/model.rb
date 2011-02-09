@@ -43,9 +43,11 @@ module OpenTox
         
         @algorithm = OpenTox::Algorithm::Generic.find(@metadata[OT.algorithm], subjectid) unless @algorithm
         algorithm_title = @algorithm ? @algorithm.metadata[DC.title] : nil
+        algorithm_type = @algorithm ? @algorithm.metadata[OT.isA] : nil
         @dependentVariable = OpenTox::Feature.find( @metadata[OT.dependentVariables],subjectid ) unless @dependentVariable
-        
-        [@dependentVariable.feature_type, @metadata[OT.isA], @metadata[DC.title], @uri, algorithm_title].each do |type|
+        type_indicators = [@dependentVariable.feature_type, @metadata[OT.isA], @metadata[DC.title], 
+          @uri, algorithm_type, algorithm_title] 
+        type_indicators.each do |type|
           case type
           when /(?i)classification/
             return "classification"
@@ -53,8 +55,7 @@ module OpenTox
             return "regression"
           end
         end
-        raise "unknown model "+[@dependentVariable.feature_type, @metadata[OT.isA],
-          @metadata[DC.title], @uri, algorithm_title].inspect
+        raise "unknown model "+type_indicators.inspect
       end
       
     end
