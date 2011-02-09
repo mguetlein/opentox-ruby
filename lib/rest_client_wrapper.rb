@@ -109,7 +109,7 @@ module OpenTox
     
     def self.wait_for_task( res, base_uri, waiting_task=nil )
       #TODO remove TUM hack
-      content_type = "text/uri-list" if base_uri =~/tu-muenchen/ and res.content_type == "application/x-www-form-urlencoded;charset=UTF-8"
+      res.content_type = "text/uri-list" if base_uri =~/tu-muenchen/ and res.content_type == "application/x-www-form-urlencoded;charset=UTF-8"
 
       task = nil
       case res.content_type
@@ -121,7 +121,7 @@ module OpenTox
         raise "uri list has more than one entry, should be a task" if res.content_type=~/text\/uri-list/ and res.split("\n").size > 1 #if uri list contains more then one uri, its not a task
         task = OpenTox::Task.find(res.to_s.chomp) if res.to_s.uri?
       else
-        raise "unknown content-type for task : '"+res.content_type.to_s+"'"+" content: "+res[0..200].to_s
+        raise "unknown content-type for task : '"+res.content_type.to_s+"'"+" base-uri: "+base_uri.to_s+" content: "+res[0..200].to_s
       end
       
       LOGGER.debug "result is a task '"+task.uri.to_s+"', wait for completion"
