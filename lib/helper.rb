@@ -29,7 +29,7 @@ helpers do
   # @param [String] uri 
   def clean_uri(uri)
     uri = uri.sub(" ", "%20")          #dirty hacks => to fix
-    uri = uri[0,uri.index("InChI=")] 
+    uri = uri[0,uri.index("InChI=")] if uri.index("InChI=") 
     
     out = URI.parse(uri)
     out.path = out.path[0, out.path.length - (out.path.reverse.rindex(/\/{1}\d+\/{1}/))] if out.path.index(/\/{1}\d+\/{1}/)  #cuts after /id/ for a&a 
