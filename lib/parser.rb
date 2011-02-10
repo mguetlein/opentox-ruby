@@ -84,7 +84,7 @@ module OpenTox
              uri = triple[0]
           end
         end
-        File.delete(file)
+        File.delete(file.path)
         # load metadata
         metadata = {}
         triples.each_line do |line|

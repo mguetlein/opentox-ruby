@@ -62,6 +62,7 @@ module OpenTox
         waiting_task!=nil and !(waiting_task.is_a?(Task) || waiting_task.is_a?(SubTask))
       headers.each{ |k,v| headers.delete(k) if v==nil } if headers #remove keys with empty values, as this can cause problems
       ## PENDING partner services accept subjectid only in header
+      headers = {} unless headers
       headers[:subjectid] = payload.delete(:subjectid) if payload and payload.is_a?(Hash) and payload.has_key?(:subjectid) 
       
       # PENDING needed for NUTA, until we finally agree on how to send subjectid
