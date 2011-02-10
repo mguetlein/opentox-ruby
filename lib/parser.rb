@@ -165,7 +165,13 @@ module OpenTox
           File.delete(file.path)
           data.each do |id,entry|
             entry[:values].each do |value_id|
-              value = feature_values[value_id].split(/\^\^/).first # remove XSD.type
+              split = feature_values[value_id].split(/\^\^/)
+              case split[-1]
+              when XSD.double
+                value = split.first.to_f
+              else
+                value = split.first
+              end
               @dataset.add entry[:compound],feature[value_id],value
             end
           end
