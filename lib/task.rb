@@ -84,6 +84,16 @@ module OpenTox
       task
     end
 
+    # Find a task for querying, status changes
+    # @param [String] uri Task URI
+    # @return [OpenTox::Task] Task object
+    def self.exist?(uri)
+      begin
+        return find(uri)
+      rescue
+      end 
+    end
+
     # Get a list of all tasks
     # @param [optional, String] uri URI of task service
     # @return [text/uri-list] Task URIs

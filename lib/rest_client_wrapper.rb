@@ -64,6 +64,9 @@ module OpenTox
       ## PENDING partner services accept subjectid only in header
       headers[:subjectid] = payload.delete(:subjectid) if payload and payload.is_a?(Hash) and payload.has_key?(:subjectid) 
       
+      # PENDING needed for NUTA, until we finally agree on how to send subjectid
+      headers[:subjectid] = payload.delete(:subjectid) if uri=~/ntua/ and payload and payload.is_a?(Hash) and payload.has_key?(:subjectid) 
+      
       begin
         #LOGGER.debug "RestCall: "+rest_call.to_s+" "+uri.to_s+" "+headers.inspect+" "+payload.inspect
         resource = RestClient::Resource.new(uri,{:timeout => 60})

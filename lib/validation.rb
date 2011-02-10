@@ -88,11 +88,11 @@ module OpenTox
     # looks for report for this crossvalidation, creates a report if no report is found
     # @param [String,optional] subjectid
     # @param [OpenTox::Task,optional] waiting_task (can be a OpenTox::Subtask as well), progress is updated accordingly
-    # @return [OpenTox::CrossvalidationReport]
+    # @return [String] report uri
     def find_or_create_report( subjectid=nil, waiting_task=nil )
       @report = CrossvalidationReport.find_for_crossvalidation(@uri, subjectid) unless @report
       @report = CrossvalidationReport.create(@uri, subjectid, waiting_task) unless @report
-      @report
+      @report.uri
     end
     
     # loads metadata via yaml from crossvalidation object
