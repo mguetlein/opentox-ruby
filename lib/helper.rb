@@ -9,7 +9,7 @@ helpers do
       end
     elsif !env["session"] && subjectid
       unless authorized?(subjectid)
-        LOGGER.debug "URI not authorized: #{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']} with request: #{request.env['REQUEST_METHOD']}"
+        LOGGER.debug "URI not authorized: clean: " + clean_uri("#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}").to_s + " full: #{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']} with request: #{request.env['REQUEST_METHOD']}"
         raise OpenTox::NotAuthorizedError.new "Not authorized" 
       end
     else
@@ -28,9 +28,11 @@ helpers do
   #cleans URI from querystring and file-extension. Sets port 80 to emptystring
   # @param [String] uri 
   def clean_uri(uri)
-    uri = uri.sub(" ", "%20")
+    uri = uri.sub(" ", "%20")          #dirty hacks => to fix
+    uri = uri[0,uri.index("InChI=")] 
+    
     out = URI.parse(uri)
-    out.path = out.path[0, out.path.index(/[0-9]/)] if out.path.index(/[0-9]/) #cuts after id for a&a
+    out.path = out.path[0, out.path.length - (out.path.reverse.rindex(/\/{1}\d+\/{1}/))] if out.path.index(/\/{1}\d+\/{1}/)  #cuts after /id/ for a&a 
     "#{out.scheme}:" + (out.port != 80 ? out.port : "") + "//#{out.host}#{out.path.chomp('/')}"
   end
 
