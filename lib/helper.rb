@@ -19,6 +19,8 @@ helpers do
 
   #Check Authorization for URI with method and subjectid. 
   def authorized?(subjectid)
+    # hack for reports, address problem as soon as subjectid is not longer allowed as param 
+    return true if request.env['REQUEST_URI'] =~ /validation\/report\/.*svg$/
     request_method = request.env['REQUEST_METHOD']
     uri = clean_uri("#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}")
     request_method = "GET" if request_method == "POST" &&  uri =~ /\/model\/\d+\/?$/
