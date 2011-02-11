@@ -172,8 +172,10 @@ module OpenTox
             entry[:values].each do |value_id|
               split = feature_values[value_id].split(/\^\^/)
               case split[-1]
-              when XSD.double
+              when XSD.double, XSD.float 
                 value = split.first.to_f
+              when XSD.boolean
+                value = split.first=~/(?i)true/ ? true : false                
               else
                 value = split.first
               end
@@ -188,15 +190,23 @@ module OpenTox
         # Read only features from a dataset service. 
         # @return [Hash] Internal features representation
         def load_features(subjectid=nil)
-          uri = File.join(@uri,"features")
-          uri += "?subjectid=#{CGI.escape(subjectid)}" if subjectid 
+          if File.exist?(@uri)
+            file = File.new(@uri)
+          else
+            file = Tempfile.new("ot-rdfxml")
+            uri = File.join(@uri,"features")
+            file.puts OpenTox::RestClientWrapper.get uri,{:subjectid => subjectid,:accept => "application/rdf+xml"},nil,false
+            file.close
+            to_delete = file.path
+          end
           statements = []
           features = Set.new
-          `rapper -i rdfxml -o ntriples #{uri} 2>/dev/null`.each_line do |line|
+          `rapper -i rdfxml -o ntriples #{file.path} 2>/dev/null`.each_line do |line|
             triple = line.chomp.split('> ').collect{|i| i.sub(/\s+.$/,'').gsub(/[<>"]/,'')}[0..2]
             statements << triple
-            features << triple[0] if triple[1] == RDF['type'] and triple[2] == OT.Feature
+            features << triple[0] if triple[1] == RDF['type'] and (triple[2] == OT.Feature || triple[2] == OT.NumericFeature) 
           end
+          File.delete(to_delete) if to_delete
           statements.each do |triple|
             if features.include? triple[0]
               @dataset.features[triple[0]] = {} unless @dataset.features[triple[0]] 
