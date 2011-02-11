@@ -85,7 +85,12 @@ module OpenTox
     end
 
     def load_rdfxml(rdfxml)
-      load_rdfxml_file Tempfile.open("ot-rdfxml"){|f| f.write(rdfxml)}.path
+      raise "rdfxml data is empty" if rdfxml.to_s.size==0
+      file = Tempfile.new("ot-rdfxml")
+      file.puts rdfxml
+      file.close
+      load_rdfxml_file file
+      file.delete
     end
 
     # Load RDF/XML representation from a file

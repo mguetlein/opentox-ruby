@@ -30,28 +30,29 @@ module OpenTox
       # Read metadata from opentox service
       # @return [Hash] Object metadata
       def load_metadata(subjectid=nil)
-        if @dataset
-          uri = File.join(@uri,"metadata")
-        else
-          uri = @uri
-        end
         # avoid using rapper directly because of 2 reasons:
         # * http errors wont be noticed
         # * subjectid cannot be sent as header
         ##uri += "?subjectid=#{CGI.escape(subjectid)}" if subjectid 
         ## `rapper -i rdfxml -o ntriples #{uri} 2>/dev/null`.each_line do |line|
-        file = Tempfile.new("ot-rdfxml")
-        file.puts OpenTox::RestClientWrapper.get @uri,{:subjectid => subjectid,:accept => "application/rdf+xml"},nil,false
-        file.close
+        if File.exist?(@uri)
+          file = File.new(@uri)
+        else
+          file = Tempfile.new("ot-rdfxml")
+          uri = @dataset ? File.join(@uri,"metadata") : @uri
+          file.puts OpenTox::RestClientWrapper.get uri,{:subjectid => subjectid,:accept => "application/rdf+xml"},nil,false
+          file.close
+          to_delete = file.path
+        end
         statements = []
         parameter_ids = []
-        `rapper -i rdfxml -o ntriples file://#{file.path} 2>/dev/null`.each_line do |line|
+        `rapper -i rdfxml -o ntriples #{file.path} 2>/dev/null`.each_line do |line|
           triple = line.to_triple
           @metadata[triple[1]] = triple[2].split('^^').first if triple[0] == @uri and triple[1] != RDF['type']
           statements << triple 
           parameter_ids << triple[2] if triple[1] == OT.parameters
         end
-        File.delete(file.path)
+        File.delete(to_delete) if to_delete
         unless parameter_ids.empty?
           @metadata[OT.parameters] = []
           parameter_ids.each do |p|
@@ -73,7 +74,7 @@ module OpenTox
         file.puts rdf
         file.close
         #puts "cmd: rapper -i rdfxml -o ntriples #{file} 2>/dev/null"
-        triples = `rapper -i rdfxml -o ntriples file://#{file.path} 2>/dev/null`
+        triples = `rapper -i rdfxml -o ntriples #{file.path} 2>/dev/null`
         
         # load uri via type
         uri = nil
@@ -130,22 +131,26 @@ module OpenTox
         #   dataset.save
         # @return [Hash] Internal dataset representation
         def load_uri(subjectid=nil)
-          uri = @uri
           
           # avoid using rapper directly because of 2 reasons:
           # * http errors wont be noticed
           # * subjectid cannot be sent as header
           ##uri += "?subjectid=#{CGI.escape(subjectid)}" if subjectid
           ##`rapper -i rdfxml -o ntriples #{file} 2>/dev/null`.each_line do |line| 
-          file = Tempfile.new("ot-rdfxml")
-          file.puts OpenTox::RestClientWrapper.get @uri,{:subjectid => subjectid,:accept => "application/rdf+xml"},nil,false
-          file.close
+          if File.exist?(@uri)
+            file = File.new(@uri)
+          else
+            file = Tempfile.new("ot-rdfxml")
+            file.puts OpenTox::RestClientWrapper.get @uri,{:subjectid => subjectid,:accept => "application/rdf+xml"},nil,false
+            file.close
+            to_delete = file.path
+          end
           
           data = {}
           feature_values = {}
           feature = {}
           other_statements = {}
-          `rapper -i rdfxml -o ntriples file://#{file.path} 2>/dev/null`.each_line do |line|
+          `rapper -i rdfxml -o ntriples #{file.path} 2>/dev/null`.each_line do |line|
             triple = line.chomp.split(' ',3)
             triple = triple[0..2].collect{|i| i.sub(/\s+.$/,'').gsub(/[<>"]/,'')}
             case triple[1] 
@@ -162,7 +167,7 @@ module OpenTox
             else 
             end
           end
-          File.delete(file.path)
+          File.delete(to_delete) if to_delete
           data.each do |id,entry|
             entry[:values].each do |value_id|
               split = feature_values[value_id].split(/\^\^/)
