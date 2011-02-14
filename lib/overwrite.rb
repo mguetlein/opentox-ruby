@@ -45,7 +45,7 @@ class Sinatra::Base
       response['Content-Type'] = "application/rdf+xml"
       halt code,task.to_rdfxml
     when /yaml/
-      response['Content-Type'] = "application/rdf+xml"
+      response['Content-Type'] = "application/x-yaml"
       halt code,task.to_yaml # PENDING differs from task-webservice
     when /html/
       response['Content-Type'] = "text/html"
