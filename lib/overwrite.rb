@@ -29,7 +29,7 @@ error Exception do
     halt error.http_code,rep.to_rdfxml
   when /html/
     content_type 'text/html'
-    halt error.http_code,(OpenTox.text_to_html rep.to_yaml)
+    halt error.http_code,(OpenTox.text_to_html rep.to_yaml, @subjectid)
   else
     content_type 'application/x-yaml'
     halt error.http_code,rep.to_yaml
@@ -49,7 +49,7 @@ class Sinatra::Base
       halt code,task.to_yaml # PENDING differs from task-webservice
     when /html/
       response['Content-Type'] = "text/html"
-      halt code,OpenTox.text_to_html(task.to_yaml)
+      halt code,OpenTox.text_to_html(task.to_yaml, @subjectid)
     else # default /uri-list/
       response['Content-Type'] = "text/uri-list"
       halt code,task.uri+"\n"
