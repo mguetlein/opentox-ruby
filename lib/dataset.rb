@@ -141,10 +141,8 @@ module OpenTox
       if (CONFIG[:yaml_hosts].include?(URI.parse(@uri).host))
         copy YAML.load(RestClientWrapper.get(@uri, {:accept => "application/x-yaml", :subjectid => subjectid}))
       else
-        puts "loading all.."
         parser = Parser::Owl::Dataset.new(@uri, subjectid)
         copy parser.load_uri(subjectid)
-        puts "..done"
       end
     end
 
