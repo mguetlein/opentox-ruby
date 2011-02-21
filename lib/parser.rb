@@ -171,6 +171,10 @@ module OpenTox
               data[triple[0]][:compound] = triple[2]  
             when /#{OT.feature}/i
               feature[triple[0]] = triple[2]
+            when /#{RDF.type}/i
+              if triple[2]=~/#{OT.Compound}/i and !data[triple[0]]
+                data[triple[0]] = {:compound => triple[0], :values => []} 
+              end
             else 
             end
           end

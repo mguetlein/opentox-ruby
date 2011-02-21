@@ -237,7 +237,7 @@ module OpenTox
       @features[feature] = {}  unless @features[feature]
       @data_entries[compound] = {} unless @data_entries[compound]
       @data_entries[compound][feature] = [] unless @data_entries[compound][feature]
-      @data_entries[compound][feature] << value if value
+      @data_entries[compound][feature] << value if value!=nil
     end
 
     # Add/modify metadata, existing entries will be overwritten
